@@ -1,0 +1,31 @@
+{
+  "name": "rental-manager",
+  "private": true,
+  "packageManager": "pnpm@12.6.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "infra:logs": "docker compose logs -f",
+    "build:shared": "pnpm --filter @rental/shared build",
+    "dev": "pnpm build:shared && pnpm --parallel --filter @rental/shared --filter api --filter web dev",
+    "dev:api": "pnpm build:shared && pnpm --filter api dev",
+    "dev:web": "pnpm build:shared && pnpm --filter web dev",
+    "build": "pnpm -r build",
+    "test": "pnpm build:shared && pnpm -r test",
+    "lint": "pnpm build:shared && pnpm -r lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "eslint": "^9.39.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.72.1"
+  }
+}
