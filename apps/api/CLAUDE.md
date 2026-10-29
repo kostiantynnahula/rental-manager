@@ -2,7 +2,7 @@
 
 ## Commands (from repo root)
 
-- dev: `pnpm dev:api` → http://localhost:3001, Swagger UI at `/docs` (off in production)
+- dev: `pnpm dev:api` → http://localhost:3001/api (global `/api` prefix), Swagger UI at `/docs` (off in production)
 - test: `pnpm --filter api test` · e2e: `pnpm --filter api test:e2e`
 - lint: `pnpm --filter api lint` · build: `pnpm --filter api build`
 - generate code: `pnpm --filter api exec nest g <schematic> <name>`
@@ -16,6 +16,9 @@
 - Env: read via `ConfigService<Env, true>`, never `process.env`. New vars → `src/config/env.validation.ts` + root `.env.example`.
 - Global `ValidationPipe` (whitelist, forbidNonWhitelisted, transform) and Swagger are set up in `src/main.ts`; e2e tests repeat the pipe options — keep them in sync.
 - DTOs: class-validator decorators + explicit `@ApiProperty` (no Swagger CLI plugin).
+- One class per file; custom error classes go in `src/<feature>/errors/<name>.error.ts`.
+- Interfaces go in `src/<feature>/interfaces/<name>.interface.ts` (one per file), imported with `import type`.
+- Pure helper functions go in `src/<feature>/helpers/` (one file per topic), not at the top/bottom of class files. Anything that needs DI stays a method/provider.
 
 ## Database (Prisma 7)
 
@@ -39,3 +42,20 @@
 - The seed never logs passwords or hashes — keep it that way.
 - Emails are stored lowercase + trimmed: always pass them through `normalizeEmail` (`src/users/`); a DB CHECK constraint is the backstop.
 - Password hashing (argon2id): `PasswordService` in `src/users/` (exported by `UsersModule`, which auth will import).
+
+## Auth (`src/auth/`)
+
+- Global `/api` prefix so API paths equal what the browser sees through the web app's `/api/*` proxy (same origin); cookie paths depend on it.
+- **Access token**: JWT (`@nestjs/jwt`, no Passport), payload `{ sub: userId }`, TTL `JWT_ACCESS_TTL_SECONDS` (900). Cookie `access_token`, `Path=/api`.
+- **Refresh token**: opaque random 32 bytes, TTL `REFRESH_TOKEN_TTL_DAYS` (30, sliding). Cookie `refresh_token`, `Path=/api/auth`.
+  Stored only as SHA-256 in `Session` (fast hash is fine for a random token; it's the unique lookup key).
+- Cookies: `httpOnly`, `SameSite=Strict`, `Secure` in production. Helpers in `helpers/auth-cookies.ts`.
+- Rotation on every `POST /auth/refresh` (atomic: old row gets `revokedAt` + `replacedById`). Presenting a revoked token = reuse → **all** sessions of that user are revoked. Two tabs refreshing at once trigger this too (accepted for a single user).
+- `JwtAuthGuard` is global (`APP_GUARD`) and stateless (no DB hit): every route needs a valid access token unless marked `@Public()`. Use `@CurrentUser()` → `{ id }`; load the user if you need more. Deactivation takes effect within one access TTL.
+- Endpoints: `POST /auth/login` (public), `POST /auth/refresh` (public), `POST /auth/logout` (public, revokes the session from the refresh cookie, always clears cookies), `GET /auth/me`.
+- Login: email normalized; unknown email, wrong password and inactive user all → `401 Invalid email or password` (a dummy argon2 verify keeps timing equal).
+- Rate limit: `ThrottlerGuard` on `AuthController` only — login 5/min, refresh 30/min per IP (`trust proxy` = loopback, so the proxy's `X-Forwarded-For` counts).
+- Secrets/TTLs come from `ConfigService` (`JWT_ACCESS_SECRET` ≥ 32 chars, required). Never log tokens.
+- Config → options mapping lives in `src/auth/config/` as pure `*OptionsFromConfig(config: ConfigService<Env, true>)` functions (`jwt.config.ts`, `cookie.config.ts`). Follow this pattern in other features (`src/<feature>/config/`).
+- Swagger: cookie auth is declared; log in via "Try it out" on `/api/auth/login` and the browser sends the cookie for later calls.
+- e2e tests importing `AppModule` get the guard too — test-only controllers need `@Public()`.

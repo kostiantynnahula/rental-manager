@@ -13,14 +13,35 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(uuid()) @db.Uuid
+  id           String    @id @default(uuid()) @db.Uuid
   // Always lowercase + trimmed (normalizeEmail); enforced by a CHECK constraint in the migration.
-  email        String   @unique
+  email        String    @unique
   passwordHash String
   name         String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  sessions     Session[]
 
   @@map("users")
+}
+
+// One row per refresh token. Rotation revokes the row and links it to its successor.
+model Session {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // SHA-256 of the opaque refresh token; the token itself is never stored.
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  replacedById String?   @unique @db.Uuid
+  replacedBy   Session?  @relation("SessionRotation", fields: [replacedById], references: [id], onDelete: SetNull)
+  replaces     Session?  @relation("SessionRotation")
+  userAgent    String?
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@map("sessions")
 }

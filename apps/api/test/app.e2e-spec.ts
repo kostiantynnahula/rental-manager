@@ -4,6 +4,7 @@ import { IsInt, IsString, Min } from 'class-validator';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { AppModule } from './../src/app.module.js';
+import { Public } from './../src/auth/public.decorator.js';
 
 // Test-only endpoint to exercise the global ValidationPipe.
 class EchoDto {
@@ -15,6 +16,8 @@ class EchoDto {
   value: number;
 }
 
+// Public: these tests are about validation, not the global auth guard.
+@Public()
 @Controller('echo')
 class EchoController {
   @Post(':id')
