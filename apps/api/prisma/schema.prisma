@@ -1,0 +1,13 @@
+// Prisma 7: the connection URL lives in prisma.config.ts, not here.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  // apps/api uses `module: nodenext`, which requires .js extensions in relative imports.
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}

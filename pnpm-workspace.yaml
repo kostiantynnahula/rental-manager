@@ -6,3 +6,7 @@ packages:
 allowBuilds:
   sharp: false
   unrs-resolver: false
+  '@scarf/scarf': false # swagger-ui-dist telemetry
+  '@prisma/engines': true # downloads the migration engine
+  prisma: true
+  esbuild: true # used by tsx (seed runner)
