@@ -10,3 +10,4 @@ allowBuilds:
   '@prisma/engines': true # downloads the migration engine
   prisma: true
   esbuild: true # used by tsx (seed runner)
+  argon2: true # native module; install only picks a prebuilt binary

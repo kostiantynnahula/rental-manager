@@ -11,3 +11,16 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  // Always lowercase + trimmed (normalizeEmail); enforced by a CHECK constraint in the migration.
+  email        String   @unique
+  passwordHash String
+  name         String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}

@@ -10,6 +10,7 @@
     "infra:down": "docker compose down",
     "infra:logs": "docker compose logs -f",
     "build:shared": "pnpm --filter @rental/shared build",
+    "prisma:studio": "pnpm --filter api db:studio",
     "dev": "pnpm build:shared && pnpm --parallel --filter @rental/shared --filter api --filter web dev",
     "dev:api": "pnpm build:shared && pnpm --filter api dev",
     "dev:web": "pnpm build:shared && pnpm --filter web dev",

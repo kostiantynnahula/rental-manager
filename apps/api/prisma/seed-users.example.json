@@ -1,0 +1,8 @@
+[
+  { "email": "owner@example.com", "password": "change-me-please-123", "name": "Owner" },
+  {
+    "email": "Second.User@Example.com ",
+    "password": "another-fake-password",
+    "name": "Second User"
+  }
+]
