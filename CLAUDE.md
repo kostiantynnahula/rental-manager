@@ -12,16 +12,19 @@ consumption × tariff per utility + fixed fees.
 
 ## Domain
 
-- **Property** — rental apartment. Utilities vary per property.
-- **Meter** — metered utility in a Property; may have several registers.
+- **Apartment** — rental apartment. Utilities vary per apartment. Archived via `isActive`, never deleted.
+- **Tenant** — a person renting; can appear in many leases over time.
+- **Lease** — an Apartment rented to one or more Tenants for a date range (open-ended allowed), with monthly rent.
+  Exactly one PRIMARY tenant per lease; others are CONTACTs. Leases of one apartment never overlap.
+- **Meter** — metered utility in an Apartment; may have several registers.
   - Electricity: single-zone or day/night (2 registers).
   - Water: cold+hot, or cold only (boiler), or none (building-level bill → fixed fee).
-  - Gas: every property.
+  - Gas: every apartment.
 - **Fixed fee** — monthly charge without a meter: waste removal (all),
   elevator (some), intercom (optional), building-level water.
 - **Reading** — value per register + date + photo + status (`parsed` → `confirmed`).
 - **Tariff** — price per unit, versioned by effective date.
-- **Statement** — monthly calculation per Property.
+- **Statement** — monthly calculation per Apartment.
 
 ## Rules
 

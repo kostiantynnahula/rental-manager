@@ -45,3 +45,75 @@ model Session {
   @@index([userId])
   @@map("sessions")
 }
+
+// Archived via isActive, never deleted (leases reference it with onDelete: Restrict).
+model Apartment {
+  id        String   @id @default(uuid()) @db.Uuid
+  // Short label, e.g. "Shevchenka 12/5".
+  name      String   @unique
+  address   String
+  notes     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  leases    Lease[]
+
+  @@map("apartments")
+}
+
+model Tenant {
+  id        String        @id @default(uuid()) @db.Uuid
+  fullName  String
+  phone     String
+  email     String?
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  leases    LeaseTenant[]
+
+  @@map("tenants")
+}
+
+// Raw-SQL constraints in migration add_apartments_tenants_leases:
+//   leases_dates_check (endDate >= startDate), leases_no_overlap (EXCLUDE, per apartment),
+//   lease_tenants_one_primary (partial unique: at most one PRIMARY per lease).
+model Lease {
+  id          String        @id @default(uuid()) @db.Uuid
+  apartmentId String        @db.Uuid
+  // Restrict: an apartment with lease history can't be deleted (archive it instead).
+  apartment   Apartment     @relation(fields: [apartmentId], references: [id], onDelete: Restrict)
+  startDate   DateTime      @db.Date
+  // Inclusive last day; null = open-ended.
+  endDate     DateTime?     @db.Date
+  // Integer kopiyky, UAH.
+  monthlyRent Int
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  tenants     LeaseTenant[]
+
+  @@index([apartmentId])
+  @@map("leases")
+}
+
+enum LeaseTenantRole {
+  PRIMARY
+  CONTACT
+
+  @@map("lease_tenant_role")
+}
+
+model LeaseTenant {
+  leaseId  String          @db.Uuid
+  // Cascade: the links belong to the lease (deleting a lease is a deliberate act).
+  lease    Lease           @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  tenantId String          @db.Uuid
+  // Restrict: a tenant with lease history can't be deleted.
+  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  role     LeaseTenantRole
+
+  // The PK (leaseId, tenantId) already serves as the index for leaseId (leading column).
+  @@id([leaseId, tenantId])
+  @@index([tenantId])
+  @@map("lease_tenants")
+}

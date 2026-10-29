@@ -11,7 +11,7 @@
 
 - Nest 12, native ESM (`"type": "module"`): relative imports need the `.js` extension.
 - Tests: vitest (globals on). Unit `*.spec.ts` next to the code; e2e in `test/*.e2e-spec.ts`.
-- One Nest module per domain area (properties, meters, readings, tariffs, statements).
+- One Nest module per domain area (apartments, tenants, leases, meters, readings, tariffs, statements).
 - Shared types come from `@rental/shared` (built to `dist/`; root `dev`/`test`/`lint` build it first).
 - Env: read via `ConfigService<Env, true>`, never `process.env`. New vars → `src/config/env.validation.ts` + root `.env.example`.
 - Global `ValidationPipe` (whitelist, forbidNonWhitelisted, transform) and Swagger are set up in `src/main.ts`; e2e tests repeat the pipe options — keep them in sync.
@@ -19,6 +19,18 @@
 - One class per file; custom error classes go in `src/<feature>/errors/<name>.error.ts`.
 - Interfaces go in `src/<feature>/interfaces/<name>.interface.ts` (one per file), imported with `import type`.
 - Pure helper functions go in `src/<feature>/helpers/` (one file per topic), not at the top/bottom of class files. Anything that needs DI stays a method/provider.
+
+## Domain
+
+- **Apartment** is archived via `isActive = false`, never deleted. Leases reference it with `onDelete: Restrict`,
+  so a delete with history fails at the DB level. Same for **Tenant** (via `LeaseTenant`).
+- **Money** is `Int` kopiyky (UAH), e.g. `monthlyRent: 1500000` = 15 000.00 UAH. Never floats.
+- **Lease** dates are `@db.Date` (no time); `endDate` is the _inclusive_ last day, `null` = open-ended.
+- Constraints written in raw SQL in migration `add_apartments_tenants_leases` (not visible in `schema.prisma`):
+  - `leases_dates_check`: `endDate >= startDate`.
+  - `leases_no_overlap`: GiST exclusion — leases of one apartment never overlap (needs the `btree_gist` extension).
+  - `lease_tenants_one_primary`: partial unique index — **at most** one PRIMARY tenant per lease.
+    "At least one" isn't enforced by the DB: the service creating a lease must add the PRIMARY in the same transaction.
 
 ## Database (Prisma 7)
 
