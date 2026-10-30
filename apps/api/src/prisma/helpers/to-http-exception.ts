@@ -13,6 +13,14 @@ const CONSTRAINT_MESSAGES: Record<string, string> = {
   leases_dates_check: 'endDate must be on or after startDate',
   lease_tenants_one_primary: 'A lease must have exactly one PRIMARY tenant',
   users_email_normalized: 'email must be lowercase and trimmed',
+  meters_removed_after_installed: 'removedAt must be on or after installedAt',
+  readings_period_first_of_month: 'period must be the first day of a month',
+  readings_confirmed_has_confirmer: 'A confirmed reading must record who confirmed it and when',
+  reading_values_non_negative: 'Meter values must not be negative',
+  readings_one_confirmed_regular_per_period:
+    'A confirmed reading for this meter and period already exists',
+  readings_one_confirmed_initial: 'This meter already has a confirmed INITIAL reading',
+  readings_one_confirmed_final: 'This meter already has a confirmed FINAL reading',
 };
 
 // Prisma codes: https://www.prisma.io/docs/orm/reference/error-reference

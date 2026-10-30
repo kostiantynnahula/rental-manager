@@ -16,13 +16,22 @@ consumption × tariff per utility + fixed fees.
 - **Tenant** — a person renting; can appear in many leases over time.
 - **Lease** — an Apartment rented to one or more Tenants for a date range (open-ended allowed), with monthly rent.
   Exactly one PRIMARY tenant per lease; others are CONTACTs. Leases of one apartment never overlap.
-- **Meter** — metered utility in an Apartment; may have several registers.
-  - Electricity: single-zone or day/night (2 registers).
+- **Meter** — metered utility in an Apartment: ELECTRICITY, COLD_WATER, HOT_WATER, GAS.
+  An apartment may have several meters of one utility (e.g. "kitchen" / "bathroom" water). Active from
+  `installedAt` until `removedAt` (null = still installed).
+  - Zone scheme: SINGLE → one TOTAL register; DAY_NIGHT → DAY + NIGHT registers (two-zone electricity).
   - Water: cold+hot, or cold only (boiler), or none (building-level bill → fixed fee).
   - Gas: every apartment.
 - **Fixed fee** — monthly charge without a meter: waste removal (all),
   elevator (some), intercom (optional), building-level water.
-- **Reading** — value per register + date + photo + status (`parsed` → `confirmed`).
+- **Reading** — one value per zone of a meter.
+  - `period` = the month the reading is for (always stored as its 1st day); `readingDate` = when the meter was
+    actually read (e.g. 2026-10-28 for period 2026-10).
+  - `kind`: REGULAR (monthly), INITIAL (on installation — starts the meter), FINAL (on removal — ends it).
+  - `status`: DRAFT (entered or parsed from a photo) → CONFIRMED by me, or CANCELLED. Confirmed readings are never
+    edited: a correction = cancel + new reading. `source`: MANUAL or PHOTO.
+- **Meter replacement** — the old meter gets a FINAL reading and `removedAt`; the new one gets `installedAt` and
+  an INITIAL reading. That month's consumption = (FINAL old − previous old) + (current new − INITIAL new).
 - **Tariff** — price per unit, versioned by effective date.
 - **Statement** — monthly calculation per Apartment.
 

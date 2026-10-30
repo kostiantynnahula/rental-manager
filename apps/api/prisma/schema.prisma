@@ -13,15 +13,17 @@ datasource db {
 }
 
 model User {
-  id           String    @id @default(uuid()) @db.Uuid
+  id                String    @id @default(uuid()) @db.Uuid
   // Always lowercase + trimmed (normalizeEmail); enforced by a CHECK constraint in the migration.
-  email        String    @unique
-  passwordHash String
-  name         String?
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  sessions     Session[]
+  email             String    @unique
+  passwordHash      String
+  name              String?
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  sessions          Session[]
+  createdReadings   Reading[] @relation("ReadingCreatedBy")
+  confirmedReadings Reading[] @relation("ReadingConfirmedBy")
 
   @@map("users")
 }
@@ -57,6 +59,7 @@ model Apartment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   leases    Lease[]
+  meters    Meter[]
 
   @@map("apartments")
 }
@@ -116,4 +119,121 @@ model LeaseTenant {
   @@id([leaseId, tenantId])
   @@index([tenantId])
   @@map("lease_tenants")
+}
+
+enum UtilityType {
+  ELECTRICITY
+  COLD_WATER
+  HOT_WATER
+  GAS
+
+  @@map("utility_type")
+}
+
+// SINGLE → one TOTAL register; DAY_NIGHT → DAY + NIGHT registers.
+enum ZoneScheme {
+  SINGLE
+  DAY_NIGHT
+
+  @@map("zone_scheme")
+}
+
+enum Zone {
+  TOTAL
+  DAY
+  NIGHT
+
+  @@map("zone")
+}
+
+// INITIAL starts a meter (installation), FINAL ends it (removal), REGULAR = monthly.
+enum ReadingKind {
+  REGULAR
+  INITIAL
+  FINAL
+
+  @@map("reading_kind")
+}
+
+// Only CONFIRMED readings are ever used; corrections = cancel + new reading.
+enum ReadingStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+
+  @@map("reading_status")
+}
+
+enum ReadingSource {
+  MANUAL
+  PHOTO
+
+  @@map("reading_source")
+}
+
+// Raw-SQL constraint in migration add_meters_readings: meters_removed_after_installed.
+model Meter {
+  id           String      @id @default(uuid()) @db.Uuid
+  apartmentId  String      @db.Uuid
+  // Restrict: meter history must stay; an apartment is archived, never deleted.
+  apartment    Apartment   @relation(fields: [apartmentId], references: [id], onDelete: Restrict)
+  utility      UtilityType
+  zoneScheme   ZoneScheme
+  // Several meters of one utility are allowed, e.g. "kitchen" / "bathroom".
+  label        String?
+  serialNumber String?
+  installedAt  DateTime    @db.Date
+  removedAt    DateTime?   @db.Date
+  notes        String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  readings     Reading[]
+
+  @@index([apartmentId])
+  @@map("meters")
+}
+
+// Raw-SQL constraints in migration add_meters_readings: readings_period_first_of_month,
+// readings_confirmed_has_confirmer, readings_one_confirmed_{regular_per_period,initial,final}.
+model Reading {
+  id            String         @id @default(uuid()) @db.Uuid
+  meterId       String         @db.Uuid
+  // Restrict: readings are history; a meter is removed (removedAt), never deleted with readings.
+  meter         Meter          @relation(fields: [meterId], references: [id], onDelete: Restrict)
+  // The month the reading is for, always its 1st day.
+  period        DateTime       @db.Date
+  // When the meter was actually read.
+  readingDate   DateTime       @db.Date
+  kind          ReadingKind
+  status        ReadingStatus  @default(DRAFT)
+  source        ReadingSource
+  note          String?
+  createdById   String         @db.Uuid
+  createdBy     User           @relation("ReadingCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  confirmedAt   DateTime?
+  confirmedById String?        @db.Uuid
+  confirmedBy   User?          @relation("ReadingConfirmedBy", fields: [confirmedById], references: [id], onDelete: Restrict)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  values        ReadingValue[]
+
+  // Also serves as the meterId FK index (leading column), so no separate @@index([meterId]).
+  @@index([meterId, period])
+  @@index([createdById])
+  @@index([confirmedById])
+  @@map("readings")
+}
+
+// Raw-SQL constraint in migration add_meters_readings: reading_values_non_negative.
+model ReadingValue {
+  readingId String  @db.Uuid
+  // Cascade: values are part of their reading (readings are cancelled, not deleted, anyway).
+  reading   Reading @relation(fields: [readingId], references: [id], onDelete: Cascade)
+  zone      Zone
+  // Prisma returns Prisma.Decimal (decimal.js): never convert to number for calculations.
+  value     Decimal @db.Decimal(12, 3)
+
+  // The PK (readingId, zone) also serves as the readingId FK index.
+  @@id([readingId, zone])
+  @@map("reading_values")
 }

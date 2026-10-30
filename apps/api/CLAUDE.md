@@ -31,6 +31,23 @@
   - `leases_no_overlap`: GiST exclusion — leases of one apartment never overlap (needs the `btree_gist` extension).
   - `lease_tenants_one_primary`: partial unique index — **at most** one PRIMARY tenant per lease.
     "At least one" isn't enforced by the DB: the service creating a lease must add the PRIMARY in the same transaction.
+- **Meters & readings**: no cascade from Apartment/Meter/User (Restrict) — meters are removed via `removedAt`, readings
+  are cancelled; only `ReadingValue` cascades with its `Reading`. `ReadingValue.value` is `Decimal(12,3)` → Prisma
+  returns `Prisma.Decimal` (decimal.js): calculate with it, never convert to `number`.
+- Raw-SQL constraints in migration `add_meters_readings`:
+  - `readings_period_first_of_month`: `period` is the 1st of a month.
+  - `meters_removed_after_installed`: `removedAt >= installedAt`.
+  - `reading_values_non_negative`: `value >= 0`.
+  - `readings_confirmed_has_confirmer`: CONFIRMED ⇒ `confirmedAt` and `confirmedById` set.
+  - Partial unique indexes over CONFIRMED rows only (drafts/cancelled may repeat):
+    `readings_one_confirmed_regular_per_period` (meter + period), `readings_one_confirmed_initial`,
+    `readings_one_confirmed_final` (one each per meter).
+- Reading rules the **services** must enforce (the DB doesn't):
+  - Zones match the meter: SINGLE → exactly TOTAL; DAY_NIGHT → exactly DAY and NIGHT.
+  - Confirmed values never decrease within one meter and zone (compare with the previous confirmed reading);
+    INITIAL is the meter's first reading, FINAL its last — nothing after FINAL.
+  - CONFIRMED readings are immutable — correct by cancelling and creating a new one.
+  - No readings outside `installedAt..removedAt` (`readingDate` within the range).
 
 ## API conventions
 
