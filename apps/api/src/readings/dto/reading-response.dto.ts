@@ -30,6 +30,9 @@ export class ReadingResponseDto {
   @ApiProperty({ type: String, nullable: true })
   note: string | null;
 
+  @ApiProperty({ type: String, format: 'uuid', nullable: true })
+  photoId: string | null;
+
   @ApiProperty({ type: [ReadingValueResponseDto] })
   values: ReadingValueResponseDto[];
 
@@ -65,6 +68,7 @@ export class ReadingResponseDto {
       period: formatPeriod(r.period),
       readingDate: formatDateOnly(r.readingDate),
       note: r.note,
+      photoId: r.photoId,
       values: r.values.map((v) => ReadingValueResponseDto.from(v)),
       consumption: consumption?.map((c) => ReadingValueResponseDto.from(c)) ?? null,
       createdById: r.createdById,

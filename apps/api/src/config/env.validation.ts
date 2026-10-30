@@ -3,7 +3,9 @@ import 'reflect-metadata';
 import { plainToInstance } from 'class-transformer';
 import {
   IsEnum,
+  IsIn,
   IsInt,
+  IsOptional,
   IsString,
   Matches,
   Max,
@@ -43,6 +45,40 @@ export class Env {
   @IsInt()
   @Min(1)
   REFRESH_TOKEN_TTL_DAYS: number = 30;
+
+  // Photo storage (S3 API). MinIO in dev: set the endpoint and path-style; real S3: omit S3_ENDPOINT.
+  @IsOptional()
+  @Matches(/^https?:\/\//, { message: 'S3_ENDPOINT must be an http(s):// URL' })
+  S3_ENDPOINT?: string;
+
+  @IsString()
+  S3_REGION: string = 'us-east-1';
+
+  @IsString()
+  @MinLength(3)
+  S3_BUCKET: string;
+
+  @IsString()
+  @MinLength(1)
+  S3_ACCESS_KEY_ID: string;
+
+  @IsString()
+  @MinLength(1)
+  S3_SECRET_ACCESS_KEY: string;
+
+  // A string, not a boolean: implicit conversion would turn "false" into true.
+  @IsIn(['true', 'false'])
+  S3_FORCE_PATH_STYLE: 'true' | 'false' = 'false';
+
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  PHOTO_MAX_FILES: number = 10;
+
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  PHOTO_MAX_FILE_SIZE_MB: number = 15;
 }
 
 // Used by ConfigModule: fails fast at startup with all invalid vars listed.

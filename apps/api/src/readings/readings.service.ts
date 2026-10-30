@@ -10,6 +10,7 @@ import { parsePeriod, periodEnd } from '../common/helpers/period.js';
 import { Meter, Prisma } from '../generated/prisma/client.js';
 import { ReadingKind, ReadingSource, ReadingStatus } from '../generated/prisma/enums.js';
 import { MetersService } from '../meters/meters.service.js';
+import { PhotosService } from '../photos/photos.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateReadingDto } from './dto/create-reading.dto.js';
 import { ReadingValueInputDto } from './dto/reading-value-input.dto.js';
@@ -32,6 +33,7 @@ export class ReadingsService {
     private readonly prisma: PrismaService,
     private readonly meters: MetersService,
     private readonly apartments: ApartmentsService,
+    private readonly photos: PhotosService,
   ) {}
 
   async listForMeter(
@@ -105,13 +107,17 @@ export class ReadingsService {
     dto: CreateReadingDto,
     userId: string,
   ): Promise<ReadingWithConsumption> {
+    const meter = await this.meters.findOrThrow(meterId);
+    // The photo must show this apartment's meters (one photo can back several readings).
+    if (dto.photoId) await this.photos.findForApartmentOrThrow(dto.photoId, meter.apartmentId);
     const period = parsePeriod(dto.period);
     const readingDate = parseDateOnly(dto.readingDate);
     const values = { create: this.valueRows(dto.values) };
     const base = {
       meterId,
       kind: ReadingKind.REGULAR,
-      source: ReadingSource.MANUAL,
+      source: dto.photoId ? ReadingSource.PHOTO : ReadingSource.MANUAL,
+      photoId: dto.photoId,
       period,
       readingDate,
       note: dto.note,
@@ -119,7 +125,6 @@ export class ReadingsService {
     };
 
     if (!dto.confirm) {
-      const meter = await this.meters.findOrThrow(meterId);
       this.assertDraftAllowed(meter, dto.values);
       const created = await this.prisma.reading.create({ data: { ...base, values } });
       return this.findOrThrow(created.id);

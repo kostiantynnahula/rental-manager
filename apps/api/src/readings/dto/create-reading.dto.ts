@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 import { IsDateOnly } from '../../common/validators/is-date-only.decorator.js';
 import { IsPeriod } from '../../common/validators/is-period.decorator.js';
 import { IsReadingValues } from '../validators/is-reading-values.decorator.js';
@@ -35,4 +35,12 @@ export class CreateReadingDto {
   @IsOptional()
   @IsBoolean()
   confirm?: boolean;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: 'Photo of this apartment the reading was taken from → source PHOTO',
+  })
+  @IsOptional()
+  @IsUUID()
+  photoId?: string;
 }

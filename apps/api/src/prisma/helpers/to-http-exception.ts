@@ -21,6 +21,9 @@ const CONSTRAINT_MESSAGES: Record<string, string> = {
     'A confirmed reading for this period already exists — cancel it first',
   readings_one_confirmed_initial: 'This meter already has a confirmed INITIAL reading',
   readings_one_confirmed_final: 'This meter already has a confirmed FINAL reading',
+  photos_size_positive: 'Photo size must be positive',
+  photos_sha256_hex: 'sha256 must be 64 lowercase hex characters',
+  photos_dimensions_positive: 'Photo width and height must be positive',
 };
 
 // Prisma codes: https://www.prisma.io/docs/orm/reference/error-reference

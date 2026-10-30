@@ -24,6 +24,7 @@ model User {
   sessions          Session[]
   createdReadings   Reading[] @relation("ReadingCreatedBy")
   confirmedReadings Reading[] @relation("ReadingConfirmedBy")
+  uploadedPhotos    Photo[]
 
   @@map("users")
 }
@@ -60,6 +61,7 @@ model Apartment {
   updatedAt DateTime @updatedAt
   leases    Lease[]
   meters    Meter[]
+  photos    Photo[]
 
   @@map("apartments")
 }
@@ -216,12 +218,44 @@ model Reading {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   values        ReadingValue[]
+  // The meter photo this reading was taken from (source PHOTO). One photo may back several
+  // readings (e.g. cold + hot water in one shot). Restrict: a photo is evidence, keep it.
+  photoId       String?        @db.Uuid
+  photo         Photo?         @relation(fields: [photoId], references: [id], onDelete: Restrict)
 
   // Also serves as the meterId FK index (leading column), so no separate @@index([meterId]).
   @@index([meterId, period])
   @@index([createdById])
   @@index([confirmedById])
+  @@index([photoId])
   @@map("readings")
+}
+
+// A meter photo as uploaded: the original object is stored byte-for-byte and never changed.
+model Photo {
+  id               String    @id @default(uuid()) @db.Uuid
+  apartmentId      String    @db.Uuid
+  apartment        Apartment @relation(fields: [apartmentId], references: [id], onDelete: Restrict)
+  // photos/YYYY/MM/<id>.<ext> — never derived from the original filename.
+  storageKey       String    @unique
+  // thumbnails/YYYY/MM/<id>.webp
+  thumbnailKey     String    @unique
+  // Detected from the file content, not from the client's header.
+  mimeType         String
+  size             Int
+  // Lowercase hex; dedup key.
+  sha256           String    @unique
+  width            Int
+  height           Int
+  originalFilename String?
+  uploadedById     String    @db.Uuid
+  uploadedBy       User      @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  createdAt        DateTime  @default(now())
+  readings         Reading[]
+
+  @@index([apartmentId, createdAt])
+  @@index([uploadedById])
+  @@map("photos")
 }
 
 // Raw-SQL constraint in migration add_meters_readings: reading_values_non_negative.
