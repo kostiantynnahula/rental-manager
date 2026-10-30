@@ -66,6 +66,26 @@
 - **No DELETE for apartments** — archive/unarchive. Tenants: DELETE only without lease history (409 otherwise).
   Leases: DELETE allowed until statements exist (TODO in `LeasesService.delete`).
 - Swagger: every endpoint documents its success response type and the error statuses it can return.
+- **Reading values**: decimal strings in and out (`"1520.350"`), never JS numbers. Input: `@IsReadingValues()` /
+  `@IsMeterValue()` (`src/readings/validators/`); output: `ReadingValueResponseDto` (`toFixed(3)`). Compute with
+  `Prisma.Decimal`.
+- **Period**: `"YYYY-MM"` in the API, 1st of the month in the DB (`periodOfDate` / `formatPeriod`, `src/common/helpers/period.ts`).
+- **Reading rules are shared pure functions** in `src/readings/helpers/` — reuse, don't re-implement:
+  `zonesMismatch(scheme, values)` (zones vs `zoneScheme`), `decreasedZones(previous, next)` (values never decrease),
+  `lastConfirmedReadingInclude` (a meter's latest CONFIRMED reading). They return data; services throw 400/409.
+- **Meter lifecycle** (`src/meters/`): create = meter + CONFIRMED INITIAL reading; wrong initial value = cancel the
+  INITIAL + create a new one (only before any non-cancelled REGULAR reading); remove = CONFIRMED FINAL + `removedAt`;
+  replace = remove + create in one transaction; DELETE only for a mistaken meter (nothing but INITIAL readings).
+  Dates that become a `readingDate` must not be in the future. `createdById`/`confirmedById` = `@CurrentUser()`.
+- **Readings** (`src/readings/`): REGULAR only (INITIAL/FINAL belong to the meter lifecycle). DRAFT → edit/delete →
+  confirm (or create with `confirm: true`); CONFIRMED → only cancel (`reason` appended to `note`) and re-enter.
+  - Confirm rules are **pure** in `helpers/confirm-rules.ts` (`checkConfirmRules`, `today` passed in, no DB) — add rules
+    and tests there; the service only loads data in a transaction and maps violations (`conflict` → 409, else 400).
+  - Drafts are checked lightly (zones, meter not removed); dates, value order and duplicates only on confirm.
+  - Chronology of a meter = `(readingDate, kind)` with INITIAL < REGULAR < FINAL on the same day
+    (`helpers/reading-order.ts`). Consumption is always against the **previous CONFIRMED** reading.
+  - Apartment view (`GET /apartments/:id/readings?period=`): meters active in the period; CONFIRMED = confirmed REGULAR
+    or FINAL of that period, DRAFT = newest draft, MISSING = nothing yet.
 
 ## Database (Prisma 7)
 

@@ -18,7 +18,7 @@ const CONSTRAINT_MESSAGES: Record<string, string> = {
   readings_confirmed_has_confirmer: 'A confirmed reading must record who confirmed it and when',
   reading_values_non_negative: 'Meter values must not be negative',
   readings_one_confirmed_regular_per_period:
-    'A confirmed reading for this meter and period already exists',
+    'A confirmed reading for this period already exists — cancel it first',
   readings_one_confirmed_initial: 'This meter already has a confirmed INITIAL reading',
   readings_one_confirmed_final: 'This meter already has a confirmed FINAL reading',
 };
