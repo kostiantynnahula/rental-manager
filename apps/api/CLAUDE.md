@@ -32,6 +32,24 @@
   - `lease_tenants_one_primary`: partial unique index — **at most** one PRIMARY tenant per lease.
     "At least one" isn't enforced by the DB: the service creating a lease must add the PRIMARY in the same transaction.
 
+## API conventions
+
+- Everything is behind the global auth guard; only auth routes are `@Public()`. Controllers get `@ApiCookieAuth()`.
+- **Dates**: `"YYYY-MM-DD"` strings in and out. Validate with `@IsDateOnly()` (`src/common/validators/`),
+  convert with `parseDateOnly` / `formatDateOnly` (`src/common/helpers/date-only.ts`). "Today" = `todayDateOnly()`, Kyiv time.
+- **Money**: `Int` kopiyky (`@IsInt`, `@Max(PG_INT_MAX)`); never floats, never formatted in the API.
+- **Responses**: explicit response DTOs with `static from(...)`, never raw Prisma objects. Prisma `include`s used by a
+  DTO live next to it in `helpers/` (e.g. `leaseWithTenantsInclude` + `LeaseWithTenants`).
+- **Ids**: `@Param('id', ParseUUIDPipe)` → a bad id is a 400, not a DB error.
+- **Errors**: services throw Nest HTTP exceptions with clear messages for business rules (`Apartment not found`,
+  `Apartment is archived`). Rules the DB already enforces (unique, overlap, date checks, FK) are **not** re-checked in
+  services: `PrismaExceptionFilter` maps them — unique → 409, `leases_no_overlap` → 409 "Lease dates overlap with another
+  lease", check → 400, FK/restrict → 409, not found → 404, else a generic 500. New raw-SQL constraint → add its message to
+  `CONSTRAINT_MESSAGES` in `src/prisma/helpers/to-http-exception.ts`. Never return Prisma messages/`detail` (row data).
+- **No DELETE for apartments** — archive/unarchive. Tenants: DELETE only without lease history (409 otherwise).
+  Leases: DELETE allowed until statements exist (TODO in `LeasesService.delete`).
+- Swagger: every endpoint documents its success response type and the error statuses it can return.
+
 ## Database (Prisma 7)
 
 - Schema: `prisma/schema.prisma`; CLI config (URL, migrations path, seed): `prisma.config.ts`; migrations: `prisma/migrations/`.
