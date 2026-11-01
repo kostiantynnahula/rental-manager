@@ -1,0 +1,3528 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "AppController_getHello",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "App"
+        ]
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sets access_token and refresh_token cookies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid email or password"
+          },
+          "429": {
+            "description": "More than 5 attempts per minute"
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Rotates the refresh token and issues a new access token"
+          },
+          "401": {
+            "description": "Missing, expired or revoked refresh token"
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Revokes the current session and clears cookies"
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "operationId": "AuthController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/apartments": {
+      "get": {
+        "operationId": "ApartmentsController_list",
+        "parameters": [
+          {
+            "name": "active",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "true",
+              "type": "string",
+              "enum": [
+                "true",
+                "false",
+                "all"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApartmentResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "apartments"
+        ]
+      },
+      "post": {
+        "operationId": "ApartmentsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApartmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApartmentResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "409": {
+            "description": "Name already exists"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "apartments"
+        ]
+      }
+    },
+    "/apartments/{id}": {
+      "get": {
+        "operationId": "ApartmentsController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApartmentDetailResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "apartments"
+        ]
+      },
+      "patch": {
+        "operationId": "ApartmentsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateApartmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApartmentResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found"
+          },
+          "409": {
+            "description": "Name already exists"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "apartments"
+        ]
+      }
+    },
+    "/apartments/{id}/archive": {
+      "post": {
+        "operationId": "ApartmentsController_archive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApartmentResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "apartments"
+        ]
+      }
+    },
+    "/apartments/{id}/unarchive": {
+      "post": {
+        "operationId": "ApartmentsController_unarchive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApartmentResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "apartments"
+        ]
+      }
+    },
+    "/tenants": {
+      "get": {
+        "operationId": "TenantsController_list",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Substring of name or phone, case-insensitive",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TenantResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "tenants"
+        ]
+      },
+      "post": {
+        "operationId": "TenantsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTenantDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "tenants"
+        ]
+      }
+    },
+    "/tenants/{id}": {
+      "get": {
+        "operationId": "TenantsController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantDetailResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Tenant not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "tenants"
+        ]
+      },
+      "patch": {
+        "operationId": "TenantsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTenantDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Tenant not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "tenants"
+        ]
+      },
+      "delete": {
+        "operationId": "TenantsController_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Tenant not found"
+          },
+          "409": {
+            "description": "Tenant has leases"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "tenants"
+        ]
+      }
+    },
+    "/apartments/{apartmentId}/leases": {
+      "get": {
+        "operationId": "ApartmentLeasesController_list",
+        "parameters": [
+          {
+            "name": "apartmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lease history, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LeaseResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "leases"
+        ]
+      },
+      "post": {
+        "operationId": "ApartmentLeasesController_create",
+        "parameters": [
+          {
+            "name": "apartmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLeaseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaseResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, not exactly one PRIMARY, unknown tenant, endDate before startDate"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found"
+          },
+          "409": {
+            "description": "Apartment is archived, or dates overlap another lease"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "leases"
+        ]
+      }
+    },
+    "/leases/{id}": {
+      "get": {
+        "operationId": "LeasesController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaseResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Lease not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "leases"
+        ]
+      },
+      "patch": {
+        "operationId": "LeasesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLeaseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaseResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body or endDate before startDate"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Lease not found"
+          },
+          "409": {
+            "description": "Dates overlap another lease"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "leases"
+        ]
+      },
+      "delete": {
+        "operationId": "LeasesController_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Lease not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "leases"
+        ]
+      }
+    },
+    "/leases/{id}/tenants": {
+      "put": {
+        "operationId": "LeasesController_replaceTenants",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplaceLeaseTenantsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Replaces the whole tenant list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaseResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not exactly one PRIMARY, duplicates or unknown tenant"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Lease not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "leases"
+        ]
+      }
+    },
+    "/leases/{id}/end": {
+      "post": {
+        "operationId": "LeasesController_end",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EndLeaseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaseResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "endDate before startDate"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Lease not found"
+          },
+          "409": {
+            "description": "Lease already ended"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "leases"
+        ]
+      }
+    },
+    "/apartments/{apartmentId}/meters": {
+      "get": {
+        "operationId": "ApartmentMetersController_list",
+        "parameters": [
+          {
+            "name": "apartmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeRemoved",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "false",
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Each meter with its last confirmed values",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MeterResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "meters"
+        ]
+      },
+      "post": {
+        "operationId": "ApartmentMetersController_create",
+        "parameters": [
+          {
+            "name": "apartmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMeterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Meter + CONFIRMED INITIAL reading",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeterResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, zones don't match zoneScheme, future date"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found"
+          },
+          "409": {
+            "description": "Apartment is archived"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "meters"
+        ]
+      }
+    },
+    "/meters/{id}": {
+      "get": {
+        "operationId": "MetersController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeterResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Meter not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "meters"
+        ]
+      },
+      "patch": {
+        "operationId": "MetersController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMeterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeterResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body (utility/zoneScheme are immutable)"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Meter not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "meters"
+        ]
+      },
+      "delete": {
+        "operationId": "MetersController_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Meter and its INITIAL readings deleted"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Meter not found"
+          },
+          "409": {
+            "description": "Meter has REGULAR or FINAL readings"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "meters"
+        ]
+      }
+    },
+    "/meters/{id}/initial-values": {
+      "put": {
+        "operationId": "MetersController_replaceInitialValues",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InitialValuesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cancels the INITIAL reading and creates a corrected one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeterResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Zones don't match zoneScheme"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Meter not found"
+          },
+          "409": {
+            "description": "Meter has REGULAR readings or is removed"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "meters"
+        ]
+      }
+    },
+    "/meters/{id}/remove": {
+      "post": {
+        "operationId": "MetersController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveMeterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "CONFIRMED FINAL reading + removedAt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeterResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Zones mismatch, values lower than last confirmed, date before last reading/in future"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Meter not found"
+          },
+          "409": {
+            "description": "Meter already removed"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "meters"
+        ]
+      }
+    },
+    "/meters/{id}/replace": {
+      "post": {
+        "operationId": "MetersController_replace",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplaceMeterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplaceMeterResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "As for remove, plus zones of the new meter"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Meter not found"
+          },
+          "409": {
+            "description": "Meter already removed, or apartment is archived"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "meters"
+        ]
+      }
+    },
+    "/apartments/{apartmentId}/photos": {
+      "post": {
+        "operationId": "ApartmentPhotosController_upload",
+        "parameters": [
+          {
+            "name": "apartmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "files"
+                ],
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "In the order sent; duplicate = already uploaded (existing record returned)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PhotoUploadResultDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No files, too many files, unsupported type (JPEG/PNG/WebP only), archived apartment"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found"
+          },
+          "409": {
+            "description": "The same photo was uploaded for another apartment"
+          },
+          "413": {
+            "description": "A file is over the size limit"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "photos"
+        ]
+      },
+      "get": {
+        "operationId": "ApartmentPhotosController_list",
+        "parameters": [
+          {
+            "name": "apartmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "unassigned",
+            "required": false,
+            "in": "query",
+            "description": "true = only photos not linked to any non-cancelled reading",
+            "schema": {
+              "default": "false",
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PhotoResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "photos"
+        ]
+      }
+    },
+    "/photos/{id}": {
+      "get": {
+        "operationId": "PhotosController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoDetailResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Photo not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "photos"
+        ]
+      },
+      "delete": {
+        "operationId": "PhotosController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Row and stored objects deleted"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Photo not found"
+          },
+          "409": {
+            "description": "Linked to a non-cancelled reading"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "photos"
+        ]
+      }
+    },
+    "/photos/{id}/file": {
+      "get": {
+        "operationId": "PhotosController_file",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The original, unchanged"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Photo not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "photos"
+        ]
+      }
+    },
+    "/photos/{id}/thumbnail": {
+      "get": {
+        "operationId": "PhotosController_thumbnail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "WebP, max 400px"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Photo not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "photos"
+        ]
+      }
+    },
+    "/meters/{meterId}/readings": {
+      "get": {
+        "operationId": "MeterReadingsController_list",
+        "parameters": [
+          {
+            "name": "meterId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "First period (inclusive)",
+            "schema": {
+              "example": "2026-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "Last period (inclusive)",
+            "schema": {
+              "example": "2026-12",
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeCancelled",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "false",
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All kinds, newest first, each with consumption since the previous confirmed one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReadingResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid period, or from after to"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Meter not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "readings"
+        ]
+      },
+      "post": {
+        "operationId": "MeterReadingsController_create",
+        "parameters": [
+          {
+            "name": "meterId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReadingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "REGULAR reading, DRAFT unless confirm=true",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadingResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Zones mismatch; with confirm: date outside window/in future, value out of order"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Meter not found"
+          },
+          "409": {
+            "description": "Meter removed; with confirm: period already confirmed"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "readings"
+        ]
+      }
+    },
+    "/apartments/{apartmentId}/readings": {
+      "get": {
+        "operationId": "ApartmentReadingsController_list",
+        "parameters": [
+          {
+            "name": "apartmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "period",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "example": "2026-10",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApartmentMeterReadingResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid period"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "readings"
+        ]
+      }
+    },
+    "/readings/{id}": {
+      "get": {
+        "operationId": "ReadingsController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadingResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Reading not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "readings"
+        ]
+      },
+      "patch": {
+        "operationId": "ReadingsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateReadingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadingResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body or zones don't match the meter"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Reading not found"
+          },
+          "409": {
+            "description": "Not a DRAFT"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "readings"
+        ]
+      },
+      "delete": {
+        "operationId": "ReadingsController_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Reading not found"
+          },
+          "409": {
+            "description": "Not a DRAFT"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "readings"
+        ]
+      }
+    },
+    "/readings/{id}/confirm": {
+      "post": {
+        "operationId": "ReadingsController_confirm",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadingResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Date outside window/in future, value out of order"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Reading not found"
+          },
+          "409": {
+            "description": "Not a DRAFT, meter removed, or period already confirmed"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "readings"
+        ]
+      }
+    },
+    "/readings/{id}/cancel": {
+      "post": {
+        "operationId": "ReadingsController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelReadingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reason is appended to the note",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadingResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Reading not found"
+          },
+          "409": {
+            "description": "INITIAL/FINAL reading, or already cancelled"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "readings"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Rental Manager API",
+    "description": "Meter readings, tariffs and monthly utility statements",
+    "version": "0.1",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [
+    {
+      "url": "/api"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "cookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "access_token"
+      }
+    },
+    "schemas": {
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "owner@example.com"
+          },
+          "password": {
+            "type": "string",
+            "format": "password"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "UserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "example": "owner@example.com"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "example": "Owner"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name"
+        ]
+      },
+      "ApartmentResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Shevchenka 12/5"
+          },
+          "address": {
+            "type": "string",
+            "example": "Kyiv, Shevchenka St 12, apt 5"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "false = archived"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "address",
+          "notes",
+          "isActive",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "LeaseTenantRole": {
+        "type": "string",
+        "enum": [
+          "PRIMARY",
+          "CONTACT"
+        ]
+      },
+      "LeaseTenantResponseDto": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fullName": {
+            "type": "string",
+            "example": "Ivan Petrenko"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+380501112233"
+          },
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LeaseTenantRole"
+              }
+            ]
+          }
+        },
+        "required": [
+          "tenantId",
+          "fullName",
+          "phone",
+          "role"
+        ]
+      },
+      "LeaseResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "apartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-01-01"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "example": null,
+            "description": "Inclusive last day; null = open-ended"
+          },
+          "monthlyRent": {
+            "type": "number",
+            "example": 1500000,
+            "description": "Integer kopiyky (UAH)"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "tenants": {
+            "description": "PRIMARY first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeaseTenantResponseDto"
+            }
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "apartmentId",
+          "startDate",
+          "endDate",
+          "monthlyRent",
+          "notes",
+          "tenants",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "ApartmentDetailResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Shevchenka 12/5"
+          },
+          "address": {
+            "type": "string",
+            "example": "Kyiv, Shevchenka St 12, apt 5"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "false = archived"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "currentLease": {
+            "nullable": true,
+            "description": "Lease covering today (Kyiv time), if any",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LeaseResponseDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "address",
+          "notes",
+          "isActive",
+          "createdAt",
+          "updatedAt",
+          "currentLease"
+        ]
+      },
+      "CreateApartmentDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Shevchenka 12/5",
+            "description": "Short unique label"
+          },
+          "address": {
+            "type": "string",
+            "example": "Kyiv, Shevchenka St 12, apt 5"
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "address"
+        ]
+      },
+      "UpdateApartmentDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Shevchenka 12/5",
+            "description": "Short unique label"
+          },
+          "address": {
+            "type": "string",
+            "example": "Kyiv, Shevchenka St 12, apt 5"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "TenantResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fullName": {
+            "type": "string",
+            "example": "Ivan Petrenko"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+380501112233"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "fullName",
+          "phone",
+          "email",
+          "notes",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "TenantLeaseResponseDto": {
+        "type": "object",
+        "properties": {
+          "leaseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "apartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "apartmentName": {
+            "type": "string",
+            "example": "Shevchenka 12/5"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-01-01"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LeaseTenantRole"
+              }
+            ]
+          }
+        },
+        "required": [
+          "leaseId",
+          "apartmentId",
+          "apartmentName",
+          "startDate",
+          "endDate",
+          "role"
+        ]
+      },
+      "TenantDetailResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fullName": {
+            "type": "string",
+            "example": "Ivan Petrenko"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+380501112233"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "leases": {
+            "description": "Newest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TenantLeaseResponseDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "fullName",
+          "phone",
+          "email",
+          "notes",
+          "createdAt",
+          "updatedAt",
+          "leases"
+        ]
+      },
+      "CreateTenantDto": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "example": "Ivan Petrenko"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+380501112233"
+          },
+          "email": {
+            "type": "string",
+            "example": "ivan@example.com"
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fullName",
+          "phone"
+        ]
+      },
+      "UpdateTenantDto": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "example": "Ivan Petrenko"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+380501112233"
+          },
+          "email": {
+            "type": "string",
+            "example": "ivan@example.com"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "LeaseTenantInputDto": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LeaseTenantRole"
+              }
+            ]
+          }
+        },
+        "required": [
+          "tenantId",
+          "role"
+        ]
+      },
+      "CreateLeaseDto": {
+        "type": "object",
+        "properties": {
+          "tenants": {
+            "description": "Exactly one PRIMARY; any number of CONTACTs; no duplicates",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeaseTenantInputDto"
+            }
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-01-01"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-12-31",
+            "description": "Inclusive last day; omit for open-ended"
+          },
+          "monthlyRent": {
+            "type": "number",
+            "example": 1500000,
+            "description": "Integer kopiyky (UAH)"
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tenants",
+          "startDate",
+          "monthlyRent"
+        ]
+      },
+      "UpdateLeaseDto": {
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-01-01"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "example": "2026-12-31"
+          },
+          "monthlyRent": {
+            "type": "number",
+            "example": 1600000,
+            "description": "Integer kopiyky (UAH)"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "ReplaceLeaseTenantsDto": {
+        "type": "object",
+        "properties": {
+          "tenants": {
+            "description": "Exactly one PRIMARY; any number of CONTACTs; no duplicates",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeaseTenantInputDto"
+            }
+          }
+        },
+        "required": [
+          "tenants"
+        ]
+      },
+      "EndLeaseDto": {
+        "type": "object",
+        "properties": {
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-05-31",
+            "description": "Inclusive last day"
+          }
+        },
+        "required": [
+          "endDate"
+        ]
+      },
+      "UtilityType": {
+        "type": "string",
+        "enum": [
+          "ELECTRICITY",
+          "COLD_WATER",
+          "HOT_WATER",
+          "GAS"
+        ]
+      },
+      "ZoneScheme": {
+        "type": "string",
+        "enum": [
+          "SINGLE",
+          "DAY_NIGHT"
+        ]
+      },
+      "ReadingKind": {
+        "type": "string",
+        "enum": [
+          "REGULAR",
+          "INITIAL",
+          "FINAL"
+        ]
+      },
+      "Zone": {
+        "type": "string",
+        "enum": [
+          "TOTAL",
+          "DAY",
+          "NIGHT"
+        ]
+      },
+      "ReadingValueResponseDto": {
+        "type": "object",
+        "properties": {
+          "zone": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Zone"
+              }
+            ]
+          },
+          "value": {
+            "type": "string",
+            "example": "1520.350",
+            "description": "Decimal string with 3 decimals"
+          }
+        },
+        "required": [
+          "zone",
+          "value"
+        ]
+      },
+      "ReadingSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReadingKind"
+              }
+            ]
+          },
+          "period": {
+            "type": "string",
+            "example": "2026-10",
+            "description": "Month the reading is for (YYYY-MM)"
+          },
+          "readingDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-10-28"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadingValueResponseDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "period",
+          "readingDate",
+          "values"
+        ]
+      },
+      "MeterResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "apartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "utility": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UtilityType"
+              }
+            ]
+          },
+          "zoneScheme": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ZoneScheme"
+              }
+            ]
+          },
+          "label": {
+            "type": "string",
+            "nullable": true,
+            "example": "kitchen"
+          },
+          "serialNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "installedAt": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-01-15"
+          },
+          "removedAt": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "null = installed"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastReading": {
+            "nullable": true,
+            "description": "Latest CONFIRMED reading (FINAL for a removed meter)",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReadingSummaryResponseDto"
+              }
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "apartmentId",
+          "utility",
+          "zoneScheme",
+          "label",
+          "serialNumber",
+          "installedAt",
+          "removedAt",
+          "notes",
+          "lastReading",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "ReadingValueInputDto": {
+        "type": "object",
+        "properties": {
+          "zone": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Zone"
+              }
+            ]
+          },
+          "value": {
+            "type": "string",
+            "example": "1520.350",
+            "description": "Decimal string, >= 0, up to 3 decimals"
+          }
+        },
+        "required": [
+          "zone",
+          "value"
+        ]
+      },
+      "CreateMeterDto": {
+        "type": "object",
+        "properties": {
+          "utility": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UtilityType"
+              }
+            ]
+          },
+          "zoneScheme": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ZoneScheme"
+              }
+            ]
+          },
+          "label": {
+            "type": "string",
+            "example": "kitchen"
+          },
+          "serialNumber": {
+            "type": "string",
+            "example": "NIK-2303-123456"
+          },
+          "installedAt": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-01-15",
+            "description": "Not in the future"
+          },
+          "initialValues": {
+            "description": "SINGLE → [TOTAL]; DAY_NIGHT → [DAY, NIGHT]",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadingValueInputDto"
+            }
+          }
+        },
+        "required": [
+          "utility",
+          "zoneScheme",
+          "installedAt",
+          "initialValues"
+        ]
+      },
+      "UpdateMeterDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "nullable": true,
+            "example": "kitchen"
+          },
+          "serialNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "InitialValuesDto": {
+        "type": "object",
+        "properties": {
+          "initialValues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadingValueInputDto"
+            }
+          }
+        },
+        "required": [
+          "initialValues"
+        ]
+      },
+      "RemoveMeterDto": {
+        "type": "object",
+        "properties": {
+          "removedAt": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-10-30",
+            "description": "Not in the future"
+          },
+          "finalValues": {
+            "description": "Not lower than the last confirmed",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadingValueInputDto"
+            }
+          }
+        },
+        "required": [
+          "removedAt",
+          "finalValues"
+        ]
+      },
+      "NewMeterDto": {
+        "type": "object",
+        "properties": {
+          "zoneScheme": {
+            "description": "Defaults to the old meter",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ZoneScheme"
+              }
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "serialNumber": {
+            "type": "string"
+          },
+          "initialValues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadingValueInputDto"
+            }
+          }
+        },
+        "required": [
+          "initialValues"
+        ]
+      },
+      "ReplaceMeterDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-10-30",
+            "description": "Old meter removedAt = new meter installedAt"
+          },
+          "finalValues": {
+            "description": "Old meter, not lower than its last",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadingValueInputDto"
+            }
+          },
+          "newMeter": {
+            "$ref": "#/components/schemas/NewMeterDto"
+          }
+        },
+        "required": [
+          "date",
+          "finalValues",
+          "newMeter"
+        ]
+      },
+      "ReplaceMeterResponseDto": {
+        "type": "object",
+        "properties": {
+          "removed": {
+            "description": "Old meter, now with FINAL reading",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MeterResponseDto"
+              }
+            ]
+          },
+          "installed": {
+            "description": "New meter with its INITIAL reading",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MeterResponseDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "removed",
+          "installed"
+        ]
+      },
+      "PhotoUploadResultDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "apartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mimeType": {
+            "type": "string",
+            "example": "image/jpeg",
+            "description": "Detected from the file content"
+          },
+          "size": {
+            "type": "number",
+            "description": "Bytes"
+          },
+          "sha256": {
+            "type": "string",
+            "example": "e3b0c442…",
+            "description": "SHA-256 of the original (hex)"
+          },
+          "width": {
+            "type": "number",
+            "description": "As displayed (EXIF orientation applied)"
+          },
+          "height": {
+            "type": "number"
+          },
+          "originalFilename": {
+            "type": "string",
+            "nullable": true
+          },
+          "uploadedById": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "fileUrl": {
+            "type": "string",
+            "example": "/api/photos/3f1c…/file"
+          },
+          "thumbnailUrl": {
+            "type": "string",
+            "example": "/api/photos/3f1c…/thumbnail"
+          },
+          "duplicate": {
+            "type": "boolean",
+            "description": "true = same file (by SHA-256) was already uploaded; existing record"
+          }
+        },
+        "required": [
+          "id",
+          "apartmentId",
+          "mimeType",
+          "size",
+          "sha256",
+          "width",
+          "height",
+          "originalFilename",
+          "uploadedById",
+          "createdAt",
+          "fileUrl",
+          "thumbnailUrl",
+          "duplicate"
+        ]
+      },
+      "PhotoResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "apartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mimeType": {
+            "type": "string",
+            "example": "image/jpeg",
+            "description": "Detected from the file content"
+          },
+          "size": {
+            "type": "number",
+            "description": "Bytes"
+          },
+          "sha256": {
+            "type": "string",
+            "example": "e3b0c442…",
+            "description": "SHA-256 of the original (hex)"
+          },
+          "width": {
+            "type": "number",
+            "description": "As displayed (EXIF orientation applied)"
+          },
+          "height": {
+            "type": "number"
+          },
+          "originalFilename": {
+            "type": "string",
+            "nullable": true
+          },
+          "uploadedById": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "fileUrl": {
+            "type": "string",
+            "example": "/api/photos/3f1c…/file"
+          },
+          "thumbnailUrl": {
+            "type": "string",
+            "example": "/api/photos/3f1c…/thumbnail"
+          }
+        },
+        "required": [
+          "id",
+          "apartmentId",
+          "mimeType",
+          "size",
+          "sha256",
+          "width",
+          "height",
+          "originalFilename",
+          "uploadedById",
+          "createdAt",
+          "fileUrl",
+          "thumbnailUrl"
+        ]
+      },
+      "ReadingStatus": {
+        "type": "string",
+        "enum": [
+          "DRAFT",
+          "CONFIRMED",
+          "CANCELLED"
+        ]
+      },
+      "PhotoReadingResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "meterId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReadingKind"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReadingStatus"
+              }
+            ]
+          },
+          "period": {
+            "type": "string",
+            "example": "2026-10"
+          }
+        },
+        "required": [
+          "id",
+          "meterId",
+          "kind",
+          "status",
+          "period"
+        ]
+      },
+      "PhotoDetailResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "apartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mimeType": {
+            "type": "string",
+            "example": "image/jpeg",
+            "description": "Detected from the file content"
+          },
+          "size": {
+            "type": "number",
+            "description": "Bytes"
+          },
+          "sha256": {
+            "type": "string",
+            "example": "e3b0c442…",
+            "description": "SHA-256 of the original (hex)"
+          },
+          "width": {
+            "type": "number",
+            "description": "As displayed (EXIF orientation applied)"
+          },
+          "height": {
+            "type": "number"
+          },
+          "originalFilename": {
+            "type": "string",
+            "nullable": true
+          },
+          "uploadedById": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "fileUrl": {
+            "type": "string",
+            "example": "/api/photos/3f1c…/file"
+          },
+          "thumbnailUrl": {
+            "type": "string",
+            "example": "/api/photos/3f1c…/thumbnail"
+          },
+          "readings": {
+            "description": "All linked readings, incl. cancelled",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhotoReadingResponseDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "apartmentId",
+          "mimeType",
+          "size",
+          "sha256",
+          "width",
+          "height",
+          "originalFilename",
+          "uploadedById",
+          "createdAt",
+          "fileUrl",
+          "thumbnailUrl",
+          "readings"
+        ]
+      },
+      "ReadingSource": {
+        "type": "string",
+        "enum": [
+          "MANUAL",
+          "PHOTO"
+        ]
+      },
+      "ReadingResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "meterId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReadingKind"
+              }
+            ]
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReadingStatus"
+              }
+            ]
+          },
+          "source": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReadingSource"
+              }
+            ]
+          },
+          "period": {
+            "type": "string",
+            "example": "2026-10",
+            "description": "Month the reading is for (YYYY-MM)"
+          },
+          "readingDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-10-28"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "photoId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadingValueResponseDto"
+            }
+          },
+          "consumption": {
+            "nullable": true,
+            "description": "Per zone since the previous CONFIRMED reading of this meter; null if none",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadingValueResponseDto"
+            }
+          },
+          "createdById": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "confirmedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "confirmedById": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "meterId",
+          "kind",
+          "status",
+          "source",
+          "period",
+          "readingDate",
+          "note",
+          "photoId",
+          "values",
+          "consumption",
+          "createdById",
+          "confirmedAt",
+          "confirmedById",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateReadingDto": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "example": "2026-10",
+            "description": "Month the reading is for"
+          },
+          "readingDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-10-28",
+            "description": "From the 1st of the period to the end of the next month; not in the future"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadingValueInputDto"
+            }
+          },
+          "note": {
+            "type": "string"
+          },
+          "confirm": {
+            "type": "boolean",
+            "default": false,
+            "description": "true = create CONFIRMED right away (manual entry); default DRAFT"
+          },
+          "photoId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Photo of this apartment the reading was taken from → source PHOTO"
+          }
+        },
+        "required": [
+          "period",
+          "readingDate",
+          "values"
+        ]
+      },
+      "MeterSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "utility": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UtilityType"
+              }
+            ]
+          },
+          "zoneScheme": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ZoneScheme"
+              }
+            ]
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "serialNumber": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "utility",
+          "zoneScheme",
+          "label",
+          "serialNumber"
+        ]
+      },
+      "PeriodReadingStatus": {
+        "type": "string",
+        "enum": [
+          "MISSING",
+          "DRAFT",
+          "CONFIRMED"
+        ],
+        "description": "MISSING = no reading for this period yet"
+      },
+      "ApartmentMeterReadingResponseDto": {
+        "type": "object",
+        "properties": {
+          "meter": {
+            "$ref": "#/components/schemas/MeterSummaryResponseDto"
+          },
+          "status": {
+            "description": "MISSING = no reading for this period yet",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PeriodReadingStatus"
+              }
+            ]
+          },
+          "reading": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReadingResponseDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "meter",
+          "status",
+          "reading"
+        ]
+      },
+      "UpdateReadingDto": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "example": "2026-10"
+          },
+          "readingDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-10-28"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadingValueInputDto"
+            }
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "CancelReadingDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "example": "Typo in the day value",
+            "description": "Stored in the reading note"
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      }
+    }
+  }
+}

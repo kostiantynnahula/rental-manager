@@ -13,5 +13,5 @@ export default defineConfig([
   sharedRules,
   // Must stay last: turns off rules that conflict with Prettier.
   prettier,
-  globalIgnores(['.next/**', 'out/**', 'build/**', 'next-env.d.ts']),
+  globalIgnores(['.next/**', 'out/**', 'build/**', 'next-env.d.ts', 'lib/api/schema.d.ts']),
 ]);

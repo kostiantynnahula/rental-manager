@@ -6,6 +6,10 @@
 - test: `pnpm --filter api test` · e2e: `pnpm --filter api test:e2e`
 - lint: `pnpm --filter api lint` · build: `pnpm --filter api build`
 - generate code: `pnpm --filter api exec nest g <schematic> <name>`
+- OpenAPI: `pnpm --filter api openapi:export` → `openapi.json` (committed; root `pnpm gen:api` also regenerates the
+  web types). Builds first and creates the app without `init()`, so no DB is needed (only a valid `.env`). Paths
+  are written without `/api`; the prefix is in `servers` (matches the web client's `baseUrl: '/api'`).
+  Swagger config lives in `src/openapi/swagger-config.ts`, shared with `main.ts`.
 
 ## Conventions
 

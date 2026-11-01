@@ -64,6 +64,7 @@ Node 24 (`.nvmrc`), pnpm via corepack. First run: `cp .env.example .env && pnpm 
 - test: `pnpm test`
 - lint: `pnpm lint` · format: `pnpm format` / `pnpm format:check`
 - build: `pnpm build`
+- API types for the web app: `pnpm gen:api` (after API DTO/controller changes; commit both generated files)
 
 ## How to work with me
 

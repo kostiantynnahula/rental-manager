@@ -15,6 +15,7 @@
     "dev:api": "pnpm build:shared && pnpm --filter api dev",
     "dev:web": "pnpm build:shared && pnpm --filter web dev",
     "build": "pnpm -r build",
+    "gen:api": "pnpm --filter api openapi:export && pnpm --filter web gen:api",
     "test": "pnpm build:shared && pnpm -r test",
     "lint": "pnpm build:shared && pnpm -r lint",
     "format": "prettier --write .",
