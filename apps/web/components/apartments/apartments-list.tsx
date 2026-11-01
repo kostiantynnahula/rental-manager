@@ -2,17 +2,13 @@
 
 import { Plus, Search } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { DataTable } from '@/components/data-table/data-table';
 import { QueryError } from '@/components/query-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  useApartments,
-  type Apartment,
-  type ApartmentActiveFilter,
-} from '@/lib/api/queries/apartments';
+import { useSearchParam } from '@/hooks/use-search-param';
+import { useApartments, type Apartment } from '@/lib/api/queries/apartments';
 import { cn } from '@/lib/utils';
 import { ApartmentCard } from './apartment-card';
 import { apartmentColumns } from './apartment-columns';
@@ -27,20 +23,9 @@ const apartmentId = (a: Apartment) => a.id;
 const renderApartmentCard = (a: Apartment) => <ApartmentCard apartment={a} />;
 
 export function ApartmentsList() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const active = parseActiveFilter(searchParams.get('active'));
+  const [active, setActive] = useSearchParam('active', parseActiveFilter, DEFAULT_APARTMENT_FILTER);
   const [search, setSearch] = useState('');
   const apartments = useApartments(active);
-
-  function setActive(value: ApartmentActiveFilter) {
-    const params = new URLSearchParams(searchParams);
-    if (value === DEFAULT_APARTMENT_FILTER) params.delete('active');
-    else params.set('active', value);
-    const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  }
 
   return (
     <section className="space-y-4">

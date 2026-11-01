@@ -578,7 +578,18 @@ export interface components {
             address?: string;
             notes?: string | null;
         };
-        TenantResponseDto: {
+        /**
+         * @description LIVING: a lease covers today (Kyiv). FORMER: only ended leases. NONE: no leases or only future ones.
+         * @enum {string}
+         */
+        TenantStatus: "LIVING" | "FORMER" | "NONE";
+        TenantApartmentResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example Shevchenka 12/5 */
+            name: string;
+        };
+        TenantListItemResponseDto: {
             /** Format: uuid */
             id: string;
             /** @example Ivan Petrenko */
@@ -591,6 +602,10 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+            /** @description LIVING: a lease covers today (Kyiv). FORMER: only ended leases. NONE: no leases or only future ones. */
+            status: components["schemas"]["TenantStatus"];
+            /** @description Apartment of the lease covering today */
+            currentApartment: components["schemas"]["TenantApartmentResponseDto"] | null;
         };
         TenantLeaseResponseDto: {
             /** Format: uuid */
@@ -607,6 +622,13 @@ export interface components {
             /** Format: date */
             endDate: string | null;
             role: components["schemas"]["LeaseTenantRole"];
+            /**
+             * @description Kopiyky (UAH)
+             * @example 1500000
+             */
+            monthlyRent: number;
+            /** @description The lease covers today (Kyiv time) */
+            isCurrent: boolean;
         };
         TenantDetailResponseDto: {
             /** Format: uuid */
@@ -624,23 +646,91 @@ export interface components {
             /** @description Newest first */
             leases: components["schemas"]["TenantLeaseResponseDto"][];
         };
+        NewLeaseAssignmentDto: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            mode: "NEW_LEASE";
+            /** Format: uuid */
+            apartmentId: string;
+            /**
+             * Format: date
+             * @example 2026-11-01
+             */
+            startDate: string;
+            /**
+             * @description Integer kopiyky (UAH)
+             * @example 1500000
+             */
+            monthlyRent: number;
+            /** @description Lease notes */
+            notes?: string;
+        };
+        AddContactAssignmentDto: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            mode: "ADD_CONTACT";
+            /** Format: uuid */
+            leaseId: string;
+        };
         CreateTenantDto: {
+            /** @example Ivan Petrenko */
+            fullName: string;
+            /**
+             * @description Ukrainian number in any common format; stored as +380XXXXXXXXX
+             * @example 067 123 45 67
+             */
+            phone: string;
+            /** @example ivan@example.com */
+            email?: string | null;
+            notes?: string | null;
+            /** @description Optional, in the same transaction: NEW_LEASE creates a lease with this tenant as PRIMARY; ADD_CONTACT adds them as CONTACT to a current lease */
+            assignment?: components["schemas"]["NewLeaseAssignmentDto"] | components["schemas"]["AddContactAssignmentDto"];
+        };
+        TenantCreatedResponseDto: {
+            /** Format: uuid */
+            id: string;
             /** @example Ivan Petrenko */
             fullName: string;
             /** @example +380501112233 */
             phone: string;
-            /** @example ivan@example.com */
-            email?: string;
-            notes?: string;
+            email: string | null;
+            notes: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** @description The lease created or joined via `assignment`; null without one */
+            lease: components["schemas"]["LeaseResponseDto"] | null;
         };
         UpdateTenantDto: {
             /** @example Ivan Petrenko */
             fullName?: string;
-            /** @example +380501112233 */
+            /**
+             * @description Ukrainian number in any common format; stored as +380XXXXXXXXX
+             * @example 067 123 45 67
+             */
             phone?: string;
             /** @example ivan@example.com */
-            email?: string;
-            notes?: string;
+            email?: string | null;
+            notes?: string | null;
+        };
+        TenantResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example Ivan Petrenko */
+            fullName: string;
+            /** @example +380501112233 */
+            phone: string;
+            email: string | null;
+            notes: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
         };
         LeaseTenantInputDto: {
             /** Format: uuid */
@@ -1388,7 +1478,7 @@ export interface operations {
     TenantsController_list: {
         parameters: {
             query?: {
-                /** @description Substring of name or phone, case-insensitive */
+                /** @description Substring of the name (case-insensitive) or phone digits in any format ("067123") */
                 search?: string;
             };
             header?: never;
@@ -1397,13 +1487,20 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description With status and current apartment */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TenantResponseDto"][];
+                    "application/json": components["schemas"]["TenantListItemResponseDto"][];
                 };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             401: {
                 headers: {
@@ -1431,9 +1528,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TenantResponseDto"];
+                    "application/json": components["schemas"]["TenantCreatedResponseDto"];
                 };
             };
+            /** @description Invalid body, unknown apartment or lease in `assignment` */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1441,6 +1539,13 @@ export interface operations {
                 content?: never;
             };
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Assignment: apartment is archived, lease is not current (ADD_CONTACT), or dates overlap another lease (NEW_LEASE) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

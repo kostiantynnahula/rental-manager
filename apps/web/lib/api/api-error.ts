@@ -25,18 +25,39 @@ export function isNotFoundError(error: unknown): boolean {
 
 export interface FieldErrorRule<T extends FieldValues> {
   status: number;
+  // Only when the server message mentions this text (e.g. 'phone' for a 400 about that property).
+  bodyIncludes?: string;
   field: Path<T>;
   message: string;
 }
 
+// Nest error bodies: { message: string | string[] }.
+function serverMessages(body: unknown): string[] {
+  if (typeof body !== 'object' || body === null || !('message' in body)) return [];
+  const { message } = body;
+  if (typeof message === 'string') return [message];
+  return Array.isArray(message) ? message.filter((m): m is string => typeof m === 'string') : [];
+}
+
+function ruleMatches(rule: { status: number; bodyIncludes?: string }, error: ApiError): boolean {
+  if (rule.status !== error.status) return false;
+  const text = rule.bodyIncludes;
+  return !text || serverMessages(error.body).some((m) => m.includes(text));
+}
+
 // The single place that turns a failed mutation into UI feedback: an error on the form field when a rule
-// matches (e.g. 409 duplicate name → "name"), otherwise a toast.
+// matches (e.g. 409 duplicate name → "name"), otherwise a toast — with `messages[status]` instead of the
+// generic text when given (actions without a form, e.g. 409 on delete).
 export function applyApiError<T extends FieldValues>(
   error: unknown,
-  options: { setError?: UseFormSetError<T>; fields?: FieldErrorRule<T>[] } = {},
+  options: {
+    setError?: UseFormSetError<T>;
+    fields?: FieldErrorRule<T>[];
+    messages?: Partial<Record<number, string>>;
+  } = {},
 ): void {
   if (error instanceof ApiError && options.setError) {
-    const rule = options.fields?.find((r) => r.status === error.status);
+    const rule = options.fields?.find((r) => ruleMatches(r, error));
     if (rule) {
       options.setError(
         rule.field,
@@ -46,5 +67,6 @@ export function applyApiError<T extends FieldValues>(
       return;
     }
   }
-  toast.error(apiErrorMessage(error));
+  const override = error instanceof ApiError ? options.messages?.[error.status] : undefined;
+  toast.error(override ?? apiErrorMessage(error));
 }

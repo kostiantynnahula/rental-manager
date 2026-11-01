@@ -2,11 +2,12 @@
 
 import { ChevronLeft, Pencil } from 'lucide-react';
 import Link from 'next/link';
-import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { NotFoundState } from '@/components/not-found-state';
 import { QueryError } from '@/components/query-error';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useSearchParam } from '@/hooks/use-search-param';
 import { isNotFoundError } from '@/lib/api/api-error';
 import { useApartment } from '@/lib/api/queries/apartments';
 import { ApartmentDetailSkeleton } from './apartment-detail-skeleton';
@@ -18,19 +19,8 @@ import { parseTab } from './helpers/parse-tab';
 
 export function ApartmentDetail() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const tab = parseTab(searchParams.get('tab'));
+  const [tab, setTab] = useSearchParam('tab', parseTab, DEFAULT_APARTMENT_TAB);
   const apartment = useApartment(id);
-
-  function setTab(value: string) {
-    const params = new URLSearchParams(searchParams);
-    if (value === DEFAULT_APARTMENT_TAB) params.delete('tab');
-    else params.set('tab', value);
-    const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  }
 
   if (apartment.isPending) return <ApartmentDetailSkeleton />;
   if (apartment.isError) {
@@ -77,7 +67,7 @@ export function ApartmentDetail() {
         </p>
       )}
 
-      <Tabs value={tab} onValueChange={setTab}>
+      <Tabs value={tab} onValueChange={(value) => setTab(parseTab(value))}>
         {/* Scrolls sideways on narrow screens instead of squeezing five labels into 375px. */}
         <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
           <TabsList className="group-data-horizontal/tabs:h-11 md:group-data-horizontal/tabs:h-8">

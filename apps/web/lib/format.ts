@@ -83,3 +83,15 @@ export function parsePeriod(display: string): string | null {
 export function telHref(phone: string): string {
   return `tel:${phone.replace(/[^\d+]/g, '')}`;
 }
+
+const kyivDateFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Kyiv',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+// Today in Kyiv as "YYYY-MM-DD" (en-CA formats as ISO) — the same "today" the API uses for current leases.
+export function todayDateOnly(): string {
+  return kyivDateFormatter.format(new Date());
+}

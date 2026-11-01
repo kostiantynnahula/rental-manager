@@ -27,9 +27,10 @@ export function useApartments(active: ApartmentActiveFilter) {
   });
 }
 
-export function useApartment(id: string) {
+export function useApartment(id: string, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: apartmentKeys.detail(id),
+    enabled: options.enabled ?? true,
     queryFn: async (): Promise<Apartment> =>
       unwrap(await api.GET('/apartments/{id}', { params: { path: { id } } })),
   });

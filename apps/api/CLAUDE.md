@@ -69,6 +69,13 @@
   `CONSTRAINT_MESSAGES` in `src/prisma/helpers/to-http-exception.ts`. Never return Prisma messages/`detail` (row data).
 - **Apartments list and detail** both return `ApartmentDetailResponseDto` with `currentLease` (lease covering today, Kyiv
   time; helper `apartments/helpers/current-lease-where.ts`). The list loads it in one query via `include`.
+- **Tenants**: phones are Ukrainian only, normalized to `+380XXXXXXXXX` by `@IsUaPhone()` (rule:
+  `normalizeUaPhone` in `@rental/shared`, also used by the web); `?search=` matches the name or the phone digits in any
+  format (`phoneSearchDigits`). The list returns `TenantListItemResponseDto` (`status` LIVING/FORMER/NONE +
+  `currentApartment`, `helpers/tenant-status.ts`); detail leases carry `monthlyRent` and `isCurrent`.
+  `POST /tenants` takes an optional `assignment` (discriminated by `mode`, chosen by the client, never inferred):
+  NEW_LEASE (open-ended lease, tenant = PRIMARY; overlap → 409 from `leases_no_overlap`) or ADD_CONTACT (lease must
+  cover today, apartment active → else 409). One `$transaction` in `TenantsService.create`; unknown ids → 400.
 - **No DELETE for apartments** — archive/unarchive. Tenants: DELETE only without lease history (409 otherwise).
   Leases: DELETE allowed until statements exist (TODO in `LeasesService.delete`).
 - Swagger: every endpoint documents its success response type and the error statuses it can return.

@@ -49,8 +49,17 @@
   Search runs before the table on `getSearchText(row)`; pass stable (module-level) callbacks.
 - Forms: RHF + zod + `field`; `useUnsavedChanges(isDirty)` (beforeunload + in-app link clicks + `confirmLeave` for
   Cancel). The browser Back gesture can't be intercepted in the App Router.
-- URL state (`?active=`, `?tab=`) via `useSearchParams` + `router.replace(…, { scroll: false })`; the default value is
-  left out of the URL.
+- URL state (`?active=`, `?tab=`, `?search=`) via `useSearchParam(name, parse, default)` (`hooks/use-search-param.ts`:
+  `router.replace` with `scroll: false`, default left out of the URL).
+- Server-side search (tenants): the input keeps local state, `useDebouncedValue` (300 ms) writes it to `?search=`, the
+  query reads the URL value and uses `placeholderData: keepPreviousData`. DataTable gets no `getSearchText` then.
+- Reusable forms (`TenantForm`): no router/toast/unsaved-changes inside, just `onSuccess(record)`, `onCancel?`,
+  `onDirtyChange?`, `idPrefix` and `allowAssignment` (create only: optional "Прив’язати до квартири" → POST /tenants
+  `assignment`; the mode comes from the selected apartment's current lease, re-checked by the API; the lease form
+  passes `false`). A page wrapper (`TenantFormPage`) owns the guard, toast and redirect, so the same form
+  can sit in a dialog.
+- Phones: `lib/phone.ts` (`normalizeUaPhone` from `@rental/shared` = the API's rule, `formatPhone` for display,
+  `viberHref`). Send normalized `+380…`, show `formatPhone`.
 - `cacheComponents`: `useSearchParams`, and `useParams`/`usePathname` on dynamic routes, are request-time data →
   wrap the component in `<Suspense>` (page-level fallback skeleton) or the build fails. The shell reads the pathname
   only in `NavLinks` (own Suspense), and `AuthGuard` reads `window.location`.

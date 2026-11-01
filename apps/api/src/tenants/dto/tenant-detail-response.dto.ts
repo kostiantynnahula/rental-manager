@@ -7,10 +7,10 @@ export class TenantDetailResponseDto extends TenantResponseDto {
   @ApiProperty({ type: [TenantLeaseResponseDto], description: 'Newest first' })
   leases: TenantLeaseResponseDto[];
 
-  static fromWithLeases(t: TenantWithLeases): TenantDetailResponseDto {
+  static fromWithLeases(t: TenantWithLeases, today: Date): TenantDetailResponseDto {
     return {
       ...TenantResponseDto.from(t),
-      leases: t.leases.map((l) => TenantLeaseResponseDto.from(l)),
+      leases: t.leases.map((l) => TenantLeaseResponseDto.from(l, today)),
     };
   }
 }

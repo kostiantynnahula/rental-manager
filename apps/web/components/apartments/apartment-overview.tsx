@@ -1,8 +1,9 @@
 import { Phone } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Apartment } from '@/lib/api/queries/apartments';
-import { formatDate, formatMoney, telHref } from '@/lib/format';
-import { contactTenants, primaryTenant, type LeaseTenant } from '@/lib/leases';
+import { formatMoney, telHref } from '@/lib/format';
+import { contactTenants, formatLeaseTerm, primaryTenant, type LeaseTenant } from '@/lib/leases';
+import { formatPhone } from '@/lib/phone';
 
 function PhoneLink({ phone }: { phone: string }) {
   return (
@@ -11,7 +12,7 @@ function PhoneLink({ phone }: { phone: string }) {
       className="inline-flex min-h-11 items-center gap-2 text-primary underline-offset-4 hover:underline md:min-h-0"
     >
       <Phone className="size-4" />
-      {phone}
+      {formatPhone(phone)}
     </a>
   );
 }
@@ -63,10 +64,7 @@ export function ApartmentOverview({ apartment }: { apartment: Apartment }) {
               </div>
               <div>
                 <dt className="text-muted-foreground">Термін</dt>
-                <dd>
-                  з {formatDate(lease.startDate)}
-                  {lease.endDate ? ` по ${formatDate(lease.endDate)}` : ', безстроково'}
-                </dd>
+                <dd>{formatLeaseTerm(lease.startDate, lease.endDate)}</dd>
               </div>
             </dl>
           ) : (

@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { formatDateOnly } from '../../common/helpers/date-only.js';
 import { LeaseTenantRole } from '../../generated/prisma/enums.js';
+import { isLeaseCurrent } from '../helpers/tenant-status.js';
 import type { TenantWithLeases } from '../helpers/tenant-with-leases.js';
 
 // One lease as seen from the tenant's side.
@@ -23,7 +24,13 @@ export class TenantLeaseResponseDto {
   @ApiProperty({ enum: LeaseTenantRole, enumName: 'LeaseTenantRole' })
   role: LeaseTenantRole;
 
-  static from(link: TenantWithLeases['leases'][number]): TenantLeaseResponseDto {
+  @ApiProperty({ description: 'Kopiyky (UAH)', example: 1500000 })
+  monthlyRent: number;
+
+  @ApiProperty({ description: 'The lease covers today (Kyiv time)' })
+  isCurrent: boolean;
+
+  static from(link: TenantWithLeases['leases'][number], today: Date): TenantLeaseResponseDto {
     return {
       leaseId: link.leaseId,
       apartmentId: link.lease.apartmentId,
@@ -31,6 +38,8 @@ export class TenantLeaseResponseDto {
       startDate: formatDateOnly(link.lease.startDate),
       endDate: link.lease.endDate ? formatDateOnly(link.lease.endDate) : null,
       role: link.role,
+      monthlyRent: link.lease.monthlyRent,
+      isCurrent: isLeaseCurrent(link.lease, today),
     };
   }
 }

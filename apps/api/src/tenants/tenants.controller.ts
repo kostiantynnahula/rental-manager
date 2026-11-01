@@ -22,9 +22,12 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { todayDateOnly } from '../common/helpers/date-only.js';
 import { CreateTenantDto } from './dto/create-tenant.dto.js';
+import { TenantCreatedResponseDto } from './dto/tenant-created-response.dto.js';
 import { ListTenantsQueryDto } from './dto/list-tenants-query.dto.js';
 import { TenantDetailResponseDto } from './dto/tenant-detail-response.dto.js';
+import { TenantListItemResponseDto } from './dto/tenant-list-item-response.dto.js';
 import { TenantResponseDto } from './dto/tenant-response.dto.js';
 import { UpdateTenantDto } from './dto/update-tenant.dto.js';
 import { TenantsService } from './tenants.service.js';
@@ -37,24 +40,37 @@ export class TenantsController {
   constructor(private readonly tenants: TenantsService) {}
 
   @Get()
-  @ApiOkResponse({ type: [TenantResponseDto] })
-  async list(@Query() query: ListTenantsQueryDto): Promise<TenantResponseDto[]> {
+  @ApiOkResponse({
+    type: [TenantListItemResponseDto],
+    description: 'With status and current apartment',
+  })
+  @ApiBadRequestResponse()
+  async list(@Query() query: ListTenantsQueryDto): Promise<TenantListItemResponseDto[]> {
     const tenants = await this.tenants.list(query.search);
-    return tenants.map((t) => TenantResponseDto.from(t));
+    const today = todayDateOnly();
+    return tenants.map((t) => TenantListItemResponseDto.fromWithLeaseDates(t, today));
   }
 
   @Get(':id')
   @ApiOkResponse({ type: TenantDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Tenant not found' })
   async get(@Param('id', ParseUUIDPipe) id: string): Promise<TenantDetailResponseDto> {
-    return TenantDetailResponseDto.fromWithLeases(await this.tenants.findWithLeasesOrThrow(id));
+    const tenant = await this.tenants.findWithLeasesOrThrow(id);
+    return TenantDetailResponseDto.fromWithLeases(tenant, todayDateOnly());
   }
 
   @Post()
-  @ApiCreatedResponse({ type: TenantResponseDto })
-  @ApiBadRequestResponse()
-  async create(@Body() dto: CreateTenantDto): Promise<TenantResponseDto> {
-    return TenantResponseDto.from(await this.tenants.create(dto));
+  @ApiCreatedResponse({ type: TenantCreatedResponseDto })
+  @ApiBadRequestResponse({
+    description: 'Invalid body, unknown apartment or lease in `assignment`',
+  })
+  @ApiConflictResponse({
+    description:
+      'Assignment: apartment is archived, lease is not current (ADD_CONTACT), or dates overlap another lease (NEW_LEASE)',
+  })
+  async create(@Body() dto: CreateTenantDto): Promise<TenantCreatedResponseDto> {
+    const { tenant, lease } = await this.tenants.create(dto);
+    return TenantCreatedResponseDto.fromWithLease(tenant, lease);
   }
 
   @Patch(':id')
