@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMe } from '@/lib/auth/queries';
@@ -11,13 +11,13 @@ import { loginUrl } from '@/lib/auth/redirect';
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const me = useMe();
   const router = useRouter();
-  const pathname = usePathname();
   const failed = me.isError;
 
   useEffect(() => {
     // A 401 here means the refresh already failed (the API middleware retries once after refreshing).
-    if (failed) router.replace(loginUrl(pathname + window.location.search));
-  }, [failed, pathname, router]);
+    // window.location, not usePathname(): that hook would need a Suspense boundary on dynamic routes.
+    if (failed) router.replace(loginUrl(window.location.pathname + window.location.search));
+  }, [failed, router]);
 
   if (!me.isSuccess) return <ShellSkeleton />;
   return children;

@@ -133,13 +133,13 @@
         ],
         "responses": {
           "200": {
-            "description": "",
+            "description": "Each with its current lease",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/ApartmentResponseDto"
+                    "$ref": "#/components/schemas/ApartmentDetailResponseDto"
                   }
                 }
               }
@@ -2099,48 +2099,6 @@
           "name"
         ]
       },
-      "ApartmentResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string",
-            "example": "Shevchenka 12/5"
-          },
-          "address": {
-            "type": "string",
-            "example": "Kyiv, Shevchenka St 12, apt 5"
-          },
-          "notes": {
-            "type": "string",
-            "nullable": true
-          },
-          "isActive": {
-            "type": "boolean",
-            "description": "false = archived"
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "address",
-          "notes",
-          "isActive",
-          "createdAt",
-          "updatedAt"
-        ]
-      },
       "LeaseTenantRole": {
         "type": "string",
         "enum": [
@@ -2304,12 +2262,55 @@
             "example": "Kyiv, Shevchenka St 12, apt 5"
           },
           "notes": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         },
         "required": [
           "name",
           "address"
+        ]
+      },
+      "ApartmentResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Shevchenka 12/5"
+          },
+          "address": {
+            "type": "string",
+            "example": "Kyiv, Shevchenka St 12, apt 5"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "false = archived"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "address",
+          "notes",
+          "isActive",
+          "createdAt",
+          "updatedAt"
         ]
       },
       "UpdateApartmentDto": {
@@ -2325,7 +2326,8 @@
             "example": "Kyiv, Shevchenka St 12, apt 5"
           },
           "notes": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         }
       },

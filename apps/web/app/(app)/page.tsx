@@ -1,12 +1,15 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
+import { ApartmentsList } from '@/components/apartments/apartments-list';
+import { DataTableSkeleton } from '@/components/data-table/data-table-skeleton';
 
 export const metadata: Metadata = { title: 'Квартири' };
 
+// Suspense: ApartmentsList reads ?active= (useSearchParams), which isn't known at prerender time.
 export default function ApartmentsPage() {
   return (
-    <section className="space-y-2">
-      <h1 className="text-2xl font-semibold">Квартири</h1>
-      <p className="text-muted-foreground">Тут буде список квартир.</p>
-    </section>
+    <Suspense fallback={<DataTableSkeleton />}>
+      <ApartmentsList />
+    </Suspense>
   );
 }

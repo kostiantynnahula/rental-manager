@@ -67,6 +67,8 @@
   services: `PrismaExceptionFilter` maps them — unique → 409, `leases_no_overlap` → 409 "Lease dates overlap with another
   lease", check → 400, FK/restrict → 409, not found → 404, else a generic 500. New raw-SQL constraint → add its message to
   `CONSTRAINT_MESSAGES` in `src/prisma/helpers/to-http-exception.ts`. Never return Prisma messages/`detail` (row data).
+- **Apartments list and detail** both return `ApartmentDetailResponseDto` with `currentLease` (lease covering today, Kyiv
+  time; helper `apartments/helpers/current-lease-where.ts`). The list loads it in one query via `include`.
 - **No DELETE for apartments** — archive/unarchive. Tenants: DELETE only without lease history (409 otherwise).
   Leases: DELETE allowed until statements exist (TODO in `LeasesService.delete`).
 - Swagger: every endpoint documents its success response type and the error statuses it can return.

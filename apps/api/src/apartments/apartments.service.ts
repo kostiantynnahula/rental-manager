@@ -9,15 +9,25 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateApartmentDto } from './dto/create-apartment.dto.js';
 import type { ApartmentActiveFilter } from './dto/list-apartments-query.dto.js';
 import { UpdateApartmentDto } from './dto/update-apartment.dto.js';
+import { currentLeaseWhere } from './helpers/current-lease-where.js';
+import type { ApartmentWithCurrentLease } from './interfaces/apartment-with-current-lease.interface.js';
 
 @Injectable()
 export class ApartmentsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  list(active: ApartmentActiveFilter): Promise<Apartment[]> {
+  // Each apartment with its current lease (0 or 1 element in `leases`) — one query for the list view.
+  list(active: ApartmentActiveFilter): Promise<ApartmentWithCurrentLease[]> {
     return this.prisma.apartment.findMany({
       where: active === 'all' ? {} : { isActive: active === 'true' },
       orderBy: { name: 'asc' },
+      include: {
+        leases: {
+          where: currentLeaseWhere(todayDateOnly()),
+          take: 1,
+          include: leaseWithTenantsInclude,
+        },
+      },
     });
   }
 
@@ -38,14 +48,8 @@ export class ApartmentsService {
     id: string,
   ): Promise<{ apartment: Apartment; currentLease: LeaseWithTenants | null }> {
     const apartment = await this.findOrThrow(id);
-    const today = todayDateOnly();
-    // At most one match: leases of one apartment can't overlap (leases_no_overlap).
     const currentLease = await this.prisma.lease.findFirst({
-      where: {
-        apartmentId: id,
-        startDate: { lte: today },
-        OR: [{ endDate: null }, { endDate: { gte: today } }],
-      },
+      where: { apartmentId: id, ...currentLeaseWhere(todayDateOnly()) },
       include: leaseWithTenantsInclude,
     });
     return { apartment, currentLease };

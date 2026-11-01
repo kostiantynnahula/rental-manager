@@ -486,21 +486,6 @@ export interface components {
             /** @example Owner */
             name: string | null;
         };
-        ApartmentResponseDto: {
-            /** Format: uuid */
-            id: string;
-            /** @example Shevchenka 12/5 */
-            name: string;
-            /** @example Kyiv, Shevchenka St 12, apt 5 */
-            address: string;
-            notes: string | null;
-            /** @description false = archived */
-            isActive: boolean;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-        };
         /** @enum {string} */
         LeaseTenantRole: "PRIMARY" | "CONTACT";
         LeaseTenantResponseDto: {
@@ -566,7 +551,22 @@ export interface components {
             name: string;
             /** @example Kyiv, Shevchenka St 12, apt 5 */
             address: string;
-            notes?: string;
+            notes?: string | null;
+        };
+        ApartmentResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example Shevchenka 12/5 */
+            name: string;
+            /** @example Kyiv, Shevchenka St 12, apt 5 */
+            address: string;
+            notes: string | null;
+            /** @description false = archived */
+            isActive: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
         };
         UpdateApartmentDto: {
             /**
@@ -576,7 +576,7 @@ export interface components {
             name?: string;
             /** @example Kyiv, Shevchenka St 12, apt 5 */
             address?: string;
-            notes?: string;
+            notes?: string | null;
         };
         TenantResponseDto: {
             /** Format: uuid */
@@ -1173,12 +1173,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Each with its current lease */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApartmentResponseDto"][];
+                    "application/json": components["schemas"]["ApartmentDetailResponseDto"][];
                 };
             };
             401: {

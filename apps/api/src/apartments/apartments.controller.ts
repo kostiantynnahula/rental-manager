@@ -36,10 +36,10 @@ export class ApartmentsController {
   constructor(private readonly apartments: ApartmentsService) {}
 
   @Get()
-  @ApiOkResponse({ type: [ApartmentResponseDto] })
-  async list(@Query() query: ListApartmentsQueryDto): Promise<ApartmentResponseDto[]> {
+  @ApiOkResponse({ type: [ApartmentDetailResponseDto], description: 'Each with its current lease' })
+  async list(@Query() query: ListApartmentsQueryDto): Promise<ApartmentDetailResponseDto[]> {
     const apartments = await this.apartments.list(query.active);
-    return apartments.map((a) => ApartmentResponseDto.from(a));
+    return apartments.map((a) => ApartmentDetailResponseDto.fromWithLease(a, a.leases[0] ?? null));
   }
 
   @Get(':id')

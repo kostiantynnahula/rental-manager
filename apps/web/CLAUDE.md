@@ -14,6 +14,8 @@
 - Next 16, App Router only (`app/`), no `src/` dir; import alias `@/*` → app root.
 - Server Components by default; add `'use client'` only when needed.
 - Shared types come from `@rental/shared` (built to `dist/`; root `dev`/`lint` build it first).
+- One component per file. Feature constants go in `components/<feature>/constants/<topic>.ts`, pure helpers in
+  `components/<feature>/helpers/<name>.ts` (one function per file).
 - `AGENTS.md` is managed by `next dev` — don't edit it by hand.
 - UI: shadcn/ui (radix, "nova" preset, `components/ui/`, add via `pnpm dlx shadcn@latest add <name>`). Forms use
   `field` + react-hook-form `Controller` + zod (shadcn's old `form` component is deprecated). `cn` comes from the
@@ -31,6 +33,27 @@
 - Data: client components + React Query. Server components only for static layout/shells.
 - Never hand-write API types: use `paths`/`components` from `lib/api/schema.d.ts` and the `api` client
   (`lib/api/client.ts`); throw on errors with `unwrap()` inside query/mutation functions.
+
+## Data layer (pattern for every resource)
+
+- `lib/api/queries/<resource>.ts`: a key factory (`apartmentKeys.all/lists()/list(filter)/details()/detail(id)`) plus
+  hooks only (`useApartments`, `useApartment`, `useCreateApartment`, …); types come from `lib/api/schema.d.ts`.
+  Components never call `api` directly.
+- Mutations invalidate the affected keys (`lists()` + `detail(id)`) instead of writing responses into the cache
+  (mutation responses are often a slimmer DTO than the queries).
+- Errors: `applyApiError(error, { setError, fields: [{ status: 409, field: 'name', message }] })` from
+  `lib/api/api-error.ts` puts known server errors on form fields and toasts everything else; queries show
+  `<QueryError>`, 404/400 → `<NotFoundState>` (`isNotFoundError`).
+- Lists: `components/data-table` (TanStack Table **v9**: features registered in `data-table/features.ts`; columns at
+  module level via `createDataTableColumnHelper`). Below `md` it renders `renderCard` instead of the table.
+  Search runs before the table on `getSearchText(row)`; pass stable (module-level) callbacks.
+- Forms: RHF + zod + `field`; `useUnsavedChanges(isDirty)` (beforeunload + in-app link clicks + `confirmLeave` for
+  Cancel). The browser Back gesture can't be intercepted in the App Router.
+- URL state (`?active=`, `?tab=`) via `useSearchParams` + `router.replace(…, { scroll: false })`; the default value is
+  left out of the URL.
+- `cacheComponents`: `useSearchParams`, and `useParams`/`usePathname` on dynamic routes, are request-time data →
+  wrap the component in `<Suspense>` (page-level fallback skeleton) or the build fails. The shell reads the pathname
+  only in `NavLinks` (own Suspense), and `AuthGuard` reads `window.location`.
 
 ## Auth
 

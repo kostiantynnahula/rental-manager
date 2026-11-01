@@ -78,3 +78,8 @@ export function parsePeriod(display: string): string | null {
   if (index === -1) return null;
   return `${match[2]}-${String(index + 1).padStart(2, '0')}`;
 }
+
+// "+38 050 111-22-33" → "tel:+380501112233"
+export function telHref(phone: string): string {
+  return `tel:${phone.replace(/[^\d+]/g, '')}`;
+}

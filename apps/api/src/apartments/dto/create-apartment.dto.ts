@@ -13,8 +13,9 @@ export class CreateApartmentDto {
   @IsNotEmpty()
   address: string;
 
-  @ApiPropertyOptional()
+  // null clears the notes on PATCH (@IsOptional skips validation for null/undefined).
+  @ApiPropertyOptional({ type: String, nullable: true })
   @IsOptional()
   @IsString()
-  notes?: string;
+  notes?: string | null;
 }
