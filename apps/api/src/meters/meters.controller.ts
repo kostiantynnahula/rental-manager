@@ -42,7 +42,7 @@ export class MetersController {
   @Get(':id')
   @ApiOkResponse({ type: MeterResponseDto })
   async get(@Param('id', ParseUUIDPipe) id: string): Promise<MeterResponseDto> {
-    return MeterResponseDto.from(await this.meters.findOrThrow(id));
+    return MeterResponseDto.from(await this.meters.withFlagsOne(await this.meters.findOrThrow(id)));
   }
 
   @Patch(':id')
@@ -52,7 +52,7 @@ export class MetersController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateMeterDto,
   ): Promise<MeterResponseDto> {
-    return MeterResponseDto.from(await this.meters.update(id, dto));
+    return MeterResponseDto.from(await this.meters.withFlagsOne(await this.meters.update(id, dto)));
   }
 
   @Put(':id/initial-values')
@@ -67,9 +67,8 @@ export class MetersController {
     @Body() dto: InitialValuesDto,
     @CurrentUser() user: AuthUser,
   ): Promise<MeterResponseDto> {
-    return MeterResponseDto.from(
-      await this.meters.replaceInitialValues(id, dto.initialValues, user.id),
-    );
+    const meter = await this.meters.replaceInitialValues(id, dto.initialValues, user.id);
+    return MeterResponseDto.from(await this.meters.withFlagsOne(meter));
   }
 
   @Post(':id/remove')
@@ -85,7 +84,8 @@ export class MetersController {
     @Body() dto: RemoveMeterDto,
     @CurrentUser() user: AuthUser,
   ): Promise<MeterResponseDto> {
-    return MeterResponseDto.from(await this.meters.remove(id, dto, user.id));
+    const meter = await this.meters.remove(id, dto, user.id);
+    return MeterResponseDto.from(await this.meters.withFlagsOne(meter));
   }
 
   @Post(':id/replace')
@@ -99,7 +99,8 @@ export class MetersController {
     @CurrentUser() user: AuthUser,
   ): Promise<ReplaceMeterResponseDto> {
     const { removed, installed } = await this.meters.replace(id, dto, user.id);
-    return { removed: MeterResponseDto.from(removed), installed: MeterResponseDto.from(installed) };
+    const [old, current] = await this.meters.withFlags([removed, installed]);
+    return { removed: MeterResponseDto.from(old), installed: MeterResponseDto.from(current) };
   }
 
   @Delete(':id')

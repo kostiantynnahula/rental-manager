@@ -16,3 +16,16 @@ export function contactTenants(lease: Lease): LeaseTenant[] {
 export function formatLeaseTerm(startDate: string, endDate: string | null): string {
   return `з ${formatDate(startDate)}${endDate ? ` по ${formatDate(endDate)}` : ', безстроково'}`;
 }
+
+export type LeaseStatus = 'ACTIVE' | 'ENDED' | 'UPCOMING';
+
+// Same rule as the API's current lease (endDate inclusive, null = open-ended). `today` = todayDateOnly() (Kyiv);
+// "YYYY-MM-DD" strings compare correctly as plain strings.
+export function leaseStatus(
+  lease: { startDate: string; endDate: string | null },
+  today: string,
+): LeaseStatus {
+  if (lease.startDate > today) return 'UPCOMING';
+  if (lease.endDate !== null && lease.endDate < today) return 'ENDED';
+  return 'ACTIVE';
+}

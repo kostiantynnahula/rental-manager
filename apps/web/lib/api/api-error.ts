@@ -28,6 +28,8 @@ export interface FieldErrorRule<T extends FieldValues> {
   // Only when the server message mentions this text (e.g. 'phone' for a 400 about that property).
   bodyIncludes?: string;
   field: Path<T>;
+  // More fields that get the same message (e.g. both dates of an overlapping lease); focus stays on `field`.
+  alsoFields?: Path<T>[];
   message: string;
 }
 
@@ -64,6 +66,8 @@ export function applyApiError<T extends FieldValues>(
         { type: 'server', message: rule.message },
         { shouldFocus: true },
       );
+      for (const field of rule.alsoFields ?? [])
+        options.setError(field, { type: 'server', message: rule.message });
       return;
     }
   }

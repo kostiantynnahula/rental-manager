@@ -3006,6 +3006,14 @@
               }
             ]
           },
+          "canDelete": {
+            "type": "boolean",
+            "description": "Computed by the server: DELETE would succeed (no REGULAR/FINAL readings)"
+          },
+          "canEditInitialValues": {
+            "type": "boolean",
+            "description": "Computed by the server: PUT initial-values would succeed (installed, no non-cancelled REGULAR readings)"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -3026,6 +3034,8 @@
           "removedAt",
           "notes",
           "lastReading",
+          "canDelete",
+          "canEditInitialValues",
           "createdAt",
           "updatedAt"
         ]

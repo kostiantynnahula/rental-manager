@@ -843,6 +843,10 @@ export interface components {
             notes: string | null;
             /** @description Latest CONFIRMED reading (FINAL for a removed meter) */
             lastReading: components["schemas"]["ReadingSummaryResponseDto"] | null;
+            /** @description Computed by the server: DELETE would succeed (no REGULAR/FINAL readings) */
+            canDelete: boolean;
+            /** @description Computed by the server: PUT initial-values would succeed (installed, no non-cancelled REGULAR readings) */
+            canEditInitialValues: boolean;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */

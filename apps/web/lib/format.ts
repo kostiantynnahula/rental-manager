@@ -2,6 +2,9 @@
 // ("YYYY-MM-DD", "YYYY-MM"), handled as strings so no timezone can shift them a day.
 
 const NBSP = ' ';
+// Money columns are Postgres integers (kopiyky): the API rejects more (PG_INT_MAX).
+export const MAX_MONEY_KOPIYKY = 2_147_483_647;
+
 const groupFormatter = new Intl.NumberFormat('uk-UA', { maximumFractionDigits: 0 });
 
 // 123456 → "1 234,56 грн" (non-breaking spaces, so the amount never wraps).

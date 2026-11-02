@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { parseMoney } from '@/lib/format';
+import { MAX_MONEY_KOPIYKY, parseMoney } from '@/lib/format';
 import { normalizeUaPhone } from '@/lib/phone';
-import { MAX_RENT_KOPIYKY, PHONE_HINT, TENANT_NAME_MAX } from '../constants/form';
+import { PHONE_HINT, TENANT_NAME_MAX } from '../constants/form';
 
 const emailSchema = z.email();
 
@@ -23,7 +23,7 @@ const assignmentSchema = z
     const rent = parseMoney(a.rent);
     if (rent === null || rent <= 0)
       ctx.addIssue({ code: 'custom', path: ['rent'], message: 'Вкажіть суму, напр. 15000' });
-    else if (rent > MAX_RENT_KOPIYKY)
+    else if (rent > MAX_MONEY_KOPIYKY)
       ctx.addIssue({ code: 'custom', path: ['rent'], message: 'Завелика сума' });
   });
 

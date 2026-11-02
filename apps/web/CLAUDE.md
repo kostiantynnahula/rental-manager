@@ -64,6 +64,29 @@
   wrap the component in `<Suspense>` (page-level fallback skeleton) or the build fails. The shell reads the pathname
   only in `NavLinks` (own Suspense), and `AuthGuard` reads `window.location`.
 
+## Leases (`components/leases/`)
+
+- Lease status (Активний / Завершений / Майбутній) is computed on the client: `leaseStatus(lease, todayDateOnly())`
+  (`lib/leases.ts`, Kyiv "today" — same rule as the API's current lease).
+- Every lease mutation invalidates `leaseKeys.all`, `apartmentKeys.all` and `tenantKeys.all` (a lease shows on both).
+- Back navigation: links into a lease carry `?from=apartment` or `?from=tenant&tenantId=…`; `leaseBackTarget()` picks
+  the target (default: the apartment's Договори tab) and `originQuery()` keeps it on detail ↔ edit links.
+- Forms inside a Sheet/Dialog: the content is portalled, but React still bubbles `submit` to the outer `<form>` —
+  wrap the inner form in `onSubmit={(e) => e.stopPropagation()}` (see `new-tenant-sheet.tsx`).
+- Dates use native `<input type="date">` (no calendar component): better on phones, values are "YYYY-MM-DD".
+
+## Meters (`components/meters/`)
+
+- Labels/units only from `lib/utilities.ts` (`UTILITY_LABELS`, `UTILITY_UNITS`, `ZONE_LABELS`, `zonesFor`,
+  `zoneSchemesFor` — day/night exists only for electricity).
+- Meter values are decimal strings end to end (`lib/meter-values.ts`: `normalizeMeterValue` → API "1520.350",
+  `compareMeterValues`, `formatMeterValue` → "1520,350"); never `Number(...)`.
+- Reusable pair for any reading entry: `ReadingValuesInput` (one input per zone, unit, "Попереднє: …") +
+  `readingValuesSchema(previous?)` (required, ≤3 decimals, not lower than previous) and `toReadingValuesInput()`.
+- `canDelete` / `canEditInitialValues` come from the API; disabled menu items stay visible with a reason.
+- Sheets opened from a DropdownMenu item: the menu is `modal={false}` (otherwise focus handling leaves the body
+  unclickable). Small forms in a side sheet: `components/form-sheet.tsx`.
+
 ## Auth
 
 - Cookies `access_token` (Path=/api) and `refresh_token` (Path=/api/auth) never reach page URLs, so the server

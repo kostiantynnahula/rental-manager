@@ -15,6 +15,8 @@ import {
   ZoneScheme,
 } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { meterFlags, NO_USAGE, type MeterUsage } from './helpers/meter-flags.js';
+import type { MeterWithFlags } from './interfaces/meter-with-flags.interface.js';
 import { ReadingValueInputDto } from '../readings/dto/reading-value-input.dto.js';
 import { decreasedZones } from '../readings/helpers/decreased-values.js';
 import {
@@ -48,6 +50,33 @@ export class MetersService {
       include: lastConfirmedReadingInclude,
       orderBy: [{ utility: 'asc' }, { label: 'asc' }, { installedAt: 'desc' }],
     });
+  }
+
+  // Adds canDelete / canEditInitialValues for responses: one grouped query for any number of meters.
+  async withFlags(meters: MeterWithLastReading[]): Promise<MeterWithFlags[]> {
+    if (meters.length === 0) return [];
+    const rows = await this.prisma.reading.groupBy({
+      by: ['meterId', 'kind', 'status'],
+      where: {
+        meterId: { in: meters.map((m) => m.id) },
+        kind: { in: [ReadingKind.REGULAR, ReadingKind.FINAL] },
+      },
+      _count: { _all: true },
+    });
+    const usage = new Map<string, MeterUsage>();
+    for (const row of rows) {
+      const u = usage.get(row.meterId) ?? { ...NO_USAGE };
+      u.regularOrFinal += row._count._all;
+      if (row.kind === ReadingKind.REGULAR && row.status !== ReadingStatus.CANCELLED)
+        u.activeRegular += row._count._all;
+      usage.set(row.meterId, u);
+    }
+    return meters.map((m) => ({ ...m, ...meterFlags(m, usage.get(m.id) ?? NO_USAGE) }));
+  }
+
+  async withFlagsOne(meter: MeterWithLastReading): Promise<MeterWithFlags> {
+    const [withFlags] = await this.withFlags([meter]);
+    return withFlags;
   }
 
   async findOrThrow(id: string, db: Prisma.TransactionClient = this.prisma) {

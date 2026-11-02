@@ -9,7 +9,12 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: readonly NavItem[] = [
-  { href: '/', label: 'Квартири', icon: Building2, alsoActiveOn: ['/apartments'] },
+  {
+    href: '/',
+    label: 'Квартири',
+    icon: Building2,
+    alsoActiveOn: ['/apartments', '/leases', '/meters'],
+  },
   { href: '/tenants', label: 'Мешканці', icon: Users },
 ];
 

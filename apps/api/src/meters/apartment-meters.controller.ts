@@ -35,7 +35,7 @@ export class ApartmentMetersController {
     @Query() query: ListMetersQueryDto,
   ): Promise<MeterResponseDto[]> {
     const meters = await this.meters.listForApartment(apartmentId, query.includeRemoved === 'true');
-    return meters.map((m) => MeterResponseDto.from(m));
+    return (await this.meters.withFlags(meters)).map((m) => MeterResponseDto.from(m));
   }
 
   @Post()
@@ -47,6 +47,7 @@ export class ApartmentMetersController {
     @Body() dto: CreateMeterDto,
     @CurrentUser() user: AuthUser,
   ): Promise<MeterResponseDto> {
-    return MeterResponseDto.from(await this.meters.create(apartmentId, dto, user.id));
+    const meter = await this.meters.create(apartmentId, dto, user.id);
+    return MeterResponseDto.from(await this.meters.withFlagsOne(meter));
   }
 }

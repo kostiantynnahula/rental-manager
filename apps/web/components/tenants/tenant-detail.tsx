@@ -68,7 +68,7 @@ export function TenantDetail() {
           </Card>
         )}
         <div className="md:col-span-2">
-          <TenantLeases leases={data.leases} />
+          <TenantLeases tenantId={data.id} leases={data.leases} />
         </div>
       </div>
     </section>

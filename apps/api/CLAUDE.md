@@ -89,6 +89,8 @@
 - **Meter lifecycle** (`src/meters/`): create = meter + CONFIRMED INITIAL reading; wrong initial value = cancel the
   INITIAL + create a new one (only before any non-cancelled REGULAR reading); remove = CONFIRMED FINAL + `removedAt`;
   replace = remove + create in one transaction; DELETE only for a mistaken meter (nothing but INITIAL readings).
+  Responses carry `canDelete` / `canEditInitialValues` (`helpers/meter-flags.ts`, added by `MetersService.withFlags`
+  in one grouped query) — same rules as DELETE / PUT initial-values, which still enforce them.
   Dates that become a `readingDate` must not be in the future. `createdById`/`confirmedById` = `@CurrentUser()`.
 - **Readings** (`src/readings/`): REGULAR only (INITIAL/FINAL belong to the meter lifecycle). DRAFT → edit/delete →
   confirm (or create with `confirm: true`); CONFIRMED → only cancel (`reason` appended to `note`) and re-enter.
