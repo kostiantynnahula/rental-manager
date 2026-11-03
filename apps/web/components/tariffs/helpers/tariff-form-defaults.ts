@@ -4,7 +4,8 @@ import type { TariffFormValues } from './tariff-form-schema';
 import { utilitySetOf } from './utility-set-of';
 
 // A function, not a constant: a new tariff's first price starts in the current month (fresh Kyiv "today").
-export function tariffFormDefaults(tariff?: TariffDetail): TariffFormValues {
+// `apartmentId`: opened from an apartment's "Тарифи" tab — that apartment is preselected.
+export function tariffFormDefaults(tariff?: TariffDetail, apartmentId?: string): TariffFormValues {
   return {
     name: tariff?.name ?? '',
     kind: tariff?.kind ?? 'METERED',
@@ -13,5 +14,6 @@ export function tariffFormDefaults(tariff?: TariffDetail): TariffFormValues {
     effectiveFrom: todayDateOnly().slice(0, 7),
     price: '',
     nightPrice: '',
+    apartmentIds: apartmentId ? [apartmentId] : [],
   };
 }

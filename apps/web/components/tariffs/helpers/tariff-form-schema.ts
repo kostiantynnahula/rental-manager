@@ -19,6 +19,8 @@ export function tariffFormSchema(withPrices: boolean) {
       price: z.string(),
       // Optional, electricity only.
       nightPrice: z.string(),
+      // Create only: attached from the first price month on.
+      apartmentIds: z.array(z.string()),
     })
     .superRefine((v, ctx) => {
       if (v.kind === 'METERED' && !UTILITY_SETS.some((s) => s.value === v.utilitySet)) {

@@ -1,11 +1,11 @@
 'use client';
 
 import { FormSheet } from '@/components/form-sheet';
-import type { TariffDetail, TariffPrice } from '@/lib/api/queries/tariffs';
+import type { Tariff, TariffPrice } from '@/lib/api/queries/tariffs';
 import { TariffPriceForm } from './tariff-price-form';
 
 interface TariffPriceSheetProps {
-  tariff: TariffDetail;
+  tariff: Tariff;
   // Fix this row; a new price otherwise.
   price?: TariffPrice;
   open: boolean;

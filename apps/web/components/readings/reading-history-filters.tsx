@@ -1,12 +1,10 @@
 'use client';
 
 import { X } from 'lucide-react';
-import { NativeSelect } from '@/components/native-select';
 import { Button } from '@/components/ui/button';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import type { Meter } from '@/lib/api/queries/meters';
-import { HISTORY_PAGE_SIZES, type HistoryPageSize } from './constants/history';
 import { hasHistoryFilters } from './helpers/has-history-filters';
 import type { HistoryFilters } from './interfaces/history-filters';
 import { ReadingHistoryMeterFilter } from './reading-history-meter-filter';
@@ -27,7 +25,7 @@ export function ReadingHistoryFilters({
 }: ReadingHistoryFiltersProps) {
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-[repeat(2,10rem)_minmax(0,16rem)_6rem_auto] md:items-end">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-[repeat(2,10rem)_minmax(0,16rem)_auto] md:items-end">
         <Field data-invalid={rangeInvalid}>
           <FieldLabel htmlFor="history-from">З</FieldLabel>
           <Input
@@ -58,20 +56,6 @@ export function ReadingHistoryFilters({
             value={filters.meterIds}
             onChange={(meterIds) => onChange({ meterIds })}
           />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="history-page-size">На сторінці</FieldLabel>
-          <NativeSelect
-            id="history-page-size"
-            value={filters.pageSize}
-            onChange={(e) => onChange({ pageSize: Number(e.target.value) as HistoryPageSize })}
-          >
-            {HISTORY_PAGE_SIZES.map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </NativeSelect>
         </Field>
         {hasHistoryFilters(filters) && (
           <Button

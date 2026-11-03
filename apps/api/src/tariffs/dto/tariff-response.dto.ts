@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { TariffKind, UtilityType } from '../../generated/prisma/enums.js';
+import { isAttachmentCurrent } from '../helpers/is-attachment-current.js';
 import { currentPrices } from '../helpers/price-for-period.js';
 import type { TariffWithPrices } from '../helpers/tariff-with-prices.js';
 import { TariffPriceResponseDto } from './tariff-price-response.dto.js';
@@ -30,6 +31,12 @@ export class TariffResponseDto {
   inUse: boolean;
 
   @ApiProperty({
+    description:
+      'Apartments it is attached to now (attachments not ended before this month) — >1 = a shared tariff',
+  })
+  apartmentCount: number;
+
+  @ApiProperty({
     type: [TariffPriceResponseDto],
     description:
       'Prices in effect this month, one per zone with its own price (empty if all start later)',
@@ -50,7 +57,10 @@ export class TariffResponseDto {
       utilities: t.utilities,
       notes: t.notes,
       isActive: t.isActive,
-      inUse: t._count.apartments > 0,
+      inUse: t.apartments.length > 0,
+      apartmentCount: new Set(
+        t.apartments.filter((a) => isAttachmentCurrent(a, period)).map((a) => a.apartmentId),
+      ).size,
       currentPrices: currentPrices(t.prices, period).map((p) => TariffPriceResponseDto.from(p)),
       createdAt: t.createdAt,
       updatedAt: t.updatedAt,

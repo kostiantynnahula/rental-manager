@@ -14,6 +14,7 @@ import { ApartmentDetailSkeleton } from './apartment-detail-skeleton';
 import { ApartmentLeasesTab } from '@/components/leases/apartment-leases-tab';
 import { ApartmentMetersTab } from '@/components/meters/apartment-meters-tab';
 import { ApartmentReadingsTab } from '@/components/readings/apartment-readings-tab';
+import { ApartmentTariffsTab } from '@/components/tariffs/apartment-tariffs-tab';
 import { ApartmentOverview } from './apartment-overview';
 import { ArchiveButton } from './archive-button';
 import { ArchivedBadge } from './archived-badge';
@@ -71,7 +72,7 @@ export function ApartmentDetail() {
       )}
 
       <Tabs value={tab} onValueChange={(value) => setTab(parseTab(value))}>
-        {/* Scrolls sideways on narrow screens instead of squeezing five labels into 375px. */}
+        {/* Scrolls sideways on narrow screens instead of squeezing six labels into 375px. */}
         <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
           <TabsList className="group-data-horizontal/tabs:h-11 md:group-data-horizontal/tabs:h-8">
             {APARTMENT_TABS.map((t) => (
@@ -90,11 +91,14 @@ export function ApartmentDetail() {
         <TabsContent value="meters" className="pt-2">
           <ApartmentMetersTab apartment={data} />
         </TabsContent>
+        <TabsContent value="tariffs" className="pt-2">
+          <ApartmentTariffsTab apartment={data} />
+        </TabsContent>
         <TabsContent value="leases" className="pt-2">
           <ApartmentLeasesTab apartment={data} />
         </TabsContent>
         {APARTMENT_TABS.filter(
-          (t) => !['overview', 'readings', 'meters', 'leases'].includes(t.value),
+          (t) => !['overview', 'readings', 'meters', 'tariffs', 'leases'].includes(t.value),
         ).map((t) => (
           <TabsContent key={t.value} value={t.value} className="pt-2">
             <p className="rounded-lg border border-dashed px-4 py-10 text-center text-muted-foreground">

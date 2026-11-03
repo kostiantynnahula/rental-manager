@@ -7,8 +7,8 @@ import { DataTable } from '@/components/data-table/data-table';
 import { QueryError } from '@/components/query-error';
 import { Button } from '@/components/ui/button';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
-import { useTariffs, type Tariff } from '@/lib/api/queries/tariffs';
-import { DEFAULT_TARIFF_ACTIVE } from './constants/filters';
+import { useTariffs, type Tariff, type TariffPageSize } from '@/lib/api/queries/tariffs';
+import { DEFAULT_TARIFF_ACTIVE, TARIFF_PAGE_SIZES } from './constants/filters';
 import { toTariffListQuery } from './helpers/to-tariff-list-query';
 import { useTariffFilters } from './hooks/use-tariff-filters';
 import { TariffCard } from './tariff-card';
@@ -84,6 +84,10 @@ export function TariffsList() {
                 onPageIndexChange: (pageIndex) => setFilters({ page: pageIndex + 1 }),
               }
             }
+            pageSize={filters.pageSize}
+            pageSizeOptions={TARIFF_PAGE_SIZES}
+            // The select only offers TARIFF_PAGE_SIZES.
+            onPageSizeChange={(pageSize) => setFilters({ pageSize: pageSize as TariffPageSize })}
             empty={filtered ? 'Нічого не знайдено' : 'Тарифів немає'}
           />
         </div>

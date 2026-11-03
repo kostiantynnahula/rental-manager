@@ -1,11 +1,13 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
 import { unwrap } from '@/lib/api/errors';
+import { apartmentTariffKeys } from '@/lib/api/queries/apartment-tariffs';
 import type { components, operations } from '@/lib/api/schema';
 
 export type Tariff = components['schemas']['TariffResponseDto'];
 export type TariffDetail = components['schemas']['TariffDetailResponseDto'];
 export type TariffPrice = components['schemas']['TariffPriceResponseDto'];
+export type TariffApartment = components['schemas']['TariffApartmentResponseDto'];
 export type TariffPage = components['schemas']['TariffPageResponseDto'];
 export type TariffKind = components['schemas']['TariffKind'];
 export type CreateTariffInput = components['schemas']['CreateTariffDto'];
@@ -44,12 +46,14 @@ export function useTariff(id: string) {
   });
 }
 
-// Every change can move a tariff in the list (name, archive) or change its current prices.
+// Every change can move a tariff in the list (name, archive) or change its current prices — also shown on the
+// apartments' "Тарифи" tabs.
 function useInvalidateTariff() {
   const queryClient = useQueryClient();
   return (id: string) => {
     void queryClient.invalidateQueries({ queryKey: tariffKeys.lists() });
     void queryClient.invalidateQueries({ queryKey: tariffKeys.detail(id) });
+    void queryClient.invalidateQueries({ queryKey: apartmentTariffKeys.all });
   };
 }
 
@@ -58,7 +62,13 @@ export function useCreateTariff() {
   return useMutation({
     mutationFn: async (body: CreateTariffInput): Promise<TariffDetail> =>
       unwrap(await api.POST('/tariffs', { body })),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: tariffKeys.lists() }),
+    onSuccess: (_created, body) => {
+      void queryClient.invalidateQueries({ queryKey: tariffKeys.lists() });
+      // Attached right away → the apartments' "Тарифи" tabs change too.
+      if (body.apartmentIds?.length) {
+        void queryClient.invalidateQueries({ queryKey: apartmentTariffKeys.all });
+      }
+    },
   });
 }
 

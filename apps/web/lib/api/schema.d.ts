@@ -580,6 +580,54 @@ export interface paths {
         patch: operations["TariffsController_updatePrice"];
         trace?: never;
     };
+    "/apartments/{apartmentId}/tariffs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ApartmentTariffsController_list"];
+        put?: never;
+        post: operations["ApartmentTariffsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/apartments/{apartmentId}/tariffs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["ApartmentTariffsController_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["ApartmentTariffsController_update"];
+        trace?: never;
+    };
+    "/apartments/{apartmentId}/tariffs/{id}/override": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ApartmentTariffsController_override"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1311,6 +1359,8 @@ export interface components {
             isActive: boolean;
             /** @description Attached to at least one apartment: kind/utilities are fixed and the tariff can only be archived, not deleted */
             inUse: boolean;
+            /** @description Apartments it is attached to now (attachments not ended before this month) — >1 = a shared tariff */
+            apartmentCount: number;
             /** @description Prices in effect this month, one per zone with its own price (empty if all start later) */
             currentPrices: components["schemas"]["TariffPriceResponseDto"][];
             /** Format: date-time */
@@ -1326,6 +1376,29 @@ export interface components {
             page: number;
             pageSize: number;
         };
+        TariffApartmentResponseDto: {
+            /**
+             * Format: uuid
+             * @description Attachment id
+             */
+            id: string;
+            /** Format: uuid */
+            apartmentId: string;
+            /** @example Shevchenka 12/5 */
+            apartmentName: string;
+            /**
+             * @description First billed month
+             * @example 2026-11
+             */
+            activeFrom: string;
+            /**
+             * @description Last billed month (inclusive); null = ongoing
+             * @example null
+             */
+            activeTo: string | null;
+            /** @description Not ended before this month (planned ones count too) */
+            isCurrent: boolean;
+        };
         TariffDetailResponseDto: {
             /** Format: uuid */
             id: string;
@@ -1338,6 +1411,8 @@ export interface components {
             isActive: boolean;
             /** @description Attached to at least one apartment: kind/utilities are fixed and the tariff can only be archived, not deleted */
             inUse: boolean;
+            /** @description Apartments it is attached to now (attachments not ended before this month) — >1 = a shared tariff */
+            apartmentCount: number;
             /** @description Prices in effect this month, one per zone with its own price (empty if all start later) */
             currentPrices: components["schemas"]["TariffPriceResponseDto"][];
             /** Format: date-time */
@@ -1346,6 +1421,8 @@ export interface components {
             updatedAt: string;
             /** @description Full price history: effectiveFrom DESC, then zone */
             prices: components["schemas"]["TariffPriceResponseDto"][];
+            /** @description All attachments, current and ended: activeFrom DESC */
+            apartments: components["schemas"]["TariffApartmentResponseDto"][];
         };
         TariffPriceInputDto: {
             /**
@@ -1373,6 +1450,8 @@ export interface components {
             notes?: string | null;
             /** @description Initial price history; must include a TOTAL price from the earliest month */
             prices: components["schemas"]["TariffPriceInputDto"][];
+            /** @description Active apartments to attach right away, from the earliest price month on */
+            apartmentIds?: string[];
         };
         UpdateTariffDto: {
             /**
@@ -1398,6 +1477,68 @@ export interface components {
              * @example 4.32
              */
             price?: string;
+        };
+        ApartmentTariffResponseDto: {
+            /**
+             * Format: uuid
+             * @description Attachment id
+             */
+            id: string;
+            /**
+             * @description First billed month
+             * @example 2026-11
+             */
+            activeFrom: string;
+            /**
+             * @description Last billed month (inclusive); null = ongoing
+             * @example null
+             */
+            activeTo: string | null;
+            /** @description Not ended before this month (planned ones count too) */
+            isCurrent: boolean;
+            tariff: components["schemas"]["TariffResponseDto"];
+        };
+        CreateApartmentTariffDto: {
+            /**
+             * Format: uuid
+             * @description An active tariff
+             */
+            tariffId: string;
+            /**
+             * @description First billed month
+             * @example 2026-11
+             */
+            activeFrom: string;
+        };
+        UpdateApartmentTariffDto: {
+            /**
+             * @description Last billed month (inclusive) — "detach from the next month"; null = ongoing again
+             * @example 2026-12
+             */
+            activeTo: string | null;
+        };
+        OverridePriceInputDto: {
+            /** @description Default TOTAL. DAY/NIGHT only for an ELECTRICITY tariff; a zone without its own price uses TOTAL */
+            zone?: components["schemas"]["Zone"];
+            /**
+             * @description UAH, decimal string, >= 0, up to 4 decimals: per unit (METERED) or per month (FIXED)
+             * @example 4.32
+             */
+            price: string;
+        };
+        OverrideApartmentTariffDto: {
+            /**
+             * @description Name of the copy (unique)
+             * @example Електроенергія (Shevchenka 12/5)
+             */
+            name: string;
+            /**
+             * @description First month of the own prices; must be within the attachment
+             * @example 2027-01
+             */
+            effectiveFrom: string;
+            /** @description Prices of the copy from effectiveFrom; must include TOTAL */
+            prices: components["schemas"]["OverridePriceInputDto"][];
         };
     };
     responses: never;
@@ -3691,6 +3832,244 @@ export interface operations {
                 content?: never;
             };
             /** @description Tariff is archived, a price for this month and zone exists, or the earliest month would lose its TOTAL price */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApartmentTariffsController_list: {
+        parameters: {
+            query?: {
+                /** @description current = not ended before this month (planned included); all = also ended */
+                scope?: "current" | "all";
+            };
+            header?: never;
+            path: {
+                apartmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ordered by tariff name, then newest attachment first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApartmentTariffResponseDto"][];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Apartment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApartmentTariffsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                apartmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateApartmentTariffDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApartmentTariffResponseDto"];
+                };
+            };
+            /** @description Invalid body or unknown tariffId */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Apartment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Apartment or tariff is archived, or the tariff is already attached for these months */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApartmentTariffsController_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                apartmentId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A mistaken attachment removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tariff attachment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApartmentTariffsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                apartmentId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateApartmentTariffDto"];
+            };
+        };
+        responses: {
+            /** @description Ended (activeTo) or reopened (null) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApartmentTariffResponseDto"];
+                };
+            };
+            /** @description Invalid body or activeTo before activeFrom */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tariff attachment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Reopening overlaps a later attachment of the same tariff */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApartmentTariffsController_override: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                apartmentId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OverrideApartmentTariffDto"];
+            };
+        };
+        responses: {
+            /** @description The new attachment of the apartment's own copy (from effectiveFrom); the shared one ends the month before */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApartmentTariffResponseDto"];
+                };
+            };
+            /** @description Invalid body, effectiveFrom outside the attachment, DAY/NIGHT on a non-electricity tariff, no TOTAL price */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Apartment or tariff attachment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Apartment is archived, or the name already exists */
             409: {
                 headers: {
                     [name: string]: unknown;

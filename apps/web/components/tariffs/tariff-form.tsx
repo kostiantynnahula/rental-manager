@@ -28,8 +28,14 @@ import {
   type TariffDetail,
   type TariffKind,
 } from '@/lib/api/queries/tariffs';
+import { ApartmentsMultiSelect } from './apartments-multi-select';
 import { IN_USE_REASON, TARIFF_KIND_HINTS, TARIFF_KIND_LABELS } from './constants/labels';
-import { ATTACHED, DUPLICATE_NAME } from './constants/server-errors';
+import {
+  APARTMENT_IS_ARCHIVED,
+  ATTACHED,
+  DUPLICATE_NAME,
+  UNKNOWN_APARTMENTS,
+} from './constants/server-errors';
 import { UTILITY_SETS } from './constants/utility-sets';
 import { isZoned } from './helpers/is-zoned';
 import { priceUnit } from './helpers/price-unit';
@@ -54,10 +60,30 @@ const SERVER_FIELD_ERRORS: FieldErrorRule<TariffFormValues>[] = [
     field: 'kind',
     message: `${IN_USE_REASON} — тип і послугу змінити не можна`,
   },
+  // Picked apartments changed meanwhile (archived or gone in another tab).
+  {
+    status: 409,
+    bodyIncludes: APARTMENT_IS_ARCHIVED,
+    field: 'apartmentIds',
+    message: 'Одна з квартир в архіві — приберіть її',
+  },
+  {
+    status: 400,
+    bodyIncludes: UNKNOWN_APARTMENTS,
+    field: 'apartmentIds',
+    message: 'Одну з квартир не знайдено — оновіть сторінку',
+  },
 ];
 
-// Create when `tariff` is undefined (with the first price), edit otherwise (prices live on the tariff page).
-export function TariffForm({ tariff }: { tariff?: TariffDetail }) {
+interface TariffFormProps {
+  // Edit this tariff; create otherwise (with the first price and apartments).
+  tariff?: TariffDetail;
+  // Create from an apartment's "Тарифи" tab: preselected, and saving/cancelling goes back there.
+  apartmentId?: string;
+}
+
+// Prices of an existing tariff live on its page, attachments on the apartments' tabs.
+export function TariffForm({ tariff, apartmentId }: TariffFormProps) {
   const router = useRouter();
   const create = useCreateTariff();
   const update = useUpdateTariff(tariff?.id ?? '');
@@ -66,10 +92,11 @@ export function TariffForm({ tariff }: { tariff?: TariffDetail }) {
   const schema = useMemo(() => tariffFormSchema(!tariff), [tariff]);
   // Attached to an apartment: statements bill by kind/utilities, so they're fixed (the API returns 409).
   const billingLocked = tariff?.inUse ?? false;
+  const apartmentTab = !tariff && apartmentId ? `/apartments/${apartmentId}?tab=tariffs` : null;
 
   const form = useForm<TariffFormValues>({
     resolver: zodResolver(schema),
-    defaultValues: tariffFormDefaults(tariff),
+    defaultValues: tariffFormDefaults(tariff, apartmentId),
   });
   const kind = useWatch({ control: form.control, name: 'kind' });
   const utilitySet = useWatch({ control: form.control, name: 'utilitySet' });
@@ -82,7 +109,7 @@ export function TariffForm({ tariff }: { tariff?: TariffDetail }) {
   // was just saved.
   const [lastSaved, setLastSaved] = useState<TariffFormValues | null>(null);
   const markSaved = useResetAfterSave(() => {
-    form.reset(tariff && lastSaved ? lastSaved : tariffFormDefaults());
+    form.reset(tariff && lastSaved ? lastSaved : tariffFormDefaults(undefined, apartmentId));
     setSaved(false);
   });
 
@@ -102,7 +129,7 @@ export function TariffForm({ tariff }: { tariff?: TariffDetail }) {
       markSaved();
       allowLeave();
       toast.success('Тариф збережено');
-      router.push(`/tariffs/${result.id}`);
+      router.push(apartmentTab ?? `/tariffs/${result.id}`);
     } catch (error) {
       applyApiError(error, { setError: form.setError, fields: SERVER_FIELD_ERRORS });
     }
@@ -112,7 +139,7 @@ export function TariffForm({ tariff }: { tariff?: TariffDetail }) {
     confirmLeave(() => {
       // Opened directly (no history in this tab) → go to a sensible parent instead of leaving the app.
       if (window.history.length > 1) router.back();
-      else router.push(tariff ? `/tariffs/${tariff.id}` : '/tariffs');
+      else router.push(tariff ? `/tariffs/${tariff.id}` : (apartmentTab ?? '/tariffs'));
     });
   }
 
@@ -272,6 +299,24 @@ export function TariffForm({ tariff }: { tariff?: TariffDetail }) {
                   )}
                 />
               )}
+              <Controller
+                name="apartmentIds"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="tariff-apartments">Квартири</FieldLabel>
+                    <ApartmentsMultiSelect
+                      id="tariff-apartments"
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                    <FieldDescription>
+                      Підключаться з місяця «Діє з». Пізніше — на вкладці «Тарифи» квартири
+                    </FieldDescription>
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
             </FieldGroup>
           </FieldSet>
         )}

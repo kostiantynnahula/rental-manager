@@ -2661,6 +2661,292 @@
           "tariffs"
         ]
       }
+    },
+    "/apartments/{apartmentId}/tariffs": {
+      "get": {
+        "operationId": "ApartmentTariffsController_list",
+        "parameters": [
+          {
+            "name": "apartmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scope",
+            "required": false,
+            "in": "query",
+            "description": "current = not ended before this month (planned included); all = also ended",
+            "schema": {
+              "default": "current",
+              "type": "string",
+              "enum": [
+                "current",
+                "all"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ordered by tariff name, then newest attachment first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApartmentTariffResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "tariffs"
+        ]
+      },
+      "post": {
+        "operationId": "ApartmentTariffsController_create",
+        "parameters": [
+          {
+            "name": "apartmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApartmentTariffDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApartmentTariffResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body or unknown tariffId"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found"
+          },
+          "409": {
+            "description": "Apartment or tariff is archived, or the tariff is already attached for these months"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "tariffs"
+        ]
+      }
+    },
+    "/apartments/{apartmentId}/tariffs/{id}": {
+      "patch": {
+        "operationId": "ApartmentTariffsController_update",
+        "parameters": [
+          {
+            "name": "apartmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateApartmentTariffDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ended (activeTo) or reopened (null)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApartmentTariffResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body or activeTo before activeFrom"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Tariff attachment not found"
+          },
+          "409": {
+            "description": "Reopening overlaps a later attachment of the same tariff"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "tariffs"
+        ]
+      },
+      "delete": {
+        "operationId": "ApartmentTariffsController_delete",
+        "parameters": [
+          {
+            "name": "apartmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "A mistaken attachment removed"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Tariff attachment not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "tariffs"
+        ]
+      }
+    },
+    "/apartments/{apartmentId}/tariffs/{id}/override": {
+      "post": {
+        "operationId": "ApartmentTariffsController_override",
+        "parameters": [
+          {
+            "name": "apartmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OverrideApartmentTariffDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new attachment of the apartment's own copy (from effectiveFrom); the shared one ends the month before",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApartmentTariffResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, effectiveFrom outside the attachment, DAY/NIGHT on a non-electricity tariff, no TOTAL price"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment or tariff attachment not found"
+          },
+          "409": {
+            "description": "Apartment is archived, or the name already exists"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "tariffs"
+        ]
+      }
     }
   },
   "info": {
@@ -4603,6 +4889,10 @@
             "type": "boolean",
             "description": "Attached to at least one apartment: kind/utilities are fixed and the tariff can only be archived, not deleted"
           },
+          "apartmentCount": {
+            "type": "number",
+            "description": "Apartments it is attached to now (attachments not ended before this month) — >1 = a shared tariff"
+          },
           "currentPrices": {
             "description": "Prices in effect this month, one per zone with its own price (empty if all start later)",
             "type": "array",
@@ -4627,6 +4917,7 @@
           "notes",
           "isActive",
           "inUse",
+          "apartmentCount",
           "currentPrices",
           "createdAt",
           "updatedAt"
@@ -4658,6 +4949,47 @@
           "total",
           "page",
           "pageSize"
+        ]
+      },
+      "TariffApartmentResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Attachment id"
+          },
+          "apartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "apartmentName": {
+            "type": "string",
+            "example": "Shevchenka 12/5"
+          },
+          "activeFrom": {
+            "type": "string",
+            "example": "2026-11",
+            "description": "First billed month"
+          },
+          "activeTo": {
+            "type": "string",
+            "nullable": true,
+            "example": null,
+            "description": "Last billed month (inclusive); null = ongoing"
+          },
+          "isCurrent": {
+            "type": "boolean",
+            "description": "Not ended before this month (planned ones count too)"
+          }
+        },
+        "required": [
+          "id",
+          "apartmentId",
+          "apartmentName",
+          "activeFrom",
+          "activeTo",
+          "isCurrent"
         ]
       },
       "TariffDetailResponseDto": {
@@ -4696,6 +5028,10 @@
             "type": "boolean",
             "description": "Attached to at least one apartment: kind/utilities are fixed and the tariff can only be archived, not deleted"
           },
+          "apartmentCount": {
+            "type": "number",
+            "description": "Apartments it is attached to now (attachments not ended before this month) — >1 = a shared tariff"
+          },
           "currentPrices": {
             "description": "Prices in effect this month, one per zone with its own price (empty if all start later)",
             "type": "array",
@@ -4717,6 +5053,13 @@
             "items": {
               "$ref": "#/components/schemas/TariffPriceResponseDto"
             }
+          },
+          "apartments": {
+            "description": "All attachments, current and ended: activeFrom DESC",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TariffApartmentResponseDto"
+            }
           }
         },
         "required": [
@@ -4727,10 +5070,12 @@
           "notes",
           "isActive",
           "inUse",
+          "apartmentCount",
           "currentPrices",
           "createdAt",
           "updatedAt",
-          "prices"
+          "prices",
+          "apartments"
         ]
       },
       "TariffPriceInputDto": {
@@ -4792,6 +5137,14 @@
             "items": {
               "$ref": "#/components/schemas/TariffPriceInputDto"
             }
+          },
+          "apartmentIds": {
+            "description": "Active apartments to attach right away, from the earliest price month on",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         },
         "required": [
@@ -4850,6 +5203,122 @@
             "description": "UAH, decimal string, >= 0, up to 4 decimals: per unit (METERED) or per month (FIXED)"
           }
         }
+      },
+      "ApartmentTariffResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Attachment id"
+          },
+          "activeFrom": {
+            "type": "string",
+            "example": "2026-11",
+            "description": "First billed month"
+          },
+          "activeTo": {
+            "type": "string",
+            "nullable": true,
+            "example": null,
+            "description": "Last billed month (inclusive); null = ongoing"
+          },
+          "isCurrent": {
+            "type": "boolean",
+            "description": "Not ended before this month (planned ones count too)"
+          },
+          "tariff": {
+            "$ref": "#/components/schemas/TariffResponseDto"
+          }
+        },
+        "required": [
+          "id",
+          "activeFrom",
+          "activeTo",
+          "isCurrent",
+          "tariff"
+        ]
+      },
+      "CreateApartmentTariffDto": {
+        "type": "object",
+        "properties": {
+          "tariffId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "An active tariff"
+          },
+          "activeFrom": {
+            "type": "string",
+            "example": "2026-11",
+            "description": "First billed month"
+          }
+        },
+        "required": [
+          "tariffId",
+          "activeFrom"
+        ]
+      },
+      "UpdateApartmentTariffDto": {
+        "type": "object",
+        "properties": {
+          "activeTo": {
+            "type": "string",
+            "nullable": true,
+            "example": "2026-12",
+            "description": "Last billed month (inclusive) — \"detach from the next month\"; null = ongoing again"
+          }
+        },
+        "required": [
+          "activeTo"
+        ]
+      },
+      "OverridePriceInputDto": {
+        "type": "object",
+        "properties": {
+          "zone": {
+            "description": "Default TOTAL. DAY/NIGHT only for an ELECTRICITY tariff; a zone without its own price uses TOTAL",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Zone"
+              }
+            ]
+          },
+          "price": {
+            "type": "string",
+            "example": "4.32",
+            "description": "UAH, decimal string, >= 0, up to 4 decimals: per unit (METERED) or per month (FIXED)"
+          }
+        },
+        "required": [
+          "price"
+        ]
+      },
+      "OverrideApartmentTariffDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Електроенергія (Shevchenka 12/5)",
+            "description": "Name of the copy (unique)"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "example": "2027-01",
+            "description": "First month of the own prices; must be within the attachment"
+          },
+          "prices": {
+            "description": "Prices of the copy from effectiveFrom; must include TOTAL",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OverridePriceInputDto"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "effectiveFrom",
+          "prices"
+        ]
       }
     }
   }

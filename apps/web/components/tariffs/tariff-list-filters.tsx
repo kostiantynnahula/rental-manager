@@ -3,9 +3,9 @@
 import { Search } from 'lucide-react';
 import { NativeSelect } from '@/components/native-select';
 import { Input } from '@/components/ui/input';
-import type { TariffKind, TariffPageSize } from '@/lib/api/queries/tariffs';
+import type { TariffKind } from '@/lib/api/queries/tariffs';
 import { cn } from '@/lib/utils';
-import { TARIFF_ACTIVE_FILTERS, TARIFF_KIND_FILTERS, TARIFF_PAGE_SIZES } from './constants/filters';
+import { TARIFF_ACTIVE_FILTERS, TARIFF_KIND_FILTERS } from './constants/filters';
 import type { TariffFilters } from './interfaces/tariff-filters';
 
 interface TariffListFiltersProps {
@@ -56,32 +56,18 @@ export function TariffListFilters({
           className="pl-9"
         />
       </div>
-      <div className="grid grid-cols-[minmax(0,1fr)_6rem] gap-3 md:flex">
-        <NativeSelect
-          value={filters.kind}
-          onChange={(e) => onChange({ kind: e.target.value as TariffKind | '' })}
-          aria-label="Тип"
-          className="md:w-44"
-        >
-          {TARIFF_KIND_FILTERS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </NativeSelect>
-        <NativeSelect
-          value={filters.pageSize}
-          onChange={(e) => onChange({ pageSize: Number(e.target.value) as TariffPageSize })}
-          aria-label="На сторінці"
-          className="md:w-20"
-        >
-          {TARIFF_PAGE_SIZES.map((size) => (
-            <option key={size} value={size}>
-              {size}
-            </option>
-          ))}
-        </NativeSelect>
-      </div>
+      <NativeSelect
+        value={filters.kind}
+        onChange={(e) => onChange({ kind: e.target.value as TariffKind | '' })}
+        aria-label="Тип"
+        className="md:w-44"
+      >
+        {TARIFF_KIND_FILTERS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </NativeSelect>
     </div>
   );
 }

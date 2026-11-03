@@ -34,6 +34,10 @@ interface DataTableProps<TData extends RowData> {
   initialSorting?: SortingState;
   // Server-side pagination: `data` is already the current page.
   pagination?: DataTableServerPagination;
+  // Page size selector in the pagination row (server-side lists: reading history, tariffs).
+  pageSize?: number;
+  pageSizeOptions?: readonly number[];
+  onPageSizeChange?: (pageSize: number) => void;
   empty: React.ReactNode;
 }
 
@@ -54,6 +58,9 @@ export function DataTable<TData extends RowData>({
   getSearchText,
   initialSorting = NO_ROWS,
   pagination,
+  pageSize,
+  pageSizeOptions,
+  onPageSizeChange,
   empty,
 }: DataTableProps<TData>) {
   const rows = useMemo(() => {
@@ -162,7 +169,14 @@ export function DataTable<TData extends RowData>({
         </Table>
       </div>
 
-      {pagination && <DataTablePagination table={table} />}
+      {pagination && (
+        <DataTablePagination
+          table={table}
+          pageSize={pageSize}
+          pageSizeOptions={pageSizeOptions}
+          onPageSizeChange={onPageSizeChange}
+        />
+      )}
     </>
   );
 }

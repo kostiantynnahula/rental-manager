@@ -9,6 +9,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
   ValidateNested,
 } from 'class-validator';
@@ -58,4 +59,16 @@ export class CreateTariffDto {
   @ValidateNested({ each: true })
   @Type(() => TariffPriceInputDto)
   prices: TariffPriceInputDto[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    format: 'uuid',
+    description: 'Active apartments to attach right away, from the earliest price month on',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @ArrayUnique()
+  @IsUUID('all', { each: true })
+  apartmentIds?: string[];
 }

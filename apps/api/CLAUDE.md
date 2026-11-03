@@ -136,6 +136,16 @@
     combine), `disallowedZoneProblem` (DAY/NIGHT only for `[ELECTRICITY]`), `totalCoverageProblem` (a TOTAL price from
     the earliest month), `duplicatePriceProblem`. Price lookup: `priceForPeriod` / `currentPrices`
     (`helpers/price-for-period.ts`) — billing must reuse them.
+  - Responses also carry `apartmentCount` (apartments attached **now**; > 1 = shared) and the detail `apartments`
+    (all attachments). Include `tariffWithPricesInclude` loads prices **and** attachments, both picked in JS for a month.
+    `POST /tariffs` takes optional `apartmentIds` (active apartments, attached from the earliest price month).
+  - **Attachments** (`ApartmentTariffsController`, `/apartments/:apartmentId/tariffs`): `GET ?scope=current|all`
+    ("current" = not ended before this month, planned included — `isAttachmentCurrent` / `currentAttachmentWhere`, one
+    rule), `POST { tariffId, activeFrom }` (active apartment + tariff), `PATCH { activeTo }` (end = last billed month,
+    `null` reopens), `DELETE` (mistake; TODO: forbid once billed). Ids are scoped by apartment (other's → 404).
+  - **Override** (`POST .../:id/override { name, effectiveFrom, prices }`) = "this price only for this apartment": one
+    transaction — a copy of the tariff with its own prices from M, the old attachment ends at M−1 (deleted if it
+    starts in M), the copy is attached from M with the old `activeTo`. Past months stay on the shared tariff.
 
 ## Database (Prisma 7)
 

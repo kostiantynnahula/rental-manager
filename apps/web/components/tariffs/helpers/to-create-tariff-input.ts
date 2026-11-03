@@ -15,5 +15,12 @@ export function toCreateTariffInput(v: TariffFormValues): CreateTariffInput {
   if (night !== null && isZoned({ kind: v.kind, utilities })) {
     prices.push({ effectiveFrom: v.effectiveFrom, zone: 'NIGHT', price: night });
   }
-  return { name: v.name, kind: v.kind, utilities, ...(v.notes && { notes: v.notes }), prices };
+  return {
+    name: v.name,
+    kind: v.kind,
+    utilities,
+    ...(v.notes && { notes: v.notes }),
+    prices,
+    ...(v.apartmentIds.length > 0 && { apartmentIds: v.apartmentIds }),
+  };
 }

@@ -8,6 +8,7 @@ import type { Apartment } from '@/lib/api/queries/apartments';
 import { useApartmentMeters } from '@/lib/api/queries/meters';
 import { useReadingHistory, type ReadingHistoryItem } from '@/lib/api/queries/readings';
 import { UTILITY_ORDER } from '@/lib/utilities';
+import { HISTORY_PAGE_SIZES, type HistoryPageSize } from './constants/history';
 import { hasHistoryFilters } from './helpers/has-history-filters';
 import { toHistoryQuery } from './helpers/to-history-query';
 import { useHistoryFilters } from './hooks/use-history-filters';
@@ -68,6 +69,10 @@ export function ReadingHistory({ apartment }: { apartment: Apartment }) {
                 onPageIndexChange: (pageIndex) => setFilters({ page: pageIndex + 1 }),
               }
             }
+            pageSize={filters.pageSize}
+            pageSizeOptions={HISTORY_PAGE_SIZES}
+            // The select only offers HISTORY_PAGE_SIZES.
+            onPageSizeChange={(pageSize) => setFilters({ pageSize: pageSize as HistoryPageSize })}
             empty={
               <div className="space-y-3">
                 <p>Показань немає</p>

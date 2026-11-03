@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { isNotFoundError } from '@/lib/api/api-error';
 import { useTariff } from '@/lib/api/queries/tariffs';
 import { DeleteTariffButton } from './delete-tariff-button';
+import { TariffApartments } from './tariff-apartments';
 import { TariffArchiveButton } from './tariff-archive-button';
 import { TariffDetailSkeleton } from './tariff-detail-skeleton';
 import { TariffOverview } from './tariff-overview';
@@ -59,7 +60,10 @@ export function TariffDetail() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 md:items-start">
-        <TariffOverview tariff={data} />
+        <div className="space-y-4">
+          <TariffOverview tariff={data} />
+          <TariffApartments tariff={data} />
+        </div>
         <TariffPrices tariff={data} />
       </div>
     </section>

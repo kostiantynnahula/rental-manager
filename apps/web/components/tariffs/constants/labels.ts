@@ -13,3 +13,5 @@ export const TARIFF_KIND_HINTS: Record<TariffKind, string> = {
 
 export const ARCHIVED_REASON = 'Тариф в архіві';
 export const IN_USE_REASON = 'Тариф підключено до квартир';
+export const APARTMENT_ARCHIVED_REASON = 'Квартира в архіві';
+export const ENDED_REASON = 'Підключення завершено';

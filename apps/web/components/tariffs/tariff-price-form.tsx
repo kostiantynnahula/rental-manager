@@ -11,7 +11,7 @@ import { applyApiError, type FieldErrorRule } from '@/lib/api/api-error';
 import {
   useAddTariffPrice,
   useUpdateTariffPrice,
-  type TariffDetail,
+  type Tariff,
   type TariffPrice,
 } from '@/lib/api/queries/tariffs';
 import { todayDateOnly } from '@/lib/format';
@@ -42,7 +42,8 @@ const SERVER_FIELD_ERRORS: FieldErrorRule<TariffPriceFormValues>[] = [
 ];
 
 interface TariffPriceFormProps {
-  tariff: TariffDetail;
+  // Only id, kind and utilities are used: a list item (apartment tab) works too.
+  tariff: Tariff;
   // Fix this row; a new price otherwise.
   price?: TariffPrice;
   onDone: () => void;

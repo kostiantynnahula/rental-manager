@@ -56,8 +56,9 @@ export class TariffsService {
     return tariff;
   }
 
-  // Tariff + initial prices in one nested create (a single statement, atomic).
-  create(dto: CreateTariffDto): Promise<TariffWithPrices> {
+  // Tariff + initial prices + attachments in one nested create (atomic). Attachments start with the earliest
+  // price month, so an attached tariff always has a price.
+  async create(dto: CreateTariffDto): Promise<TariffWithPrices> {
     const utilities = dto.utilities ?? [];
     const prices = dto.prices.map((p) => tariffPriceData(p));
     const problem =
@@ -70,6 +71,9 @@ export class TariffsService {
       duplicatePriceProblem(prices) ??
       totalCoverageProblem(prices);
     if (problem) throw new BadRequestException(problem);
+    const apartmentIds = dto.apartmentIds ?? [];
+    await this.assertActiveApartments(apartmentIds);
+    const activeFrom = new Date(Math.min(...prices.map((p) => p.effectiveFrom.getTime())));
     return this.prisma.tariff.create({
       data: {
         name: dto.name,
@@ -77,6 +81,7 @@ export class TariffsService {
         utilities,
         notes: dto.notes,
         prices: { create: prices },
+        apartments: { create: apartmentIds.map((apartmentId) => ({ apartmentId, activeFrom })) },
       },
       include: tariffWithPricesInclude,
     });
@@ -92,7 +97,7 @@ export class TariffsService {
       utilities.some((u) => !tariff.utilities.includes(u));
     if (changesBilling) {
       // Statements will bill attached tariffs by kind/utilities: changing them would rewrite history.
-      if (tariff._count.apartments > 0) {
+      if (tariff.apartments.length > 0) {
         throw new ConflictException(
           'Tariff is attached to apartments — archive it and create a new one to change kind or utilities',
         );
@@ -125,7 +130,7 @@ export class TariffsService {
   // Only a mistaken tariff: once attached to an apartment it is archived instead.
   async delete(id: string): Promise<void> {
     const tariff = await this.findWithPricesOrThrow(id);
-    if (tariff._count.apartments > 0) {
+    if (tariff.apartments.length > 0) {
       throw new ConflictException('Tariff is attached to apartments — archive it instead');
     }
     // tariff_prices rows go with it (onDelete: Cascade).
@@ -169,6 +174,17 @@ export class TariffsService {
     const coverage = totalCoverageProblem(tariff.prices.filter((p) => p.id !== priceId));
     if (coverage) throw new ConflictException(coverage);
     await this.prisma.tariffPrice.delete({ where: { id: priceId } });
+  }
+
+  // Unknown ids are a client error (400, not a 409 from the FK); archived apartments get no new tariffs.
+  private async assertActiveApartments(ids: string[]): Promise<void> {
+    if (!ids.length) return;
+    const found = await this.prisma.apartment.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, isActive: true },
+    });
+    if (found.length !== ids.length) throw new BadRequestException('Unknown apartmentIds');
+    if (found.some((a) => !a.isActive)) throw new ConflictException('Apartment is archived');
   }
 
   private async findActiveOrThrow(id: string): Promise<TariffWithPrices> {

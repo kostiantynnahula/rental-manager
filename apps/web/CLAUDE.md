@@ -119,6 +119,15 @@
   mistakes. DAY/NIGHT zones only for electricity (`isZoned`); a zone without its own price uses TOTAL.
 - `inUse` (attached to an apartment) locks kind/utilities in the form and disables delete (archive instead);
   archived tariffs can't get new or fixed prices.
+- Apartments: tab "Тарифи" (`apartment-tariffs-tab.tsx`, `lib/api/queries/apartment-tariffs.ts`) — attach from a month,
+  end (last billed month) / reopen, delete a mistake; "Показати завершені" = `scope=all`. The create form takes
+  `apartmentIds` (multi-select; `?apartmentId=` preselects and returns to that tab); the tariff page lists
+  `apartments`.
+- "Змінити ціну" on the tab: `apartmentCount > 1` (shared) first asks "Для всіх квартир (N)" (a new price of the
+  shared tariff) or "Лише для цієї квартири" (`override`: a copy with own prices from a month; past months stay on
+  the shared tariff). Attachment and tariff mutations invalidate both `apartmentTariffKeys.all` and tariff keys.
+- Server-side lists put the page-size select into the pagination row (`DataTable` `pageSize`/`pageSizeOptions`/
+  `onPageSizeChange`), not into the filters.
 
 ## Auth
 

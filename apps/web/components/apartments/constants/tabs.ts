@@ -3,6 +3,7 @@ export const APARTMENT_TABS = [
   { value: 'overview', label: 'Огляд' },
   { value: 'readings', label: 'Показання' },
   { value: 'meters', label: 'Лічильники' },
+  { value: 'tariffs', label: 'Тарифи' },
   { value: 'photos', label: 'Фото' },
   { value: 'leases', label: 'Договори' },
 ] as const;
