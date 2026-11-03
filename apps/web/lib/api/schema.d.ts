@@ -1353,11 +1353,8 @@ export interface components {
              * @example 2026-11
              */
             effectiveFrom: string;
-            /**
-             * @description DAY/NIGHT only for an ELECTRICITY tariff; a zone without its own price uses TOTAL
-             * @default TOTAL
-             */
-            zone: components["schemas"]["Zone"];
+            /** @description Default TOTAL. DAY/NIGHT only for an ELECTRICITY tariff; a zone without its own price uses TOTAL */
+            zone?: components["schemas"]["Zone"];
             /**
              * @description UAH, decimal string, >= 0, up to 4 decimals: per unit (METERED) or per month (FIXED)
              * @example 4.32
@@ -1371,11 +1368,8 @@ export interface components {
              */
             name: string;
             kind: components["schemas"]["TariffKind"];
-            /**
-             * @description METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED: empty
-             * @default []
-             */
-            utilities: components["schemas"]["UtilityType"][];
+            /** @description Default []. METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED: empty */
+            utilities?: components["schemas"]["UtilityType"][];
             notes?: string | null;
             /** @description Initial price history; must include a TOTAL price from the earliest month */
             prices: components["schemas"]["TariffPriceInputDto"][];
@@ -1387,11 +1381,8 @@ export interface components {
              */
             name?: string;
             kind?: components["schemas"]["TariffKind"];
-            /**
-             * @description METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED: empty
-             * @default []
-             */
-            utilities: components["schemas"]["UtilityType"][];
+            /** @description Default []. METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED: empty */
+            utilities?: components["schemas"]["UtilityType"][];
             notes?: string | null;
         };
         UpdateTariffPriceDto: {
@@ -1400,11 +1391,8 @@ export interface components {
              * @example 2026-11
              */
             effectiveFrom?: string;
-            /**
-             * @description DAY/NIGHT only for an ELECTRICITY tariff; a zone without its own price uses TOTAL
-             * @default TOTAL
-             */
-            zone: components["schemas"]["Zone"];
+            /** @description Default TOTAL. DAY/NIGHT only for an ELECTRICITY tariff; a zone without its own price uses TOTAL */
+            zone?: components["schemas"]["Zone"];
             /**
              * @description UAH, decimal string, >= 0, up to 4 decimals: per unit (METERED) or per month (FIXED)
              * @example 4.32

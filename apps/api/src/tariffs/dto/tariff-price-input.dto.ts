@@ -10,12 +10,12 @@ export class TariffPriceInputDto {
   effectiveFrom: string;
 
   // No initializer: UpdateTariffPriceDto (PartialType) would inherit it and reset the zone on PATCH.
+  // No Swagger `default` either: openapi-typescript would make the field required in the web types.
   @ApiPropertyOptional({
     enum: Zone,
     enumName: 'Zone',
-    default: Zone.TOTAL,
     description:
-      'DAY/NIGHT only for an ELECTRICITY tariff; a zone without its own price uses TOTAL',
+      'Default TOTAL. DAY/NIGHT only for an ELECTRICITY tariff; a zone without its own price uses TOTAL',
   })
   @IsOptional()
   @IsEnum(Zone)

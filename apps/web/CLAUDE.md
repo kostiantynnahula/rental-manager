@@ -106,6 +106,20 @@
 - DataTable: `pagination` prop (`manualPagination`, `rowCount`; `data` = the current page) and optional `getRowHref`
   (rows without a link). No `paginatedRowModel` is registered, so client-side lists are never sliced.
 
+## Tariffs (`components/tariffs/`)
+
+- Section "Тарифи" (`/tariffs`, `/tariffs/new`, `/tariffs/[id]`, `/tariffs/[id]/edit`). The list is server-side:
+  search, `active`, `kind`, `size`, `page` in the URL via `hooks/use-tariff-filters.ts` (same pattern as the readings
+  history; the search input is debounced into `?search=` like tenants).
+- Prices are decimal strings end to end (`lib/tariff-prices.ts`: `normalizePrice` → API "4.32", `formatPrice` →
+  "4,32"; ≤ 4 decimals); never `Number(...)`. Input: `PriceInput` (unit addon, formats on blur); unit via `priceUnit()`.
+- Utilities of a METERED tariff are one choice from `constants/utility-sets.ts` (electricity / gas alone, water
+  utilities combine, e.g. drainage) — the API's "one unit per tariff" rule holds by construction.
+- A price change is a **new row** ("Нова ціна", from a month on); "Виправити"/"Видалити" on a row are only for
+  mistakes. DAY/NIGHT zones only for electricity (`isZoned`); a zone without its own price uses TOTAL.
+- `inUse` (attached to an apartment) locks kind/utilities in the form and disables delete (archive instead);
+  archived tariffs can't get new or fixed prices.
+
 ## Auth
 
 - Cookies `access_token` (Path=/api) and `refresh_token` (Path=/api/auth) never reach page URLs, so the server

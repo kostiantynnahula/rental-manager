@@ -4742,8 +4742,7 @@
             "description": "First month the price applies to"
           },
           "zone": {
-            "default": "TOTAL",
-            "description": "DAY/NIGHT only for an ELECTRICITY tariff; a zone without its own price uses TOTAL",
+            "description": "Default TOTAL. DAY/NIGHT only for an ELECTRICITY tariff; a zone without its own price uses TOTAL",
             "allOf": [
               {
                 "$ref": "#/components/schemas/Zone"
@@ -4778,8 +4777,7 @@
           },
           "utilities": {
             "type": "array",
-            "default": [],
-            "description": "METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED: empty",
+            "description": "Default []. METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED: empty",
             "items": {
               "$ref": "#/components/schemas/UtilityType"
             }
@@ -4819,8 +4817,7 @@
           },
           "utilities": {
             "type": "array",
-            "default": [],
-            "description": "METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED: empty",
+            "description": "Default []. METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED: empty",
             "items": {
               "$ref": "#/components/schemas/UtilityType"
             }
@@ -4840,8 +4837,7 @@
             "description": "First month the price applies to"
           },
           "zone": {
-            "default": "TOTAL",
-            "description": "DAY/NIGHT only for an ELECTRICITY tariff; a zone without its own price uses TOTAL",
+            "description": "Default TOTAL. DAY/NIGHT only for an ELECTRICITY tariff; a zone without its own price uses TOTAL",
             "allOf": [
               {
                 "$ref": "#/components/schemas/Zone"

@@ -26,14 +26,14 @@ export class CreateTariffDto {
   @IsEnum(TariffKind)
   kind: TariffKind;
 
-  // No initializer (default []): UpdateTariffDto (PartialType) would inherit it.
+  // No initializer (default []): UpdateTariffDto (PartialType) would inherit it. No Swagger `default` either:
+  // openapi-typescript would make the field required in the web types.
   @ApiPropertyOptional({
     enum: UtilityType,
     enumName: 'UtilityType',
     isArray: true,
-    default: [],
     description:
-      'METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED: empty',
+      'Default []. METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED: empty',
   })
   @IsOptional()
   @IsArray()
