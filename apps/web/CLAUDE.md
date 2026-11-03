@@ -99,6 +99,12 @@
   (`Promise.allSettled`), `confirm: true`. Saved meters get locked, failed ones keep a per-meter message
   (`readingErrorMessage` translates the API's rule messages). Empty meter = skipped.
 - Previous values = the meter's `lastReading` (last confirmed); the API re-checks order against all confirmed readings.
+- History (tab "Показання", `reading-history.tsx`): `GET /apartments/:id/readings/history`, server-side pagination.
+  Filters + page in the URL via `hooks/use-history-filters.ts` (`from`, `to`, `meters`, `size`, `page`; one
+  `router.replace` for several params, any filter change → page 1). Values in lists: `formatMeterValueCompact`.
+- Invalidation: `readingKeys.all` after creating readings **and** after every meter mutation (INITIAL/FINAL readings).
+- DataTable: `pagination` prop (`manualPagination`, `rowCount`; `data` = the current page) and optional `getRowHref`
+  (rows without a link). No `paginatedRowModel` is registered, so client-side lists are never sliced.
 
 ## Auth
 

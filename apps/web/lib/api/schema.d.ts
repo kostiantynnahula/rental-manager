@@ -420,6 +420,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/apartments/{apartmentId}/readings/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ApartmentReadingsController_history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/readings/{id}": {
         parameters: {
             query?: never;
@@ -1105,6 +1121,50 @@ export interface components {
             /** @description MISSING = no reading for this period yet */
             status: components["schemas"]["PeriodReadingStatus"];
             reading: components["schemas"]["ReadingResponseDto"] | null;
+        };
+        ReadingHistoryMeterResponseDto: {
+            /** Format: uuid */
+            id: string;
+            utility: components["schemas"]["UtilityType"];
+            label: string | null;
+            serialNumber: string | null;
+            /** @description The meter has been removed (replaced or taken out) */
+            removed: boolean;
+        };
+        ReadingHistoryValueResponseDto: {
+            zone: components["schemas"]["Zone"];
+            /**
+             * @description Decimal string with 3 decimals
+             * @example 1520.350
+             */
+            value: string;
+            /**
+             * @description Since the previous confirmed reading of the meter and zone; null if there is none
+             * @example 120.000
+             */
+            consumption: string | null;
+        };
+        ReadingHistoryItemResponseDto: {
+            /** Format: uuid */
+            id: string;
+            meter: components["schemas"]["ReadingHistoryMeterResponseDto"];
+            /** @example 2026-10 */
+            period: string;
+            /**
+             * Format: date
+             * @example 2026-10-28
+             */
+            readingDate: string;
+            kind: components["schemas"]["ReadingKind"];
+            values: components["schemas"]["ReadingHistoryValueResponseDto"][];
+        };
+        ReadingHistoryPageResponseDto: {
+            items: components["schemas"]["ReadingHistoryItemResponseDto"][];
+            /** @description Readings matching the filters (all pages) */
+            total: number;
+            /** @description 1-based */
+            page: number;
+            pageSize: number;
         };
         UpdateReadingDto: {
             /** @example 2026-10 */
@@ -2707,6 +2767,56 @@ export interface operations {
                 };
             };
             /** @description Missing or invalid period */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Apartment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApartmentReadingsController_history: {
+        parameters: {
+            query?: {
+                /** @description First period (inclusive) */
+                from?: string;
+                /** @description Last period (inclusive) */
+                to?: string;
+                /** @description Only these meters (repeat the param: ?meterIds=a&meterIds=b) */
+                meterIds?: string[];
+                page?: number;
+                pageSize?: 10 | 20 | 50;
+            };
+            header?: never;
+            path: {
+                apartmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadingHistoryPageResponseDto"];
+                };
+            };
+            /** @description Invalid filters (period format, from after to, page size, meter ids) */
             400: {
                 headers: {
                     [name: string]: unknown;

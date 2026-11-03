@@ -8,7 +8,9 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ApartmentMeterReadingResponseDto } from './dto/apartment-meter-reading-response.dto.js';
+import { ApartmentReadingHistoryQueryDto } from './dto/apartment-reading-history-query.dto.js';
 import { ApartmentReadingsQueryDto } from './dto/apartment-readings-query.dto.js';
+import { ReadingHistoryPageResponseDto } from './dto/reading-history-page-response.dto.js';
 import { ReadingsService } from './readings.service.js';
 
 @ApiTags('readings')
@@ -29,5 +31,21 @@ export class ApartmentReadingsController {
   ): Promise<ApartmentMeterReadingResponseDto[]> {
     const items = await this.readings.listForApartment(apartmentId, query.period);
     return items.map((i) => ApartmentMeterReadingResponseDto.from(i));
+  }
+
+  // Confirmed readings with consumption, paginated by reading (a day/night reading is one item).
+  @Get('history')
+  @ApiOkResponse({ type: ReadingHistoryPageResponseDto })
+  @ApiBadRequestResponse({
+    description: 'Invalid filters (period format, from after to, page size, meter ids)',
+  })
+  @ApiNotFoundResponse({ description: 'Apartment not found' })
+  async history(
+    @Param('apartmentId', ParseUUIDPipe) apartmentId: string,
+    @Query() query: ApartmentReadingHistoryQueryDto,
+  ): Promise<ReadingHistoryPageResponseDto> {
+    return ReadingHistoryPageResponseDto.from(
+      await this.readings.historyForApartment(apartmentId, query),
+    );
   }
 }

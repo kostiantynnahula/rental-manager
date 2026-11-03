@@ -46,6 +46,13 @@
   - Partial unique indexes over CONFIRMED rows only (drafts/cancelled may repeat):
     `readings_one_confirmed_regular_per_period` (meter + period), `readings_one_confirmed_initial`,
     `readings_one_confirmed_final` (one each per meter).
+- **Consumption** = view `reading_consumption` (migration `add_reading_consumption_view`): one row per value of every
+  CONFIRMED reading with `previousValue` and `consumption` (`LAG` per meter + zone, ordered by period, readingDate,
+  kind INITIAL < REGULAR < FINAL, createdAt; NULL without a previous value). **The single place consumption is
+  computed — billing must reuse it**, not re-implement it. Read it with `$queryRaw` (no Prisma model; Prisma ignores
+  views when diffing). Filter it from outside by `"meterId"` (pushed into the view, so LAG still sees the full
+  history); never filter by period inside it. TODO: the per-reading responses still use `consumption()` from
+  `readings/helpers/reading-order.ts` (readingDate order) — move them to the view.
 - Reading rules the **services** must enforce (the DB doesn't):
   - Zones match the meter: SINGLE → exactly TOTAL; DAY_NIGHT → exactly DAY and NIGHT.
   - Confirmed values never decrease within one meter and zone (compare with the previous confirmed reading);
@@ -101,6 +108,9 @@
     (`helpers/reading-order.ts`). Consumption is always against the **previous CONFIRMED** reading.
   - Apartment view (`GET /apartments/:id/readings?period=`): meters active in the period; CONFIRMED = confirmed REGULAR
     or FINAL of that period, DRAFT = newest draft, MISSING = nothing yet.
+  - History (`GET /apartments/:id/readings/history?from&to&meterIds&page&pageSize`): CONFIRMED readings (all kinds),
+    paginated by reading (values grouped), order period DESC, utility (enum order), label NULLS FIRST, readingDate
+    DESC, id. Parameterized SQL fragments in `helpers/reading-history-sql.ts` (`Prisma.sql` / `Prisma.empty`).
 
 ## Database (Prisma 7)
 

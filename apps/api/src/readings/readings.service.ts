@@ -15,14 +15,19 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateReadingDto } from './dto/create-reading.dto.js';
 import { ReadingValueInputDto } from './dto/reading-value-input.dto.js';
 import { UpdateReadingDto } from './dto/update-reading.dto.js';
+import type { ApartmentReadingHistoryQueryDto } from './dto/apartment-reading-history-query.dto.js';
 import { checkConfirmRules } from './helpers/confirm-rules.js';
 import { pickPeriodReading } from './helpers/period-reading.js';
 import { consumption, findPreviousConfirmed } from './helpers/reading-order.js';
 import { readingWithValuesInclude, type ReadingWithValues } from './helpers/reading-with-values.js';
+import { READING_HISTORY_ORDER, readingHistoryWhere } from './helpers/reading-history-sql.js';
 import { zonesMismatch } from './helpers/zones.js';
 import type { ConfirmCandidate } from './interfaces/confirm-candidate.interface.js';
 import type { ApartmentMeterReading } from './interfaces/apartment-meter-reading.interface.js';
 import type { ReadingWithConsumption } from './interfaces/reading-with-consumption.interface.js';
+import type { ReadingConsumptionRow } from './interfaces/reading-consumption-row.interface.js';
+import type { ReadingHistoryPage } from './interfaces/reading-history-page.interface.js';
+import type { ReadingHistoryRow } from './interfaces/reading-history-row.interface.js';
 
 // REGULAR readings only; INITIAL/FINAL are written by MetersService (create/remove/replace).
 // Business rules for confirming live in helpers/confirm-rules.ts (pure); this service loads the
@@ -94,6 +99,56 @@ export class ReadingsService {
         entry: reading ? this.withConsumption(reading, confirmed) : null,
       };
     });
+  }
+
+  // Confirmed readings of the apartment, newest period first, one item per reading (values grouped).
+  // Consumption comes from the reading_consumption view, which runs over each meter's full history,
+  // so a period filter never drops the previous value of the first row.
+  async historyForApartment(
+    apartmentId: string,
+    query: ApartmentReadingHistoryQueryDto,
+  ): Promise<ReadingHistoryPage> {
+    await this.apartments.findOrThrow(apartmentId);
+    const from = query.from ? parsePeriod(query.from) : undefined;
+    const to = query.to ? parsePeriod(query.to) : undefined;
+    if (from && to && from > to) throw new BadRequestException('from must not be after to');
+
+    const where = readingHistoryWhere({ apartmentId, from, to, meterIds: query.meterIds });
+    const offset = (query.page - 1) * query.pageSize;
+    const [rows, [{ total }]] = await Promise.all([
+      this.prisma.$queryRaw<ReadingHistoryRow[]>`
+        SELECT r."id", r."meterId", r."period", r."readingDate", r."kind",
+               m."utility", m."label", m."serialNumber", m."removedAt"
+        FROM "readings" r JOIN "meters" m ON m."id" = r."meterId"
+        ${where}
+        ${READING_HISTORY_ORDER}
+        LIMIT ${query.pageSize} OFFSET ${offset}`,
+      this.prisma.$queryRaw<[{ total: number }]>`
+        SELECT COUNT(*)::int AS "total"
+        FROM "readings" r JOIN "meters" m ON m."id" = r."meterId"
+        ${where}`,
+    ]);
+
+    const values =
+      rows.length === 0
+        ? []
+        : await this.prisma.$queryRaw<ReadingConsumptionRow[]>`
+            SELECT "readingId", "zone", "value", "consumption"
+            FROM "reading_consumption"
+            -- "meterId" is pushed down into the view (PARTITION BY column); readingId alone isn't.
+            WHERE "meterId" = ANY(${[...new Set(rows.map((r) => r.meterId))]}::uuid[])
+              AND "readingId" = ANY(${rows.map((r) => r.id)}::uuid[])
+            ORDER BY "zone"`;
+
+    return {
+      items: rows.map((reading) => ({
+        reading,
+        values: values.filter((v) => v.readingId === reading.id),
+      })),
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    };
   }
 
   async findOrThrow(id: string): Promise<ReadingWithConsumption> {

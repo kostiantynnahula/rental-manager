@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
 import { unwrap } from '@/lib/api/errors';
+import { readingKeys } from '@/lib/api/queries/readings';
 import type { components } from '@/lib/api/schema';
 
 export type Meter = components['schemas']['MeterResponseDto'];
@@ -44,10 +45,13 @@ export function useMeter(id: string) {
 }
 
 // Every meter change can alter another meter's card too (replace = remove + install), so refetch all meters.
-// TODO: also invalidate readings keys once the readings UI has them (INITIAL/FINAL readings change here).
+// INITIAL/FINAL readings are written here as well → the readings history changes too.
 function useInvalidateMeters() {
   const queryClient = useQueryClient();
-  return () => void queryClient.invalidateQueries({ queryKey: meterKeys.all });
+  return () => {
+    void queryClient.invalidateQueries({ queryKey: meterKeys.all });
+    void queryClient.invalidateQueries({ queryKey: readingKeys.all });
+  };
 }
 
 export function useCreateMeter(apartmentId: string) {

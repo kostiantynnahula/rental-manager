@@ -1811,6 +1811,107 @@
         ]
       }
     },
+    "/apartments/{apartmentId}/readings/history": {
+      "get": {
+        "operationId": "ApartmentReadingsController_history",
+        "parameters": [
+          {
+            "name": "apartmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "First period (inclusive)",
+            "schema": {
+              "example": "2026-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "Last period (inclusive)",
+            "schema": {
+              "example": "2026-12",
+              "type": "string"
+            }
+          },
+          {
+            "name": "meterIds",
+            "required": false,
+            "in": "query",
+            "description": "Only these meters (repeat the param: ?meterIds=a&meterIds=b)",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "number",
+              "enum": [
+                10,
+                20,
+                50
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadingHistoryPageResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filters (period format, from after to, page size, meter ids)"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "readings"
+        ]
+      }
+    },
     "/readings/{id}": {
       "get": {
         "operationId": "ReadingsController_get",
@@ -3732,6 +3833,139 @@
           "meter",
           "status",
           "reading"
+        ]
+      },
+      "ReadingHistoryMeterResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "utility": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UtilityType"
+              }
+            ]
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "serialNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "removed": {
+            "type": "boolean",
+            "description": "The meter has been removed (replaced or taken out)"
+          }
+        },
+        "required": [
+          "id",
+          "utility",
+          "label",
+          "serialNumber",
+          "removed"
+        ]
+      },
+      "ReadingHistoryValueResponseDto": {
+        "type": "object",
+        "properties": {
+          "zone": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Zone"
+              }
+            ]
+          },
+          "value": {
+            "type": "string",
+            "example": "1520.350",
+            "description": "Decimal string with 3 decimals"
+          },
+          "consumption": {
+            "type": "string",
+            "nullable": true,
+            "example": "120.000",
+            "description": "Since the previous confirmed reading of the meter and zone; null if there is none"
+          }
+        },
+        "required": [
+          "zone",
+          "value",
+          "consumption"
+        ]
+      },
+      "ReadingHistoryItemResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "meter": {
+            "$ref": "#/components/schemas/ReadingHistoryMeterResponseDto"
+          },
+          "period": {
+            "type": "string",
+            "example": "2026-10"
+          },
+          "readingDate": {
+            "type": "string",
+            "example": "2026-10-28",
+            "format": "date"
+          },
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReadingKind"
+              }
+            ]
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadingHistoryValueResponseDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "meter",
+          "period",
+          "readingDate",
+          "kind",
+          "values"
+        ]
+      },
+      "ReadingHistoryPageResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadingHistoryItemResponseDto"
+            }
+          },
+          "total": {
+            "type": "number",
+            "description": "Readings matching the filters (all pages)"
+          },
+          "page": {
+            "type": "number",
+            "description": "1-based"
+          },
+          "pageSize": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
         ]
       },
       "UpdateReadingDto": {

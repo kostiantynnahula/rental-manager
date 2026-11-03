@@ -11,8 +11,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { cn } from '@/lib/utils';
+import { DataTablePagination } from './data-table-pagination';
 import { DataTableSkeleton } from './data-table-skeleton';
 import { dataTableFeatures, type DataTableFeatures } from './features';
+import type { DataTableServerPagination } from './interfaces/data-table-server-pagination';
 
 interface DataTableProps<TData extends RowData> {
   // Stable references (module-level or useMemo): a new array each render recomputes the table.
@@ -21,13 +24,16 @@ interface DataTableProps<TData extends RowData> {
   data: TData[] | undefined;
   isLoading?: boolean;
   getRowId: (row: TData) => string;
-  getRowHref: (row: TData) => string;
+  // Rows/cards are links when given; plain otherwise (e.g. readings history).
+  getRowHref?: (row: TData) => string;
   // Mobile (< md) view of one row; the whole card is a link to getRowHref.
   renderCard: (row: TData) => React.ReactNode;
   // Client-side text search: rows whose getSearchText() contains `search` (case-insensitive).
   search?: string;
   getSearchText?: (row: TData) => string;
   initialSorting?: SortingState;
+  // Server-side pagination: `data` is already the current page.
+  pagination?: DataTableServerPagination;
   empty: React.ReactNode;
 }
 
@@ -47,6 +53,7 @@ export function DataTable<TData extends RowData>({
   search = '',
   getSearchText,
   initialSorting = NO_ROWS,
+  pagination,
   empty,
 }: DataTableProps<TData>) {
   const rows = useMemo(() => {
@@ -62,6 +69,16 @@ export function DataTable<TData extends RowData>({
     data: rows,
     getRowId: (row) => getRowId(row),
     initialState: { sorting: initialSorting },
+    ...(pagination && {
+      manualPagination: true,
+      rowCount: pagination.rowCount,
+      state: { pagination: { pageIndex: pagination.pageIndex, pageSize: pagination.pageSize } },
+      onPaginationChange: (updater) => {
+        const current = { pageIndex: pagination.pageIndex, pageSize: pagination.pageSize };
+        const next = typeof updater === 'function' ? updater(current) : updater;
+        if (next.pageIndex !== current.pageIndex) pagination.onPageIndexChange(next.pageIndex);
+      },
+    }),
   });
 
   if (isLoading) return <DataTableSkeleton columns={columns.length} />;
@@ -81,12 +98,16 @@ export function DataTable<TData extends RowData>({
       <ul className="space-y-2 md:hidden">
         {tableRows.map((row) => (
           <li key={row.id}>
-            <Link
-              href={getRowHref(row.original)}
-              className="block min-h-11 rounded-lg border bg-card p-4 transition-colors active:bg-muted"
-            >
-              {renderCard(row.original)}
-            </Link>
+            {getRowHref ? (
+              <Link
+                href={getRowHref(row.original)}
+                className="block min-h-11 rounded-lg border bg-card p-4 transition-colors active:bg-muted"
+              >
+                {renderCard(row.original)}
+              </Link>
+            ) : (
+              <div className="rounded-lg border bg-card p-4">{renderCard(row.original)}</div>
+            )}
           </li>
         ))}
       </ul>
@@ -120,10 +141,10 @@ export function DataTable<TData extends RowData>({
             {tableRows.map((row) => (
               // `relative` + the first cell's stretched link (after:inset-0) make the whole row clickable,
               // while it stays a real link (keyboard, middle-click, "open in new tab").
-              <TableRow key={row.id} className="relative cursor-pointer">
+              <TableRow key={row.id} className={cn(getRowHref && 'relative cursor-pointer')}>
                 {row.getAllCells().map((cell, index) => (
                   <TableCell key={cell.id}>
-                    {index === 0 ? (
+                    {index === 0 && getRowHref ? (
                       <Link
                         href={getRowHref(row.original)}
                         className="font-medium outline-none after:absolute after:inset-0 focus-visible:underline"
@@ -140,6 +161,8 @@ export function DataTable<TData extends RowData>({
           </TableBody>
         </Table>
       </div>
+
+      {pagination && <DataTablePagination table={table} />}
     </>
   );
 }

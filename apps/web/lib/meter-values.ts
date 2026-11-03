@@ -24,3 +24,12 @@ export function compareMeterValues(a: string, b: string): number {
 export function formatMeterValue(value: string): string {
   return (normalizeMeterValue(value) ?? value).replace('.', ',');
 }
+
+// Display in lists: "1520.000" → "1520", "12.350" → "12,35", "-3.500" → "-3,5" (consumption can be negative).
+export function formatMeterValueCompact(value: string): string {
+  const match = /^(-?)(\d+)(?:\.(\d+))?$/.exec(value.trim());
+  if (!match) return value;
+  const [, sign, integer, fraction = ''] = match;
+  const trimmed = fraction.replace(/0+$/, '');
+  return `${sign}${integer}${trimmed ? `,${trimmed}` : ''}`;
+}
