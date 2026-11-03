@@ -51,17 +51,18 @@ model Session {
 
 // Archived via isActive, never deleted (leases reference it with onDelete: Restrict).
 model Apartment {
-  id        String   @id @default(uuid()) @db.Uuid
+  id        String            @id @default(uuid()) @db.Uuid
   // Short label, e.g. "Shevchenka 12/5".
-  name      String   @unique
+  name      String            @unique
   address   String
   notes     String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  isActive  Boolean           @default(true)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
   leases    Lease[]
   meters    Meter[]
   photos    Photo[]
+  tariffs   ApartmentTariff[]
 
   @@map("apartments")
 }
@@ -272,4 +273,76 @@ model ReadingValue {
   // The PK (readingId, zone) also serves as the readingId FK index.
   @@id([readingId, zone])
   @@map("reading_values")
+}
+
+// METERED = price per unit of consumption; FIXED = price per month (no meter).
+enum TariffKind {
+  METERED
+  FIXED
+
+  @@map("tariff_kind")
+}
+
+// A bill line from a shared catalog: meter tariffs and fixed fees alike. Prices depending on the
+// district get their own tariff (e.g. "Waste removal (Sykhiv)"). Archived via isActive.
+// Raw-SQL constraint in migration add_tariffs: tariffs_utilities_match_kind.
+model Tariff {
+  id         String            @id @default(uuid()) @db.Uuid
+  name       String            @unique
+  kind       TariffKind
+  // METERED: the utilities whose consumption is billed, ≥ 1 (e.g. drainage = COLD_WATER + HOT_WATER).
+  // FIXED: empty.
+  utilities  UtilityType[]
+  isActive   Boolean           @default(true)
+  notes      String?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  prices     TariffPrice[]
+  apartments ApartmentTariff[]
+
+  @@map("tariffs")
+}
+
+// Price history of a tariff. The price for a period = the latest effectiveFrom <= period for the
+// zone, falling back to TOTAL (so a two-zone meter only needs an extra NIGHT price).
+// DAY/NIGHT prices only for METERED electricity tariffs — checked by the service.
+// Raw-SQL constraints in migration add_tariffs: tariff_prices_effective_first_of_month,
+// tariff_prices_non_negative.
+model TariffPrice {
+  id            String   @id @default(uuid()) @db.Uuid
+  tariffId      String   @db.Uuid
+  // Cascade: prices are part of their tariff (a used tariff is archived, never deleted).
+  tariff        Tariff   @relation(fields: [tariffId], references: [id], onDelete: Cascade)
+  // 1st day of the first month the price applies to (like Reading.period).
+  effectiveFrom DateTime @db.Date
+  zone          Zone     @default(TOTAL)
+  // UAH: per unit for METERED, per month for FIXED. Line totals are rounded to kopiyky by billing.
+  price         Decimal  @db.Decimal(12, 4)
+  createdAt     DateTime @default(now())
+
+  // Also serves as the tariffId FK index (leading column).
+  @@unique([tariffId, effectiveFrom, zone])
+  @@map("tariff_prices")
+}
+
+// Which tariffs an apartment is billed for, by month.
+// Raw-SQL constraints in migration add_tariffs: apartment_tariffs_active_from_first_of_month,
+// apartment_tariffs_active_to_first_of_month, apartment_tariffs_dates_check, apartment_tariffs_no_overlap.
+model ApartmentTariff {
+  id          String    @id @default(uuid()) @db.Uuid
+  apartmentId String    @db.Uuid
+  apartment   Apartment @relation(fields: [apartmentId], references: [id], onDelete: Restrict)
+  tariffId    String    @db.Uuid
+  tariff      Tariff    @relation(fields: [tariffId], references: [id], onDelete: Restrict)
+  // 1st day of the first billed month.
+  activeFrom  DateTime  @db.Date
+  // 1st day of the last billed month (inclusive); null = ongoing.
+  activeTo    DateTime? @db.Date
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Also serves as the apartmentId FK index (leading column).
+  @@index([apartmentId, tariffId])
+  @@index([tariffId])
+  @@map("apartment_tariffs")
 }

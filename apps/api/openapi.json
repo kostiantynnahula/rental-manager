@@ -2143,6 +2143,524 @@
           "readings"
         ]
       }
+    },
+    "/tariffs": {
+      "get": {
+        "operationId": "TariffsController_list",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Substring of the name (case-insensitive)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/TariffKind"
+            }
+          },
+          {
+            "name": "utility",
+            "required": false,
+            "in": "query",
+            "description": "Tariffs billing this utility",
+            "schema": {
+              "$ref": "#/components/schemas/UtilityType"
+            }
+          },
+          {
+            "name": "active",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "true",
+              "type": "string",
+              "enum": [
+                "true",
+                "false",
+                "all"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "number",
+              "enum": [
+                10,
+                20,
+                50
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ordered by name",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TariffPageResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "tariffs"
+        ]
+      },
+      "post": {
+        "operationId": "TariffsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTariffDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TariffDetailResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body: utilities don't fit the kind, DAY/NIGHT price on a non-electricity tariff, duplicate prices, no TOTAL price from the earliest month"
+          },
+          "401": {
+            "description": ""
+          },
+          "409": {
+            "description": "Name already exists"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "tariffs"
+        ]
+      }
+    },
+    "/tariffs/{id}": {
+      "get": {
+        "operationId": "TariffsController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "With the full price history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TariffDetailResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Tariff not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "tariffs"
+        ]
+      },
+      "patch": {
+        "operationId": "TariffsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTariffDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TariffDetailResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, or new kind/utilities don't fit the prices"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Tariff not found"
+          },
+          "409": {
+            "description": "Name already exists, or kind/utilities change on a tariff attached to apartments"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "tariffs"
+        ]
+      },
+      "delete": {
+        "operationId": "TariffsController_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted with its prices"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Tariff not found"
+          },
+          "409": {
+            "description": "Tariff is attached to apartments (archive it instead)"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "tariffs"
+        ]
+      }
+    },
+    "/tariffs/{id}/archive": {
+      "post": {
+        "operationId": "TariffsController_archive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TariffDetailResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Tariff not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "tariffs"
+        ]
+      }
+    },
+    "/tariffs/{id}/unarchive": {
+      "post": {
+        "operationId": "TariffsController_unarchive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TariffDetailResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Tariff not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "tariffs"
+        ]
+      }
+    },
+    "/tariffs/{id}/prices": {
+      "post": {
+        "operationId": "TariffsController_addPrice",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TariffPriceInputDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "A price change from this month on",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TariffPriceResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, DAY/NIGHT on a non-electricity tariff, or earlier than every TOTAL price"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Tariff not found"
+          },
+          "409": {
+            "description": "Tariff is archived, or a price for this month and zone exists"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "tariffs"
+        ]
+      }
+    },
+    "/tariffs/{id}/prices/{priceId}": {
+      "patch": {
+        "operationId": "TariffsController_updatePrice",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "priceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTariffPriceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Fixes a mistyped price",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TariffPriceResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, or DAY/NIGHT on a non-electricity tariff"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Tariff or price not found"
+          },
+          "409": {
+            "description": "Tariff is archived, a price for this month and zone exists, or the earliest month would lose its TOTAL price"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "tariffs"
+        ]
+      },
+      "delete": {
+        "operationId": "TariffsController_deletePrice",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "priceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removes a mistaken price"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Tariff or price not found"
+          },
+          "409": {
+            "description": "The earliest month would lose its TOTAL price"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "tariffs"
+        ]
+      }
     }
   },
   "info": {
@@ -4004,6 +4522,338 @@
         "required": [
           "reason"
         ]
+      },
+      "TariffKind": {
+        "type": "string",
+        "enum": [
+          "METERED",
+          "FIXED"
+        ]
+      },
+      "TariffPriceResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "example": "2026-11",
+            "description": "First month the price applies to"
+          },
+          "zone": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Zone"
+              }
+            ]
+          },
+          "price": {
+            "type": "string",
+            "example": "4.3200",
+            "description": "UAH, decimal string with 4 decimals"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "effectiveFrom",
+          "zone",
+          "price",
+          "createdAt"
+        ]
+      },
+      "TariffResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Електроенергія"
+          },
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TariffKind"
+              }
+            ]
+          },
+          "utilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UtilityType"
+            }
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "false = archived"
+          },
+          "inUse": {
+            "type": "boolean",
+            "description": "Attached to at least one apartment: kind/utilities are fixed and the tariff can only be archived, not deleted"
+          },
+          "currentPrices": {
+            "description": "Prices in effect this month, one per zone with its own price (empty if all start later)",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TariffPriceResponseDto"
+            }
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "utilities",
+          "notes",
+          "isActive",
+          "inUse",
+          "currentPrices",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "TariffPageResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TariffResponseDto"
+            }
+          },
+          "total": {
+            "type": "number",
+            "description": "Tariffs matching the filters (all pages)"
+          },
+          "page": {
+            "type": "number",
+            "description": "1-based"
+          },
+          "pageSize": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
+      },
+      "TariffDetailResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Електроенергія"
+          },
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TariffKind"
+              }
+            ]
+          },
+          "utilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UtilityType"
+            }
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "false = archived"
+          },
+          "inUse": {
+            "type": "boolean",
+            "description": "Attached to at least one apartment: kind/utilities are fixed and the tariff can only be archived, not deleted"
+          },
+          "currentPrices": {
+            "description": "Prices in effect this month, one per zone with its own price (empty if all start later)",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TariffPriceResponseDto"
+            }
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "prices": {
+            "description": "Full price history: effectiveFrom DESC, then zone",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TariffPriceResponseDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "utilities",
+          "notes",
+          "isActive",
+          "inUse",
+          "currentPrices",
+          "createdAt",
+          "updatedAt",
+          "prices"
+        ]
+      },
+      "TariffPriceInputDto": {
+        "type": "object",
+        "properties": {
+          "effectiveFrom": {
+            "type": "string",
+            "example": "2026-11",
+            "description": "First month the price applies to"
+          },
+          "zone": {
+            "default": "TOTAL",
+            "description": "DAY/NIGHT only for an ELECTRICITY tariff; a zone without its own price uses TOTAL",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Zone"
+              }
+            ]
+          },
+          "price": {
+            "type": "string",
+            "example": "4.32",
+            "description": "UAH, decimal string, >= 0, up to 4 decimals: per unit (METERED) or per month (FIXED)"
+          }
+        },
+        "required": [
+          "effectiveFrom",
+          "price"
+        ]
+      },
+      "CreateTariffDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Електроенергія",
+            "description": "Unique, e.g. \"Вивіз сміття (Сихів)\""
+          },
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TariffKind"
+              }
+            ]
+          },
+          "utilities": {
+            "type": "array",
+            "default": [],
+            "description": "METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED: empty",
+            "items": {
+              "$ref": "#/components/schemas/UtilityType"
+            }
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "prices": {
+            "description": "Initial price history; must include a TOTAL price from the earliest month",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TariffPriceInputDto"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "prices"
+        ]
+      },
+      "UpdateTariffDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Електроенергія",
+            "description": "Unique, e.g. \"Вивіз сміття (Сихів)\""
+          },
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TariffKind"
+              }
+            ]
+          },
+          "utilities": {
+            "type": "array",
+            "default": [],
+            "description": "METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED: empty",
+            "items": {
+              "$ref": "#/components/schemas/UtilityType"
+            }
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "UpdateTariffPriceDto": {
+        "type": "object",
+        "properties": {
+          "effectiveFrom": {
+            "type": "string",
+            "example": "2026-11",
+            "description": "First month the price applies to"
+          },
+          "zone": {
+            "default": "TOTAL",
+            "description": "DAY/NIGHT only for an ELECTRICITY tariff; a zone without its own price uses TOTAL",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Zone"
+              }
+            ]
+          },
+          "price": {
+            "type": "string",
+            "example": "4.32",
+            "description": "UAH, decimal string, >= 0, up to 4 decimals: per unit (METERED) or per month (FIXED)"
+          }
+        }
       }
     }
   }

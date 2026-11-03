@@ -10,6 +10,7 @@ import { MetersModule } from './meters/meters.module.js';
 import { PhotosModule } from './photos/photos.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { ReadingsModule } from './readings/readings.module.js';
+import { TariffsModule } from './tariffs/tariffs.module.js';
 import { TenantsModule } from './tenants/tenants.module.js';
 import { UsersModule } from './users/users.module.js';
 
@@ -31,6 +32,7 @@ import { UsersModule } from './users/users.module.js';
     MetersModule,
     PhotosModule,
     ReadingsModule,
+    TariffsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

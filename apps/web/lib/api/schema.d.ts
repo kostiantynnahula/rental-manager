@@ -484,6 +484,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tariffs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TariffsController_list"];
+        put?: never;
+        post: operations["TariffsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tariffs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TariffsController_get"];
+        put?: never;
+        post?: never;
+        delete: operations["TariffsController_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["TariffsController_update"];
+        trace?: never;
+    };
+    "/tariffs/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TariffsController_archive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tariffs/{id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TariffsController_unarchive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tariffs/{id}/prices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TariffsController_addPrice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tariffs/{id}/prices/{priceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["TariffsController_deletePrice"];
+        options?: never;
+        head?: never;
+        patch: operations["TariffsController_updatePrice"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1183,6 +1279,137 @@ export interface components {
              * @example Typo in the day value
              */
             reason: string;
+        };
+        /** @enum {string} */
+        TariffKind: "METERED" | "FIXED";
+        TariffPriceResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description First month the price applies to
+             * @example 2026-11
+             */
+            effectiveFrom: string;
+            zone: components["schemas"]["Zone"];
+            /**
+             * @description UAH, decimal string with 4 decimals
+             * @example 4.3200
+             */
+            price: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        TariffResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example Електроенергія */
+            name: string;
+            kind: components["schemas"]["TariffKind"];
+            utilities: components["schemas"]["UtilityType"][];
+            notes: string | null;
+            /** @description false = archived */
+            isActive: boolean;
+            /** @description Attached to at least one apartment: kind/utilities are fixed and the tariff can only be archived, not deleted */
+            inUse: boolean;
+            /** @description Prices in effect this month, one per zone with its own price (empty if all start later) */
+            currentPrices: components["schemas"]["TariffPriceResponseDto"][];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        TariffPageResponseDto: {
+            items: components["schemas"]["TariffResponseDto"][];
+            /** @description Tariffs matching the filters (all pages) */
+            total: number;
+            /** @description 1-based */
+            page: number;
+            pageSize: number;
+        };
+        TariffDetailResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example Електроенергія */
+            name: string;
+            kind: components["schemas"]["TariffKind"];
+            utilities: components["schemas"]["UtilityType"][];
+            notes: string | null;
+            /** @description false = archived */
+            isActive: boolean;
+            /** @description Attached to at least one apartment: kind/utilities are fixed and the tariff can only be archived, not deleted */
+            inUse: boolean;
+            /** @description Prices in effect this month, one per zone with its own price (empty if all start later) */
+            currentPrices: components["schemas"]["TariffPriceResponseDto"][];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** @description Full price history: effectiveFrom DESC, then zone */
+            prices: components["schemas"]["TariffPriceResponseDto"][];
+        };
+        TariffPriceInputDto: {
+            /**
+             * @description First month the price applies to
+             * @example 2026-11
+             */
+            effectiveFrom: string;
+            /**
+             * @description DAY/NIGHT only for an ELECTRICITY tariff; a zone without its own price uses TOTAL
+             * @default TOTAL
+             */
+            zone: components["schemas"]["Zone"];
+            /**
+             * @description UAH, decimal string, >= 0, up to 4 decimals: per unit (METERED) or per month (FIXED)
+             * @example 4.32
+             */
+            price: string;
+        };
+        CreateTariffDto: {
+            /**
+             * @description Unique, e.g. "Вивіз сміття (Сихів)"
+             * @example Електроенергія
+             */
+            name: string;
+            kind: components["schemas"]["TariffKind"];
+            /**
+             * @description METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED: empty
+             * @default []
+             */
+            utilities: components["schemas"]["UtilityType"][];
+            notes?: string | null;
+            /** @description Initial price history; must include a TOTAL price from the earliest month */
+            prices: components["schemas"]["TariffPriceInputDto"][];
+        };
+        UpdateTariffDto: {
+            /**
+             * @description Unique, e.g. "Вивіз сміття (Сихів)"
+             * @example Електроенергія
+             */
+            name?: string;
+            kind?: components["schemas"]["TariffKind"];
+            /**
+             * @description METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED: empty
+             * @default []
+             */
+            utilities: components["schemas"]["UtilityType"][];
+            notes?: string | null;
+        };
+        UpdateTariffPriceDto: {
+            /**
+             * @description First month the price applies to
+             * @example 2026-11
+             */
+            effectiveFrom?: string;
+            /**
+             * @description DAY/NIGHT only for an ELECTRICITY tariff; a zone without its own price uses TOTAL
+             * @default TOTAL
+             */
+            zone: components["schemas"]["Zone"];
+            /**
+             * @description UAH, decimal string, >= 0, up to 4 decimals: per unit (METERED) or per month (FIXED)
+             * @example 4.32
+             */
+            price?: string;
         };
     };
     responses: never;
@@ -3049,6 +3276,433 @@ export interface operations {
                 content?: never;
             };
             /** @description INITIAL/FINAL reading, or already cancelled */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TariffsController_list: {
+        parameters: {
+            query?: {
+                /** @description Substring of the name (case-insensitive) */
+                search?: string;
+                kind?: components["schemas"]["TariffKind"];
+                /** @description Tariffs billing this utility */
+                utility?: components["schemas"]["UtilityType"];
+                active?: "true" | "false" | "all";
+                page?: number;
+                pageSize?: 10 | 20 | 50;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ordered by name */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TariffPageResponseDto"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TariffsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTariffDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TariffDetailResponseDto"];
+                };
+            };
+            /** @description Invalid body: utilities don't fit the kind, DAY/NIGHT price on a non-electricity tariff, duplicate prices, no TOTAL price from the earliest month */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Name already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TariffsController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description With the full price history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TariffDetailResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tariff not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TariffsController_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted with its prices */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tariff not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tariff is attached to apartments (archive it instead) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TariffsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTariffDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TariffDetailResponseDto"];
+                };
+            };
+            /** @description Invalid body, or new kind/utilities don't fit the prices */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tariff not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Name already exists, or kind/utilities change on a tariff attached to apartments */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TariffsController_archive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TariffDetailResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tariff not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TariffsController_unarchive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TariffDetailResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tariff not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TariffsController_addPrice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TariffPriceInputDto"];
+            };
+        };
+        responses: {
+            /** @description A price change from this month on */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TariffPriceResponseDto"];
+                };
+            };
+            /** @description Invalid body, DAY/NIGHT on a non-electricity tariff, or earlier than every TOTAL price */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tariff not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tariff is archived, or a price for this month and zone exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TariffsController_deletePrice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                priceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removes a mistaken price */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tariff or price not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The earliest month would lose its TOTAL price */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TariffsController_updatePrice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                priceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTariffPriceDto"];
+            };
+        };
+        responses: {
+            /** @description Fixes a mistyped price */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TariffPriceResponseDto"];
+                };
+            };
+            /** @description Invalid body, or DAY/NIGHT on a non-electricity tariff */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tariff or price not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tariff is archived, a price for this month and zone exists, or the earliest month would lose its TOTAL price */
             409: {
                 headers: {
                     [name: string]: unknown;

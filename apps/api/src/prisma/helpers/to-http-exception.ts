@@ -24,6 +24,16 @@ const CONSTRAINT_MESSAGES: Record<string, string> = {
   photos_size_positive: 'Photo size must be positive',
   photos_sha256_hex: 'sha256 must be 64 lowercase hex characters',
   photos_dimensions_positive: 'Photo width and height must be positive',
+  tariffs_utilities_match_kind:
+    'A METERED tariff needs at least one utility; a FIXED tariff must have none',
+  tariff_prices_effective_first_of_month: 'effectiveFrom must be the first day of a month',
+  tariff_prices_non_negative: 'Price must not be negative',
+  tariff_prices_tariffId_effectiveFrom_zone_key:
+    'This tariff already has a price for this month and zone',
+  apartment_tariffs_active_from_first_of_month: 'activeFrom must be the first day of a month',
+  apartment_tariffs_active_to_first_of_month: 'activeTo must be the first day of a month',
+  apartment_tariffs_dates_check: 'activeTo must be on or after activeFrom',
+  apartment_tariffs_no_overlap: 'This tariff is already attached to the apartment for these months',
 };
 
 // Prisma codes: https://www.prisma.io/docs/orm/reference/error-reference
