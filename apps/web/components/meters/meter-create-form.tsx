@@ -9,6 +9,7 @@ import { NativeSelect } from '@/components/native-select';
 import { Button } from '@/components/ui/button';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { useResetAfterSave } from '@/hooks/use-reset-after-save';
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { applyApiError, type FieldErrorRule } from '@/lib/api/api-error';
 import type { Apartment } from '@/lib/api/queries/apartments';
@@ -37,6 +38,18 @@ const SERVER_ERRORS: FieldErrorRule<MeterCreateValues>[] = [
   },
 ];
 
+// Fresh every time: "today" must be the day the form is (re)opened.
+function createDefaults(): MeterCreateValues {
+  return {
+    utility: 'ELECTRICITY',
+    zoneScheme: 'SINGLE',
+    label: '',
+    serialNumber: '',
+    installedAt: todayDateOnly(),
+    initialValues: emptyValues('SINGLE'),
+  };
+}
+
 // New meter + its INITIAL reading (confirmed right away: you read the meter yourself).
 export function MeterCreateForm({ apartment }: { apartment: Apartment }) {
   const router = useRouter();
@@ -46,14 +59,12 @@ export function MeterCreateForm({ apartment }: { apartment: Apartment }) {
 
   const form = useForm<MeterCreateValues>({
     resolver: zodResolver(meterCreateSchema),
-    defaultValues: {
-      utility: 'ELECTRICITY',
-      zoneScheme: 'SINGLE',
-      label: '',
-      serialNumber: '',
-      installedAt: todayDateOnly(),
-      initialValues: emptyValues('SINGLE'),
-    },
+    defaultValues: createDefaults(),
+  });
+  // The page stays mounted (hidden) after navigating away: start empty on the next visit.
+  const markSaved = useResetAfterSave(() => {
+    form.reset(createDefaults());
+    setSaved(false);
   });
   const { isDirty, isSubmitting } = form.formState;
   const { confirmLeave, allowLeave, dialog } = useUnsavedChanges(isDirty && !saved);
@@ -86,6 +97,7 @@ export function MeterCreateForm({ apartment }: { apartment: Apartment }) {
         ...(v.serialNumber && { serialNumber: v.serialNumber }),
       });
       setSaved(true);
+      markSaved();
       allowLeave();
       toast.success('Лічильник додано');
       router.push(back);

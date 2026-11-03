@@ -16,6 +16,7 @@ import {
   FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { useResetAfterSave } from '@/hooks/use-reset-after-save';
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { applyApiError, type FieldErrorRule } from '@/lib/api/api-error';
 import { useReplaceMeter, type Meter } from '@/lib/api/queries/meters';
@@ -49,6 +50,17 @@ const SERVER_ERRORS: FieldErrorRule<ReplaceMeterValues>[] = [
   },
 ];
 
+function replaceDefaults(meter: Meter): ReplaceMeterValues {
+  return {
+    date: todayDateOnly(),
+    finalValues: emptyValues(meter.zoneScheme),
+    zoneScheme: meter.zoneScheme,
+    label: meter.label ?? '',
+    serialNumber: '',
+    initialValues: emptyValues(meter.zoneScheme),
+  };
+}
+
 // Old meter: FINAL + removed on `date`; new meter: installed on the same date with an INITIAL reading. One request.
 export function MeterReplaceForm({ meter }: { meter: Meter }) {
   const router = useRouter();
@@ -59,14 +71,12 @@ export function MeterReplaceForm({ meter }: { meter: Meter }) {
 
   const form = useForm<ReplaceMeterValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      date: todayDateOnly(),
-      finalValues: emptyValues(meter.zoneScheme),
-      zoneScheme: meter.zoneScheme,
-      label: meter.label ?? '',
-      serialNumber: '',
-      initialValues: emptyValues(meter.zoneScheme),
-    },
+    defaultValues: replaceDefaults(meter),
+  });
+  // The page stays mounted (hidden) after navigating away: no stale values on the next visit.
+  const markSaved = useResetAfterSave(() => {
+    form.reset(replaceDefaults(meter));
+    setSaved(false);
   });
   const { isDirty, isSubmitting } = form.formState;
   const { confirmLeave, allowLeave, dialog } = useUnsavedChanges(isDirty && !saved);
@@ -92,6 +102,7 @@ export function MeterReplaceForm({ meter }: { meter: Meter }) {
         },
       });
       setSaved(true);
+      markSaved();
       allowLeave();
       toast.success('Лічильник замінено');
       router.push(back);

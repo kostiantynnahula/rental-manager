@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 
 // Warns before leaving a form with unsaved changes:
@@ -46,6 +46,15 @@ export function useUnsavedChanges(isDirty: boolean) {
       document.removeEventListener('click', onClick, true);
     };
   }, [isDirty, router]);
+
+  // The page is hidden, not unmounted, on navigation (Activity): re-arm the guard for the next visit.
+  useLayoutEffect(
+    () => () => {
+      allowedRef.current = false;
+      setPendingLeave(null);
+    },
+    [],
+  );
 
   const confirmLeave = useCallback(
     (leave: () => void) => {

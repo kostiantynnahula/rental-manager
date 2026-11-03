@@ -13,6 +13,7 @@ import { useApartment } from '@/lib/api/queries/apartments';
 import { ApartmentDetailSkeleton } from './apartment-detail-skeleton';
 import { ApartmentLeasesTab } from '@/components/leases/apartment-leases-tab';
 import { ApartmentMetersTab } from '@/components/meters/apartment-meters-tab';
+import { ApartmentReadingsTab } from '@/components/readings/apartment-readings-tab';
 import { ApartmentOverview } from './apartment-overview';
 import { ArchiveButton } from './archive-button';
 import { ArchivedBadge } from './archived-badge';
@@ -83,21 +84,24 @@ export function ApartmentDetail() {
         <TabsContent value="overview" className="pt-2">
           <ApartmentOverview apartment={data} />
         </TabsContent>
+        <TabsContent value="readings" className="pt-2">
+          <ApartmentReadingsTab apartment={data} />
+        </TabsContent>
         <TabsContent value="meters" className="pt-2">
           <ApartmentMetersTab apartment={data} />
         </TabsContent>
         <TabsContent value="leases" className="pt-2">
           <ApartmentLeasesTab apartment={data} />
         </TabsContent>
-        {APARTMENT_TABS.filter((t) => !['overview', 'meters', 'leases'].includes(t.value)).map(
-          (t) => (
-            <TabsContent key={t.value} value={t.value} className="pt-2">
-              <p className="rounded-lg border border-dashed px-4 py-10 text-center text-muted-foreground">
-                Скоро
-              </p>
-            </TabsContent>
-          ),
-        )}
+        {APARTMENT_TABS.filter(
+          (t) => !['overview', 'readings', 'meters', 'leases'].includes(t.value),
+        ).map((t) => (
+          <TabsContent key={t.value} value={t.value} className="pt-2">
+            <p className="rounded-lg border border-dashed px-4 py-10 text-center text-muted-foreground">
+              Скоро
+            </p>
+          </TabsContent>
+        ))}
       </Tabs>
     </section>
   );

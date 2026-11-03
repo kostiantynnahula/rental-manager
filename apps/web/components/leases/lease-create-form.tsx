@@ -7,6 +7,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { FieldGroup, FieldLegend, FieldSet } from '@/components/ui/field';
+import { useResetAfterSave } from '@/hooks/use-reset-after-save';
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { applyApiError, type FieldErrorRule } from '@/lib/api/api-error';
 import type { Apartment } from '@/lib/api/queries/apartments';
@@ -28,6 +29,10 @@ const SERVER_FIELD_ERRORS: FieldErrorRule<LeaseCreateValues>[] = [
   },
 ];
 
+function createDefaults(): LeaseCreateValues {
+  return { startDate: todayDateOnly(), endDate: '', rent: '', notes: '', tenants: [] };
+}
+
 // New lease for an apartment: terms + tenants in one POST.
 export function LeaseCreateForm({ apartment }: { apartment: Apartment }) {
   const router = useRouter();
@@ -36,7 +41,12 @@ export function LeaseCreateForm({ apartment }: { apartment: Apartment }) {
 
   const form = useForm<LeaseCreateValues>({
     resolver: zodResolver(leaseCreateSchema),
-    defaultValues: { startDate: todayDateOnly(), endDate: '', rent: '', notes: '', tenants: [] },
+    defaultValues: createDefaults(),
+  });
+  // The page stays mounted (hidden) after navigating away: start empty on the next visit.
+  const markSaved = useResetAfterSave(() => {
+    form.reset(createDefaults());
+    setSaved(false);
   });
   const { isDirty, isSubmitting } = form.formState;
   const { confirmLeave, allowLeave, dialog } = useUnsavedChanges(isDirty && !saved);
@@ -51,6 +61,7 @@ export function LeaseCreateForm({ apartment }: { apartment: Apartment }) {
         tenants: values.tenants.map(({ tenantId, role }) => ({ tenantId, role })),
       });
       setSaved(true);
+      markSaved();
       allowLeave();
       toast.success('Договір створено');
       router.push(`/leases/${lease.id}?from=apartment`);

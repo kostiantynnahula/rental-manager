@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useResetAfterSave } from '@/hooks/use-reset-after-save';
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { applyApiError, type FieldErrorRule } from '@/lib/api/api-error';
 import {
@@ -49,6 +50,13 @@ export function ApartmentForm({ apartment }: { apartment?: Apartment }) {
   });
   const { isDirty, isSubmitting } = form.formState;
   const { confirmLeave, allowLeave, dialog } = useUnsavedChanges(isDirty && !saved);
+  // The page stays mounted (hidden) after navigating away. Next visit: create starts empty, edit shows what
+  // was just saved (not the values from before the edit).
+  const [lastSaved, setLastSaved] = useState<ApartmentFormValues | null>(null);
+  const markSaved = useResetAfterSave(() => {
+    form.reset(apartment && lastSaved ? lastSaved : { name: '', address: '', notes: '' });
+    setSaved(false);
+  });
 
   async function onSubmit({ name, address, notes }: ApartmentFormValues) {
     try {
@@ -57,6 +65,8 @@ export function ApartmentForm({ apartment }: { apartment?: Apartment }) {
           await update.mutateAsync({ name, address, notes: notes || null })
         : await create.mutateAsync({ name, address, ...(notes && { notes }) });
       setSaved(true);
+      setLastSaved({ name, address, notes });
+      markSaved();
       allowLeave();
       toast.success('Квартиру збережено');
       router.push(`/apartments/${result.id}`);

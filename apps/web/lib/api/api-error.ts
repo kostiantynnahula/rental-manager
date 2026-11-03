@@ -34,7 +34,7 @@ export interface FieldErrorRule<T extends FieldValues> {
 }
 
 // Nest error bodies: { message: string | string[] }.
-function serverMessages(body: unknown): string[] {
+export function serverMessages(body: unknown): string[] {
   if (typeof body !== 'object' || body === null || !('message' in body)) return [];
   const { message } = body;
   if (typeof message === 'string') return [message];

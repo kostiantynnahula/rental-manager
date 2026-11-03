@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
+import { useResetAfterSave } from '@/hooks/use-reset-after-save';
 import { Button } from '@/components/ui/button';
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
@@ -79,6 +80,16 @@ interface TenantFormProps {
   allowAssignment?: boolean;
 }
 
+function tenantDefaults(tenant: TenantRecord | undefined): TenantFormValues {
+  return {
+    fullName: tenant?.fullName ?? '',
+    phone: tenant ? formatPhone(tenant.phone) : '',
+    email: tenant?.email ?? '',
+    notes: tenant?.notes ?? '',
+    assignment: { ...EMPTY_ASSIGNMENT, startDate: todayDateOnly() },
+  };
+}
+
 // Reusable: no router, toast or unsaved-changes logic here. The caller (page or dialog) decides what happens
 // after a save or on cancel.
 export function TenantForm({
@@ -97,13 +108,14 @@ export function TenantForm({
 
   const form = useForm<TenantFormValues>({
     resolver: zodResolver(tenantFormSchema),
-    defaultValues: {
-      fullName: tenant?.fullName ?? '',
-      phone: tenant ? formatPhone(tenant.phone) : '',
-      email: tenant?.email ?? '',
-      notes: tenant?.notes ?? '',
-      assignment: { ...EMPTY_ASSIGNMENT, startDate: todayDateOnly() },
-    },
+    defaultValues: tenantDefaults(tenant),
+  });
+  // On a page, the form stays mounted (hidden) after navigating away. Next visit: create starts empty
+  // (assignment too), edit shows what was just saved.
+  const [lastSaved, setLastSaved] = useState<TenantRecord | null>(null);
+  const markSaved = useResetAfterSave(() => {
+    form.reset(tenantDefaults(tenant ? (lastSaved ?? tenant) : undefined));
+    setSaved(false);
   });
   const showAssignment = allowAssignment && !tenant;
   const target = useAssignmentTarget(form.control, form.setValue);
@@ -134,6 +146,8 @@ export function TenantForm({
             ...(assignment && { assignment }),
           });
       setSaved(true);
+      setLastSaved(result);
+      markSaved();
       onSuccess(result, { apartmentName: assignment ? target.apartment?.name : undefined });
     } catch (error) {
       // The apartment's lease changed since it was loaded (ended, created elsewhere…): reload the preview.

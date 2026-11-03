@@ -47,6 +47,10 @@
 - Lists: `components/data-table` (TanStack Table **v9**: features registered in `data-table/features.ts`; columns at
   module level via `createDataTableColumnHelper`). Below `md` it renders `renderCard` instead of the table.
   Search runs before the table on `getSearchText(row)`; pass stable (module-level) callbacks.
+- Pages aren't unmounted on navigation (cacheComponents → React `<Activity>` keeps up to 3 routes hidden, with
+  their state). A form that saves and then navigates away must call `markSaved()` from `useResetAfterSave(reset)`
+  (`hooks/use-reset-after-save.ts`): when the page is hidden it resets to fresh defaults (create) or the saved
+  values (edit). Unsaved drafts are kept on purpose. Defaults come from a function (fresh `todayDateOnly()`).
 - Forms: RHF + zod + `field`; `useUnsavedChanges(isDirty)` (beforeunload + in-app link clicks + `confirmLeave` for
   Cancel). The browser Back gesture can't be intercepted in the App Router.
 - URL state (`?active=`, `?tab=`, `?search=`) via `useSearchParam(name, parse, default)` (`hooks/use-search-param.ts`:
@@ -86,6 +90,15 @@
 - `canDelete` / `canEditInitialValues` come from the API; disabled menu items stay visible with a reason.
 - Sheets opened from a DropdownMenu item: the menu is `modal={false}` (otherwise focus handling leaves the body
   unclickable). Small forms in a side sheet: `components/form-sheet.tsx`.
+
+## Readings (`components/readings/`)
+
+- Months are "YYYY-MM" strings: `lib/period.ts` (`defaultReadingPeriod` — previous month until day
+  `READINGS_DEADLINE_DAY` = 10, `addMonths`, `readingDateWindow` = the API's 1st of period … end of next month).
+- Batch entry (`/apartments/[id]/readings/new`): one `POST /meters/:id/readings` per filled meter, in parallel
+  (`Promise.allSettled`), `confirm: true`. Saved meters get locked, failed ones keep a per-meter message
+  (`readingErrorMessage` translates the API's rule messages). Empty meter = skipped.
+- Previous values = the meter's `lastReading` (last confirmed); the API re-checks order against all confirmed readings.
 
 ## Auth
 
