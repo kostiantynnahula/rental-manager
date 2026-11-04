@@ -24,10 +24,10 @@ import {
 import { readingErrorMessage } from './helpers/reading-error-message';
 import { MeterReadingEntry, type EntryResult } from './meter-reading-entry';
 
-function entryDefaults(meters: Meter[]): BatchReadingsValues {
+function entryDefaults(meters: Meter[], initialPeriod?: string): BatchReadingsValues {
   const today = todayDateOnly();
   return {
-    period: defaultReadingPeriod(today),
+    period: initialPeriod ?? defaultReadingPeriod(today),
     readingDate: today,
     entries: meters.map((m) => ({ meterId: m.id, values: emptyValues(m.zoneScheme) })),
   };
@@ -37,11 +37,13 @@ interface ReadingEntryFormProps {
   apartmentId: string;
   // Active meters of the apartment, with their last confirmed values (= previous values).
   meters: Meter[];
+  // Preselected month ("YYYY-MM"); otherwise defaultReadingPeriod.
+  initialPeriod?: string;
 }
 
 // All active meters of an apartment for one month. Each filled meter is its own POST (confirm: true), so one
 // failing meter doesn't block the others: saved ones get locked, failed ones keep the API message for a retry.
-export function ReadingEntryForm({ apartmentId, meters }: ReadingEntryFormProps) {
+export function ReadingEntryForm({ apartmentId, meters, initialPeriod }: ReadingEntryFormProps) {
   const router = useRouter();
   const create = useCreateReading();
   const back = `/apartments/${apartmentId}?tab=readings`;
@@ -56,7 +58,7 @@ export function ReadingEntryForm({ apartmentId, meters }: ReadingEntryFormProps)
 
   const form = useForm<BatchReadingsValues>({
     resolver: zodResolver(schema),
-    defaultValues: entryDefaults(meters),
+    defaultValues: entryDefaults(meters, initialPeriod),
   });
   const { isSubmitting } = form.formState;
   const entries = useWatch({ control: form.control, name: 'entries' });
@@ -66,7 +68,7 @@ export function ReadingEntryForm({ apartmentId, meters }: ReadingEntryFormProps)
   const { confirmLeave, allowLeave, dialog } = useUnsavedChanges(hasUnsaved && !done);
   // The page stays mounted (hidden) after navigating away: start fresh next time.
   const markSaved = useResetAfterSave(() => {
-    form.reset(entryDefaults(meters));
+    form.reset(entryDefaults(meters, initialPeriod));
     setResults({});
     setDone(false);
   });

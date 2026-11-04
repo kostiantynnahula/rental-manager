@@ -91,7 +91,7 @@ export class LeasesService {
     });
   }
 
-  // TODO: forbid once statements reference leases (history must not disappear).
+  // A lease billed by a statement can't be deleted: the FK is Restrict, the filter answers 409.
   async delete(id: string): Promise<void> {
     await this.findOrThrow(id);
     // lease_tenants rows go with it (onDelete: Cascade).

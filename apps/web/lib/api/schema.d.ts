@@ -628,6 +628,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/apartments/{apartmentId}/statements/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ApartmentStatementsController_preview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/apartments/{apartmentId}/statements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ApartmentStatementsController_list"];
+        put?: never;
+        post: operations["ApartmentStatementsController_issue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/statements/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StatementsController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/statements/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StatementsController_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1539,6 +1603,178 @@ export interface components {
             effectiveFrom: string;
             /** @description Prices of the copy from effectiveFrom; must include TOTAL */
             prices: components["schemas"]["OverridePriceInputDto"][];
+        };
+        /** @enum {string} */
+        StatementLineType: "RENT" | "FIXED" | "METERED";
+        StatementLineMeterResponseDto: {
+            /** Format: uuid */
+            meterId: string;
+            utility: components["schemas"]["UtilityType"];
+            /** @example кухня */
+            label: string | null;
+            serialNumber: string | null;
+            /**
+             * @description Decimal string with 3 decimals
+             * @example 12.350
+             */
+            consumption: string;
+        };
+        StatementLineResponseDto: {
+            type: components["schemas"]["StatementLineType"];
+            /**
+             * Format: uuid
+             * @description METERED and FIXED
+             */
+            tariffId?: string;
+            /** @example Електроенергія */
+            name: string;
+            /** @description METERED only */
+            zone?: components["schemas"]["Zone"];
+            /** @description METERED only */
+            utilities?: components["schemas"]["UtilityType"][];
+            /**
+             * @description Decimal string with 3 decimals
+             * @example 200.000
+             */
+            quantity: string;
+            /**
+             * @description UAH, decimal string with 4 decimals
+             * @example 4.3200
+             */
+            unitPrice: string;
+            /**
+             * @description Integer kopiyky
+             * @example 86400
+             */
+            amount: number;
+            /** @description METERED only: what each meter contributed */
+            meters?: components["schemas"]["StatementLineMeterResponseDto"][];
+        };
+        /**
+         * @description MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details
+         * @enum {string}
+         */
+        StatementWarningCode: "MISSING_READING" | "NO_PRICE" | "NO_METERS" | "MULTIPLE_LEASES";
+        StatementWarningResponseDto: {
+            /** @description MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details */
+            code: components["schemas"]["StatementWarningCode"];
+            /** Format: uuid */
+            meterId?: string;
+            utility?: components["schemas"]["UtilityType"];
+            label?: string | null;
+            /** Format: uuid */
+            tariffId?: string;
+            tariffName?: string;
+            zone?: components["schemas"]["Zone"];
+        };
+        StatementPreviewResponseDto: {
+            /** @example 2026-10 */
+            period: string;
+            /**
+             * @description Integer kopiyky: the sum of the line amounts
+             * @example 1586400
+             */
+            total: number;
+            /** @description Rent, then metered by utility and zone (DAY, NIGHT, TOTAL), then fixed by name */
+            lines: components["schemas"]["StatementLineResponseDto"][];
+            /** @description What the total is missing: skipped lines and meters without a reading */
+            warnings: components["schemas"]["StatementWarningResponseDto"][];
+        };
+        /** @enum {string} */
+        StatementStatus: "ISSUED" | "CANCELLED";
+        StatementListItemResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example 2026-10 */
+            period: string;
+            status: components["schemas"]["StatementStatus"];
+            /**
+             * @description Integer kopiyky
+             * @example 1586400
+             */
+            totalAmount: number;
+            /** @example 0 */
+            warningsCount: number;
+            /** Format: date-time */
+            issuedAt: string;
+        };
+        StatementPageResponseDto: {
+            items: components["schemas"]["StatementListItemResponseDto"][];
+            /** @description The apartment's statements (all pages), cancelled included */
+            total: number;
+            /** @description 1-based */
+            page: number;
+            pageSize: number;
+        };
+        IssueStatementDto: {
+            /**
+             * @description YYYY-MM
+             * @example 2026-10
+             */
+            period: string;
+            /**
+             * @description Integer kopiyky: the preview total the user agreed to
+             * @example 1586400
+             */
+            expectedTotal: number;
+            /** @description Required to issue a statement that has warnings */
+            acknowledgeWarnings?: boolean;
+        };
+        StatementLeaseSummaryResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** @description The tenant's current name, not a snapshot */
+            primaryTenantName: string | null;
+        };
+        StatementResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            apartmentId: string;
+            /** @example 2026-10 */
+            period: string;
+            status: components["schemas"]["StatementStatus"];
+            /**
+             * @description Integer kopiyky: the sum of the line amounts
+             * @example 1586400
+             */
+            totalAmount: number;
+            /** @description As of issue time */
+            warnings: components["schemas"]["StatementWarningResponseDto"][];
+            /** @description In display order */
+            lines: components["schemas"]["StatementLineResponseDto"][];
+            /** @description The lease used for the rent line */
+            lease: components["schemas"]["StatementLeaseSummaryResponseDto"] | null;
+            /** Format: date-time */
+            issuedAt: string;
+            /** Format: uuid */
+            issuedById: string;
+            /** Format: date-time */
+            cancelledAt: string | null;
+            /** Format: uuid */
+            cancelledById: string | null;
+            cancelNote: string | null;
+        };
+        StatementTotalChangedResponseDto: {
+            /** @example 409 */
+            statusCode: number;
+            message: string;
+            /** @example Conflict */
+            error: string;
+            /** @description Only when the total changed; absent when the period is already issued */
+            preview?: components["schemas"]["StatementPreviewResponseDto"];
+        };
+        StatementHasWarningsResponseDto: {
+            /** @example 422 */
+            statusCode: number;
+            message: string;
+            /** @example Unprocessable Entity */
+            error: string;
+            warnings: components["schemas"]["StatementWarningResponseDto"][];
+        };
+        CancelStatementDto: {
+            /** @example Wrong water reading */
+            note?: string;
         };
     };
     responses: never;
@@ -4070,6 +4306,254 @@ export interface operations {
                 content?: never;
             };
             /** @description Apartment is archived, or the name already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApartmentStatementsController_preview: {
+        parameters: {
+            query: {
+                period: string;
+            };
+            header?: never;
+            path: {
+                apartmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Calculated on the fly from confirmed readings; nothing is saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementPreviewResponseDto"];
+                };
+            };
+            /** @description Missing or invalid period */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Apartment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApartmentStatementsController_list: {
+        parameters: {
+            query?: {
+                /** @description Only this month (YYYY-MM) */
+                period?: string;
+                page?: number;
+                pageSize?: 10 | 20 | 50;
+            };
+            header?: never;
+            path: {
+                apartmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Newest period first, cancelled included */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementPageResponseDto"];
+                };
+            };
+            /** @description Invalid page or pageSize */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Apartment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApartmentStatementsController_issue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                apartmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IssueStatementDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementResponseDto"];
+                };
+            };
+            /** @description Invalid body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Apartment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The total differs from expectedTotal, or the period is already issued */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementTotalChangedResponseDto"];
+                };
+            };
+            /** @description Warnings not acknowledged */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementHasWarningsResponseDto"];
+                };
+            };
+        };
+    };
+    StatementsController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementResponseDto"];
+                };
+            };
+            /** @description Invalid id */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Statement not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    StatementsController_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelStatementDto"];
+            };
+        };
+        responses: {
+            /** @description To re-issue the period, POST a new statement afterwards */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementResponseDto"];
+                };
+            };
+            /** @description Invalid id or note */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Statement not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Already cancelled */
             409: {
                 headers: {
                     [name: string]: unknown;

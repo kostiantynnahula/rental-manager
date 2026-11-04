@@ -13,18 +13,20 @@ datasource db {
 }
 
 model User {
-  id                String    @id @default(uuid()) @db.Uuid
+  id                  String      @id @default(uuid()) @db.Uuid
   // Always lowercase + trimmed (normalizeEmail); enforced by a CHECK constraint in the migration.
-  email             String    @unique
-  passwordHash      String
-  name              String?
-  isActive          Boolean   @default(true)
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  sessions          Session[]
-  createdReadings   Reading[] @relation("ReadingCreatedBy")
-  confirmedReadings Reading[] @relation("ReadingConfirmedBy")
-  uploadedPhotos    Photo[]
+  email               String      @unique
+  passwordHash        String
+  name                String?
+  isActive            Boolean     @default(true)
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  sessions            Session[]
+  createdReadings     Reading[]   @relation("ReadingCreatedBy")
+  confirmedReadings   Reading[]   @relation("ReadingConfirmedBy")
+  uploadedPhotos      Photo[]
+  issuedStatements    Statement[] @relation("StatementIssuedBy")
+  cancelledStatements Statement[] @relation("StatementCancelledBy")
 
   @@map("users")
 }
@@ -51,18 +53,19 @@ model Session {
 
 // Archived via isActive, never deleted (leases reference it with onDelete: Restrict).
 model Apartment {
-  id        String            @id @default(uuid()) @db.Uuid
+  id         String            @id @default(uuid()) @db.Uuid
   // Short label, e.g. "Shevchenka 12/5".
-  name      String            @unique
-  address   String
-  notes     String?
-  isActive  Boolean           @default(true)
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  leases    Lease[]
-  meters    Meter[]
-  photos    Photo[]
-  tariffs   ApartmentTariff[]
+  name       String            @unique
+  address    String
+  notes      String?
+  isActive   Boolean           @default(true)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  leases     Lease[]
+  meters     Meter[]
+  photos     Photo[]
+  tariffs    ApartmentTariff[]
+  statements Statement[]
 
   @@map("apartments")
 }
@@ -97,6 +100,7 @@ model Lease {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   tenants     LeaseTenant[]
+  statements  Statement[]
 
   @@index([apartmentId])
   @@map("leases")
@@ -287,18 +291,19 @@ enum TariffKind {
 // district get their own tariff (e.g. "Waste removal (Sykhiv)"). Archived via isActive.
 // Raw-SQL constraint in migration add_tariffs: tariffs_utilities_match_kind.
 model Tariff {
-  id         String            @id @default(uuid()) @db.Uuid
-  name       String            @unique
-  kind       TariffKind
+  id             String            @id @default(uuid()) @db.Uuid
+  name           String            @unique
+  kind           TariffKind
   // METERED: the utilities whose consumption is billed, ≥ 1 (e.g. drainage = COLD_WATER + HOT_WATER).
   // FIXED: empty.
-  utilities  UtilityType[]
-  isActive   Boolean           @default(true)
-  notes      String?
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
-  prices     TariffPrice[]
-  apartments ApartmentTariff[]
+  utilities      UtilityType[]
+  isActive       Boolean           @default(true)
+  notes          String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  prices         TariffPrice[]
+  apartments     ApartmentTariff[]
+  statementLines StatementLine[]
 
   @@map("tariffs")
 }
@@ -345,4 +350,87 @@ model ApartmentTariff {
   @@index([apartmentId, tariffId])
   @@index([tariffId])
   @@map("apartment_tariffs")
+}
+
+enum StatementStatus {
+  ISSUED
+  CANCELLED
+
+  @@map("statement_status")
+}
+
+enum StatementLineType {
+  RENT
+  FIXED
+  METERED
+
+  @@map("statement_line_type")
+}
+
+// A frozen monthly bill: lines, prices and warnings as of issue time; later tariff or reading changes don't touch it.
+// Corrected by cancelling and issuing again.
+// Raw-SQL constraints in migration add_statements: statements_period_first_of_month,
+// statements_one_issued_per_period (partial unique), statements_cancel_consistency, statements_total_non_negative.
+model Statement {
+  id            String          @id @default(uuid()) @db.Uuid
+  apartmentId   String          @db.Uuid
+  apartment     Apartment       @relation(fields: [apartmentId], references: [id], onDelete: Restrict)
+  // The month billed, always its 1st day.
+  period        DateTime        @db.Date
+  // The lease used for the rent line; null without one.
+  leaseId       String?         @db.Uuid
+  lease         Lease?          @relation(fields: [leaseId], references: [id], onDelete: Restrict)
+  status        StatementStatus @default(ISSUED)
+  // Integer kopiyky: the sum of the line amounts.
+  totalAmount   Int
+  // Calculator warnings at issue time; empty array if none.
+  warnings      Json
+  issuedAt      DateTime        @default(now())
+  issuedById    String          @db.Uuid
+  issuedBy      User            @relation("StatementIssuedBy", fields: [issuedById], references: [id], onDelete: Restrict)
+  cancelledAt   DateTime?
+  cancelledById String?         @db.Uuid
+  cancelledBy   User?           @relation("StatementCancelledBy", fields: [cancelledById], references: [id], onDelete: Restrict)
+  cancelNote    String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  lines         StatementLine[]
+
+  // Serves the list query and, as the leading column, the apartmentId FK.
+  @@index([apartmentId, period(sort: Desc)])
+  @@index([leaseId])
+  @@index([issuedById])
+  @@index([cancelledById])
+  @@map("statements")
+}
+
+// Raw-SQL constraints in migration add_statements: statement_lines_tariff_by_type, statement_lines_non_negative.
+model StatementLine {
+  id          String            @id @default(uuid()) @db.Uuid
+  // Cascade: lines are part of their statement.
+  statementId String            @db.Uuid
+  statement   Statement         @relation(fields: [statementId], references: [id], onDelete: Cascade)
+  // Display order from the calculator.
+  position    Int
+  type        StatementLineType
+  // Null only for RENT.
+  tariffId    String?           @db.Uuid
+  tariff      Tariff?           @relation(fields: [tariffId], references: [id], onDelete: Restrict)
+  // Snapshot of the tariff name, "Оренда" for rent.
+  name        String
+  // Snapshot; empty for RENT and FIXED.
+  utilities   UtilityType[]
+  zone        Zone?
+  quantity    Decimal           @db.Decimal(12, 3)
+  // UAH.
+  unitPrice   Decimal           @db.Decimal(12, 4)
+  // Integer kopiyky.
+  amount      Int
+  // METERED: [{ meterId, utility, label, serialNumber, consumption }] as of issue time.
+  details     Json?
+
+  // Also serves as the statementId FK index (leading column).
+  @@unique([statementId, position])
+  @@index([tariffId])
+  @@map("statement_lines")
 }

@@ -2947,6 +2947,310 @@
           "tariffs"
         ]
       }
+    },
+    "/apartments/{apartmentId}/statements/preview": {
+      "get": {
+        "operationId": "ApartmentStatementsController_preview",
+        "parameters": [
+          {
+            "name": "apartmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "period",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "example": "2026-10",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calculated on the fly from confirmed readings; nothing is saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatementPreviewResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid period"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "statements"
+        ]
+      }
+    },
+    "/apartments/{apartmentId}/statements": {
+      "get": {
+        "operationId": "ApartmentStatementsController_list",
+        "parameters": [
+          {
+            "name": "apartmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "period",
+            "required": false,
+            "in": "query",
+            "description": "Only this month (YYYY-MM)",
+            "schema": {
+              "example": "2026-10",
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "number",
+              "enum": [
+                10,
+                20,
+                50
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Newest period first, cancelled included",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatementPageResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid page or pageSize"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "statements"
+        ]
+      },
+      "post": {
+        "operationId": "ApartmentStatementsController_issue",
+        "parameters": [
+          {
+            "name": "apartmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssueStatementDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatementResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found"
+          },
+          "409": {
+            "description": "The total differs from expectedTotal, or the period is already issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatementTotalChangedResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Warnings not acknowledged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatementHasWarningsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "statements"
+        ]
+      }
+    },
+    "/statements/{id}": {
+      "get": {
+        "operationId": "StatementsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatementResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid id"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Statement not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "statements"
+        ]
+      }
+    },
+    "/statements/{id}/cancel": {
+      "post": {
+        "operationId": "StatementsController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelStatementDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "To re-issue the period, POST a new statement afterwards",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatementResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid id or note"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Statement not found"
+          },
+          "409": {
+            "description": "Already cancelled"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "statements"
+        ]
+      }
     }
   },
   "info": {
@@ -5319,6 +5623,479 @@
           "effectiveFrom",
           "prices"
         ]
+      },
+      "StatementLineType": {
+        "type": "string",
+        "enum": [
+          "RENT",
+          "FIXED",
+          "METERED"
+        ]
+      },
+      "StatementLineMeterResponseDto": {
+        "type": "object",
+        "properties": {
+          "meterId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "utility": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UtilityType"
+              }
+            ]
+          },
+          "label": {
+            "type": "string",
+            "nullable": true,
+            "example": "кухня"
+          },
+          "serialNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "consumption": {
+            "type": "string",
+            "example": "12.350",
+            "description": "Decimal string with 3 decimals"
+          }
+        },
+        "required": [
+          "meterId",
+          "utility",
+          "label",
+          "serialNumber",
+          "consumption"
+        ]
+      },
+      "StatementLineResponseDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StatementLineType"
+              }
+            ]
+          },
+          "tariffId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "METERED and FIXED"
+          },
+          "name": {
+            "type": "string",
+            "example": "Електроенергія"
+          },
+          "zone": {
+            "description": "METERED only",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Zone"
+              }
+            ]
+          },
+          "utilities": {
+            "type": "array",
+            "description": "METERED only",
+            "items": {
+              "$ref": "#/components/schemas/UtilityType"
+            }
+          },
+          "quantity": {
+            "type": "string",
+            "example": "200.000",
+            "description": "Decimal string with 3 decimals"
+          },
+          "unitPrice": {
+            "type": "string",
+            "example": "4.3200",
+            "description": "UAH, decimal string with 4 decimals"
+          },
+          "amount": {
+            "type": "number",
+            "example": 86400,
+            "description": "Integer kopiyky"
+          },
+          "meters": {
+            "description": "METERED only: what each meter contributed",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatementLineMeterResponseDto"
+            }
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "quantity",
+          "unitPrice",
+          "amount"
+        ]
+      },
+      "StatementWarningCode": {
+        "type": "string",
+        "enum": [
+          "MISSING_READING",
+          "NO_PRICE",
+          "NO_METERS",
+          "MULTIPLE_LEASES"
+        ],
+        "description": "MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details"
+      },
+      "StatementWarningResponseDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "description": "MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StatementWarningCode"
+              }
+            ]
+          },
+          "meterId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "utility": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UtilityType"
+              }
+            ]
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "tariffId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tariffName": {
+            "type": "string"
+          },
+          "zone": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Zone"
+              }
+            ]
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "StatementPreviewResponseDto": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "example": "2026-10"
+          },
+          "total": {
+            "type": "number",
+            "example": 1586400,
+            "description": "Integer kopiyky: the sum of the line amounts"
+          },
+          "lines": {
+            "description": "Rent, then metered by utility and zone (DAY, NIGHT, TOTAL), then fixed by name",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatementLineResponseDto"
+            }
+          },
+          "warnings": {
+            "description": "What the total is missing: skipped lines and meters without a reading",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatementWarningResponseDto"
+            }
+          }
+        },
+        "required": [
+          "period",
+          "total",
+          "lines",
+          "warnings"
+        ]
+      },
+      "StatementStatus": {
+        "type": "string",
+        "enum": [
+          "ISSUED",
+          "CANCELLED"
+        ]
+      },
+      "StatementListItemResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "period": {
+            "type": "string",
+            "example": "2026-10"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StatementStatus"
+              }
+            ]
+          },
+          "totalAmount": {
+            "type": "number",
+            "example": 1586400,
+            "description": "Integer kopiyky"
+          },
+          "warningsCount": {
+            "type": "number",
+            "example": 0
+          },
+          "issuedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "period",
+          "status",
+          "totalAmount",
+          "warningsCount",
+          "issuedAt"
+        ]
+      },
+      "StatementPageResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatementListItemResponseDto"
+            }
+          },
+          "total": {
+            "type": "number",
+            "description": "The apartment's statements (all pages), cancelled included"
+          },
+          "page": {
+            "type": "number",
+            "description": "1-based"
+          },
+          "pageSize": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
+      },
+      "IssueStatementDto": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "example": "2026-10",
+            "description": "YYYY-MM"
+          },
+          "expectedTotal": {
+            "type": "number",
+            "example": 1586400,
+            "description": "Integer kopiyky: the preview total the user agreed to"
+          },
+          "acknowledgeWarnings": {
+            "type": "boolean",
+            "description": "Required to issue a statement that has warnings"
+          }
+        },
+        "required": [
+          "period",
+          "expectedTotal"
+        ]
+      },
+      "StatementLeaseSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "primaryTenantName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The tenant's current name, not a snapshot"
+          }
+        },
+        "required": [
+          "id",
+          "primaryTenantName"
+        ]
+      },
+      "StatementResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "apartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "period": {
+            "type": "string",
+            "example": "2026-10"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StatementStatus"
+              }
+            ]
+          },
+          "totalAmount": {
+            "type": "number",
+            "example": 1586400,
+            "description": "Integer kopiyky: the sum of the line amounts"
+          },
+          "warnings": {
+            "description": "As of issue time",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatementWarningResponseDto"
+            }
+          },
+          "lines": {
+            "description": "In display order",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatementLineResponseDto"
+            }
+          },
+          "lease": {
+            "nullable": true,
+            "description": "The lease used for the rent line",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StatementLeaseSummaryResponseDto"
+              }
+            ]
+          },
+          "issuedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "issuedById": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cancelledAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "cancelledById": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "cancelNote": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "apartmentId",
+          "period",
+          "status",
+          "totalAmount",
+          "warnings",
+          "lines",
+          "lease",
+          "issuedAt",
+          "issuedById",
+          "cancelledAt",
+          "cancelledById",
+          "cancelNote"
+        ]
+      },
+      "StatementTotalChangedResponseDto": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "number",
+            "example": 409
+          },
+          "message": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string",
+            "example": "Conflict"
+          },
+          "preview": {
+            "description": "Only when the total changed; absent when the period is already issued",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StatementPreviewResponseDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "statusCode",
+          "message",
+          "error"
+        ]
+      },
+      "StatementHasWarningsResponseDto": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "number",
+            "example": 422
+          },
+          "message": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string",
+            "example": "Unprocessable Entity"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatementWarningResponseDto"
+            }
+          }
+        },
+        "required": [
+          "statusCode",
+          "message",
+          "error",
+          "warnings"
+        ]
+      },
+      "CancelStatementDto": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "example": "Wrong water reading",
+            "maxLength": 500
+          }
+        }
       }
     }
   }

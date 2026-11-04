@@ -2,7 +2,7 @@
 
 import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { FormSkeleton } from '@/components/form-skeleton';
 import { NotFoundState } from '@/components/not-found-state';
 import { QueryError } from '@/components/query-error';
@@ -10,14 +10,17 @@ import { Button } from '@/components/ui/button';
 import { isNotFoundError } from '@/lib/api/api-error';
 import { useApartment } from '@/lib/api/queries/apartments';
 import { useApartmentMeters } from '@/lib/api/queries/meters';
+import { isPeriod } from '@/lib/period';
 import { UTILITY_ORDER } from '@/lib/utilities';
 import { ReadingEntryForm } from './reading-entry-form';
 
-// /apartments/[id]/readings/new
+// /apartments/[id]/readings/new, optionally ?period=YYYY-MM (the month preselected, e.g. from a statement warning).
 export function ReadingEntry() {
   const { id } = useParams<{ id: string }>();
   const apartment = useApartment(id);
   const meters = useApartmentMeters(id, false);
+  const requestedPeriod = useSearchParams().get('period');
+  const initialPeriod = requestedPeriod && isPeriod(requestedPeriod) ? requestedPeriod : undefined;
 
   if (apartment.isPending || meters.isPending) return <FormSkeleton fields={4} />;
   if (apartment.isError) {
@@ -50,7 +53,13 @@ export function ReadingEntry() {
           </Button>
         </div>
       ) : (
-        <ReadingEntryForm apartmentId={id} meters={ordered} />
+        // key: the hidden page keeps its form state (<Activity>), so a link with another month needs a new form.
+        <ReadingEntryForm
+          key={initialPeriod}
+          apartmentId={id}
+          meters={ordered}
+          initialPeriod={initialPeriod}
+        />
       )}
     </section>
   );

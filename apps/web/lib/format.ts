@@ -98,3 +98,8 @@ const kyivDateFormatter = new Intl.DateTimeFormat('en-CA', {
 export function todayDateOnly(): string {
   return kyivDateFormatter.format(new Date());
 }
+
+// A timestamp from the API (e.g. issuedAt) → its Kyiv date: "2026-10-28T22:30:00.000Z" → "29.10.2026".
+export function formatInstantDate(timestamp: string): string {
+  return formatDate(kyivDateFormatter.format(new Date(timestamp)));
+}

@@ -34,6 +34,13 @@ const CONSTRAINT_MESSAGES: Record<string, string> = {
   apartment_tariffs_active_to_first_of_month: 'activeTo must be the first day of a month',
   apartment_tariffs_dates_check: 'activeTo must be on or after activeFrom',
   apartment_tariffs_no_overlap: 'This tariff is already attached to the apartment for these months',
+  statements_period_first_of_month: 'period must be the first day of a month',
+  statements_one_issued_per_period:
+    'A statement for this period is already issued — cancel it first',
+  statements_cancel_consistency: 'A cancelled statement must record who cancelled it and when',
+  statements_total_non_negative: 'Statement total must not be negative',
+  statement_lines_tariff_by_type: 'Only a rent line has no tariff',
+  statement_lines_non_negative: 'Statement line values must not be negative',
 };
 
 // Prisma codes: https://www.prisma.io/docs/orm/reference/error-reference
