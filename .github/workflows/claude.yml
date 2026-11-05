@@ -36,10 +36,11 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: pnpm
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      # Before install: the api postinstall (prisma generate) needs DATABASE_URL.
       - name: Create .env from the example
         run: cp .env.example .env
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Run Claude Code
         id: claude
