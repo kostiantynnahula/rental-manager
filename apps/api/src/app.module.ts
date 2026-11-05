@@ -5,6 +5,7 @@ import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { AuthModule } from './auth/auth.module.js';
 import { validateEnv } from './config/env.validation.js';
+import { HealthController } from './health/health.controller.js';
 import { LeasesModule } from './leases/leases.module.js';
 import { MetersModule } from './meters/meters.module.js';
 import { PhotosModule } from './photos/photos.module.js';
@@ -36,7 +37,7 @@ import { UsersModule } from './users/users.module.js';
     TariffsModule,
     StatementsModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, HealthController],
   providers: [AppService],
 })
 export class AppModule {}
