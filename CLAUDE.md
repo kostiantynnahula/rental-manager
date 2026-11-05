@@ -49,8 +49,10 @@ pnpm workspaces monorepo:
 
 - `apps/api` — NestJS + Prisma + Postgres
 - `apps/web` — Next.js
-- `apps/worker` — image parsing with LangChain (later)
-- `packages/shared` — shared types
+- `apps/worker` — image parsing with LangChain (later). Never writes to the DB directly: it sends results
+  (proposed values → DRAFT readings) to the API, which owns Prisma and all business rules.
+- `packages/shared` — code shared by api and web that isn't part of the API contract (e.g. phone
+  normalization). API request/response types are never put here: the web generates them from OpenAPI.
 
 Infra in Docker Compose: Postgres, MinIO (S3-compatible photo storage;
 community `pgsty/minio` image, since official MinIO images are no longer published).
