@@ -49,8 +49,10 @@ pnpm workspaces monorepo:
 
 - `apps/api` — NestJS + Prisma + Postgres
 - `apps/web` — Next.js
-- `apps/worker` — image parsing with LangChain (later). Never writes to the DB directly: it sends results
-  (proposed values → DRAFT readings) to the API, which owns Prisma and all business rules.
+- `apps/worker` — photo parsing with LangChain.js (later). Consumes BullMQ jobs (Redis) that the API enqueues
+  on photo upload. Never touches the DB: it reads photos and saves proposed values (DRAFT readings) over HTTP.
+- The API is the only way to data and business rules: every other app (web, worker, later a Telegram bot and an
+  MCP server) is an HTTP client of it. No second Prisma client or raw SQL outside `apps/api`.
 - `packages/shared` — code shared by api and web that isn't part of the API contract (e.g. phone
   normalization). API request/response types are never put here: the web generates them from OpenAPI.
 
