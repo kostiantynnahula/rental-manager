@@ -30,6 +30,17 @@ jobs:
         with:
           fetch-depth: 1
 
+      # Toolchain for the repo, so Claude can run lint/tests/gen:api like CLAUDE.md asks.
+      - uses: pnpm/action-setup@v4 # version from "packageManager" in package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Create .env from the example
+        run: cp .env.example .env
+
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@v1
@@ -46,5 +57,7 @@ jobs:
           # Optional: Add claude_args to customize behavior and configuration
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
-          # claude_args: '--allowed-tools Bash(gh pr *)'
+          # No Postgres/MinIO here: lint, unit tests, build and gen:api only (no e2e).
+          claude_args: >-
+            --allowedTools "Bash(pnpm lint*),Bash(pnpm test*),Bash(pnpm build*),Bash(pnpm gen:api*),Bash(pnpm format*),Bash(pnpm --filter *),Bash(git status*),Bash(git diff*),Bash(git log*),Bash(git add *),Bash(git commit *),Bash(git push *),Bash(git checkout *),Bash(git branch *)"
 
