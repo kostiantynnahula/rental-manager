@@ -61,4 +61,3 @@ jobs:
           # No Postgres/MinIO here: lint, unit tests, build and gen:api only (no e2e).
           claude_args: >-
             --allowedTools "Bash(pnpm lint*),Bash(pnpm test*),Bash(pnpm build*),Bash(pnpm gen:api*),Bash(pnpm format*),Bash(pnpm --filter *),Bash(git status*),Bash(git diff*),Bash(git log*),Bash(git add *),Bash(git commit *),Bash(git push *),Bash(git checkout *),Bash(git branch *)"
-

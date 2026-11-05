@@ -7,3 +7,5 @@ apps/web/AGENTS.md
 **/generated
 apps/api/openapi.json
 apps/web/lib/api/schema.d.ts
+**/.claude/skills
+.junie
