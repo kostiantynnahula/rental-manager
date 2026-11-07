@@ -34,114 +34,6 @@
 - Never hand-write API types: use `paths`/`components` from `lib/api/schema.d.ts` and the `api` client
   (`lib/api/client.ts`); throw on errors with `unwrap()` inside query/mutation functions.
 
-## Data layer (pattern for every resource)
-
-- `lib/api/queries/<resource>.ts`: a key factory (`apartmentKeys.all/lists()/list(filter)/details()/detail(id)`) plus
-  hooks only (`useApartments`, `useApartment`, `useCreateApartment`, …); types come from `lib/api/schema.d.ts`.
-  Components never call `api` directly.
-- Mutations invalidate the affected keys (`lists()` + `detail(id)`) instead of writing responses into the cache
-  (mutation responses are often a slimmer DTO than the queries).
-- Errors: `applyApiError(error, { setError, fields: [{ status: 409, field: 'name', message }] })` from
-  `lib/api/api-error.ts` puts known server errors on form fields and toasts everything else; queries show
-  `<QueryError>`, 404/400 → `<NotFoundState>` (`isNotFoundError`).
-- Lists: `components/data-table` (TanStack Table **v9**: features registered in `data-table/features.ts`; columns at
-  module level via `createDataTableColumnHelper`). Below `md` it renders `renderCard` instead of the table.
-  Search runs before the table on `getSearchText(row)`; pass stable (module-level) callbacks.
-- Pages aren't unmounted on navigation (cacheComponents → React `<Activity>` keeps up to 3 routes hidden, with
-  their state). A form that saves and then navigates away must call `markSaved()` from `useResetAfterSave(reset)`
-  (`hooks/use-reset-after-save.ts`): when the page is hidden it resets to fresh defaults (create) or the saved
-  values (edit). Unsaved drafts are kept on purpose. Defaults come from a function (fresh `todayDateOnly()`).
-- Forms: RHF + zod + `field`; `useUnsavedChanges(isDirty)` (beforeunload + in-app link clicks + `confirmLeave` for
-  Cancel). The browser Back gesture can't be intercepted in the App Router.
-- URL state (`?active=`, `?tab=`, `?search=`) via `useSearchParam(name, parse, default)` (`hooks/use-search-param.ts`:
-  `router.replace` with `scroll: false`, default left out of the URL).
-- Server-side search (tenants): the input keeps local state, `useDebouncedValue` (300 ms) writes it to `?search=`, the
-  query reads the URL value and uses `placeholderData: keepPreviousData`. DataTable gets no `getSearchText` then.
-- Reusable forms (`TenantForm`): no router/toast/unsaved-changes inside, just `onSuccess(record)`, `onCancel?`,
-  `onDirtyChange?`, `idPrefix` and `allowAssignment` (create only: optional "Прив’язати до квартири" → POST /tenants
-  `assignment`; the mode comes from the selected apartment's current lease, re-checked by the API; the lease form
-  passes `false`). A page wrapper (`TenantFormPage`) owns the guard, toast and redirect, so the same form
-  can sit in a dialog.
-- Phones: `lib/phone.ts` (`normalizeUaPhone` from `@rental/shared` = the API's rule, `formatPhone` for display,
-  `viberHref`). Send normalized `+380…`, show `formatPhone`.
-- `cacheComponents`: `useSearchParams`, and `useParams`/`usePathname` on dynamic routes, are request-time data →
-  wrap the component in `<Suspense>` (page-level fallback skeleton) or the build fails. The shell reads the pathname
-  only in `NavLinks` (own Suspense), and `AuthGuard` reads `window.location`.
-
-## Leases (`components/leases/`)
-
-- Lease status (Активний / Завершений / Майбутній) is computed on the client: `leaseStatus(lease, todayDateOnly())`
-  (`lib/leases.ts`, Kyiv "today" — same rule as the API's current lease).
-- Every lease mutation invalidates `leaseKeys.all`, `apartmentKeys.all` and `tenantKeys.all` (a lease shows on both).
-- Back navigation: links into a lease carry `?from=apartment` or `?from=tenant&tenantId=…`; `leaseBackTarget()` picks
-  the target (default: the apartment's Договори tab) and `originQuery()` keeps it on detail ↔ edit links.
-- Forms inside a Sheet/Dialog: the content is portalled, but React still bubbles `submit` to the outer `<form>` —
-  wrap the inner form in `onSubmit={(e) => e.stopPropagation()}` (see `new-tenant-sheet.tsx`).
-- Dates use native `<input type="date">` (no calendar component): better on phones, values are "YYYY-MM-DD".
-
-## Meters (`components/meters/`)
-
-- Labels/units only from `lib/utilities.ts` (`UTILITY_LABELS`, `UTILITY_UNITS`, `ZONE_LABELS`, `zonesFor`,
-  `zoneSchemesFor` — day/night exists only for electricity).
-- Meter values are decimal strings end to end (`lib/meter-values.ts`: `normalizeMeterValue` → API "1520.350",
-  `compareMeterValues`, `formatMeterValue` → "1520,350"); never `Number(...)`.
-- Reusable pair for any reading entry: `ReadingValuesInput` (one input per zone, unit, "Попереднє: …") +
-  `readingValuesSchema(previous?)` (required, ≤3 decimals, not lower than previous) and `toReadingValuesInput()`.
-- `canDelete` / `canEditInitialValues` come from the API; disabled menu items stay visible with a reason.
-- Sheets opened from a DropdownMenu item: the menu is `modal={false}` (otherwise focus handling leaves the body
-  unclickable). Small forms in a side sheet: `components/form-sheet.tsx`.
-
-## Readings (`components/readings/`)
-
-- Months are "YYYY-MM" strings: `lib/period.ts` (`defaultReadingPeriod` — previous month until day
-  `READINGS_DEADLINE_DAY` = 10, `addMonths`, `readingDateWindow` = the API's 1st of period … end of next month).
-- Batch entry (`/apartments/[id]/readings/new`): one `POST /meters/:id/readings` per filled meter, in parallel
-  (`Promise.allSettled`), `confirm: true`. Saved meters get locked, failed ones keep a per-meter message
-  (`readingErrorMessage` translates the API's rule messages). Empty meter = skipped.
-- Previous values = the meter's `lastReading` (last confirmed); the API re-checks order against all confirmed readings.
-- History (tab "Показання", `reading-history.tsx`): `GET /apartments/:id/readings/history`, server-side pagination.
-  Filters + page in the URL via `hooks/use-history-filters.ts` (`from`, `to`, `meters`, `size`, `page`; one
-  `router.replace` for several params, any filter change → page 1). Values in lists: `formatMeterValueCompact`.
-- Invalidation: `readingKeys.all` after creating readings **and** after every meter mutation (INITIAL/FINAL readings).
-- DataTable: `pagination` prop (`manualPagination`, `rowCount`; `data` = the current page) and optional `getRowHref`
-  (rows without a link). No `paginatedRowModel` is registered, so client-side lists are never sliced.
-
-## Tariffs (`components/tariffs/`)
-
-- Section "Тарифи" (`/tariffs`, `/tariffs/new`, `/tariffs/[id]`, `/tariffs/[id]/edit`). The list is server-side:
-  search, `active`, `kind`, `size`, `page` in the URL via `hooks/use-tariff-filters.ts` (same pattern as the readings
-  history; the search input is debounced into `?search=` like tenants).
-- Prices are decimal strings end to end (`lib/tariff-prices.ts`: `normalizePrice` → API "4.32", `formatPrice` →
-  "4,32"; ≤ 4 decimals); never `Number(...)`. Input: `PriceInput` (unit addon, formats on blur); unit via `priceUnit()`.
-- Utilities of a METERED tariff are one choice from `constants/utility-sets.ts` (electricity / gas alone, water
-  utilities combine, e.g. drainage) — the API's "one unit per tariff" rule holds by construction.
-- A price change is a **new row** ("Нова ціна", from a month on); "Виправити"/"Видалити" on a row are only for
-  mistakes. DAY/NIGHT zones only for electricity (`isZoned`); a zone without its own price uses TOTAL.
-- `inUse` (attached to an apartment) locks kind/utilities in the form and disables delete (archive instead);
-  archived tariffs can't get new or fixed prices.
-- Apartments: tab "Тарифи" (`apartment-tariffs-tab.tsx`, `lib/api/queries/apartment-tariffs.ts`) — attach from a month,
-  end (last billed month) / reopen, delete a mistake; "Показати завершені" = `scope=all`. The create form takes
-  `apartmentIds` (multi-select; `?apartmentId=` preselects and returns to that tab); the tariff page lists
-  `apartments`.
-- "Змінити ціну" on the tab: `apartmentCount > 1` (shared) first asks "Для всіх квартир (N)" (a new price of the
-  shared tariff) or "Лише для цієї квартири" (`override`: a copy with own prices from a month; past months stay on
-  the shared tariff). Attachment and tariff mutations invalidate both `apartmentTariffKeys.all` and tariff keys.
-- Server-side lists put the page-size select into the pagination row (`DataTable` `pageSize`/`pageSizeOptions`/
-  `onPageSizeChange`), not into the filters.
-
-## Statements (`components/statements/`)
-
-- Tab "Рахунки" (`?stPage`, `?stSize`: `page`/`size` belong to the readings history on the same page), new statement
-  `/apartments/[id]/statements/new?period=`, statement page `/statements/[id]`. Labels and warning messages:
-  `lib/statements.ts`. Preview and saved statement use one line DTO, so one component (`StatementLines`) shows both.
-- The preview and "already issued?" (`useIssuedStatement`, the list with `?period=`) have `staleTime: 0`: entering a
-  reading or changing a tariff elsewhere shows up on return (window focus or in-app navigation) without cross-feature
-  invalidation. The preview has no `keepPreviousData`: another month's total must never be issuable.
-- Issuing sends `expectedTotal`; the API is the judge. 409 with `preview` in the body = total changed, 409 without =
-  already issued (`isStatementTotalChanged`). Mutations invalidate in `onSettled`, so failures refresh the screen too.
-- Saved statements are snapshots: never recompute them on the client. Correcting = cancel + "Виставити заново".
-- The readings form takes `?period=` (from a `MISSING_READING` warning).
-
 ## Auth
 
 - Cookies `access_token` (Path=/api) and `refresh_token` (Path=/api/auth) never reach page URLs, so the server
@@ -152,3 +44,9 @@
   replays the request once. Refresh failed → clear the query cache, redirect to `/login?next=<path>`.
   Login/refresh/logout are never refreshed or retried; `/auth/me` is (otherwise you'd be logged out after the access TTL).
 - `?next` is validated by `safeNextPath()` (same-origin paths only).
+
+## More
+
+- Feature details: `.claude/rules/web-*.md` (load when you touch that feature).
+- Billing reuses the `reading_consumption` view and `priceForPeriod` — never re-implement.
+- Project rules override advice from skills.
