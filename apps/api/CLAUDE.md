@@ -87,6 +87,7 @@ photos:read`, `apikey:list`, `apikey:revoke <prefix>`. `create` upserts `<servic
 ## API conventions
 
 - Everything is behind the global auth guard; only auth routes are `@Public()`. Controllers get `@ApiCookieAuth()`.
+  A route a service (API key) may call needs `@Scopes(...)` + `@ApiBearerAuth()`; keys are denied everywhere else.
 - **Dates**: `"YYYY-MM-DD"` strings in and out. Validate with `@IsDateOnly()` (`src/common/validators/`),
   convert with `parseDateOnly` / `formatDateOnly` (`src/common/helpers/date-only.ts`). "Today" = `todayDateOnly()`, Kyiv time.
 - **Money**: `Int` kopiyky (`@IsInt`, `@Max(PG_INT_MAX)`); never floats, never formatted in the API.

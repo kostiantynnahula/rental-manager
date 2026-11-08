@@ -12,6 +12,9 @@ import { generateApiKey, hashApiKey } from './helpers/api-key-token.js';
 import type { CreateApiKeyInput } from './interfaces/create-api-key-input.interface.js';
 import type { VerifiedApiKey } from './interfaces/verified-api-key.interface.js';
 
+// lastUsedAt is written at most this often per key, not on every request.
+const TOUCH_INTERVAL_MS = 60_000;
+
 // Becomes the email local part, so keep it to a safe, already-normalized charset.
 const SERVICE_NAME = /^[a-z0-9-]+$/;
 
@@ -81,5 +84,20 @@ export class ApiKeysService {
     }
     const { user, ...apiKey } = found;
     return { apiKey, user };
+  }
+
+  // Records key usage; skips the write if it was already recorded within TOUCH_INTERVAL_MS.
+  async touch(id: string): Promise<void> {
+    const now = new Date();
+    await this.prisma.apiKey.updateMany({
+      where: {
+        id,
+        OR: [
+          { lastUsedAt: null },
+          { lastUsedAt: { lt: new Date(now.getTime() - TOUCH_INTERVAL_MS) } },
+        ],
+      },
+      data: { lastUsedAt: now },
+    });
   }
 }

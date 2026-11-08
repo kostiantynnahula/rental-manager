@@ -22,4 +22,12 @@ paths:
 - Config → options mapping lives in `src/auth/config/` as pure `*OptionsFromConfig(config: ConfigService<Env, true>)` functions (`jwt.config.ts`, `cookie.config.ts`). Follow this pattern in other features (`src/<feature>/config/`).
 - Swagger: cookie auth is declared; log in via "Try it out" on `/api/auth/login` and the browser sends the cookie for later calls.
 - e2e tests importing `AppModule` get the guard too — test-only controllers need `@Public()`.
-- API keys for service users: `src/api-keys/` (see `apps/api/CLAUDE.md`). The guard will authenticate `Bearer rm_…` tokens via `ApiKeysService.verify`; never log the `Authorization` header or a key, only its prefix.
+- **API keys** (service users, `src/api-keys/`, see `apps/api/CLAUDE.md`): `Authorization: Bearer rm_…` → the same
+  global guard looks the key up with `ApiKeysService.verify` (the only DB hit in the guard). A Bearer that isn't
+  `rm_…` is ignored: humans authenticate with the cookie only.
+  - **Deny by default**: a key works only on routes with `@Scopes(...)` (`scopes.decorator.ts`; method over class,
+    all listed scopes required). No `@Scopes` or a missing scope → `403`; unknown/revoked key or inactive user → `401`.
+  - Humans ignore `@Scopes`; `@Public()` routes are open to keys too.
+  - `req.user = { id, apiKeyId }` for keys (`apiKeyId` absent for humans). `lastUsedAt` is updated at most once a minute.
+  - Service routes also get `@ApiBearerAuth()`. Today: `GET /photos/:id/file` and `/thumbnail` (`photos:read`).
+  - Never log the `Authorization` header or a key — only its prefix.

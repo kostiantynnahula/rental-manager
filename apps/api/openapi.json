@@ -1604,6 +1604,9 @@
           "401": {
             "description": ""
           },
+          "403": {
+            "description": "API key without photos:read"
+          },
           "404": {
             "description": "Photo not found"
           }
@@ -1611,6 +1614,9 @@
         "security": [
           {
             "cookie": []
+          },
+          {
+            "bearer": []
           }
         ],
         "tags": [
@@ -1638,6 +1644,9 @@
           "401": {
             "description": ""
           },
+          "403": {
+            "description": "API key without photos:read"
+          },
           "404": {
             "description": "Photo not found"
           }
@@ -1645,6 +1654,9 @@
         "security": [
           {
             "cookie": []
+          },
+          {
+            "bearer": []
           }
         ],
         "tags": [
@@ -3303,6 +3315,12 @@
         "type": "apiKey",
         "in": "cookie",
         "name": "access_token"
+      },
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http",
+        "description": "API key (rm_…)"
       }
     },
     "schemas": {

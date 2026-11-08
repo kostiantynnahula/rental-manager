@@ -9,6 +9,8 @@ export function buildSwaggerConfig(): Omit<OpenAPIObject, 'paths'> {
       .setVersion('0.1')
       // Cookie auth: log in via POST /api/auth/login and the browser sends the cookie afterwards.
       .addCookieAuth('access_token')
+      // Service users (worker, bots): `Authorization: Bearer rm_…` API key, only on routes with @Scopes.
+      .addBearerAuth({ type: 'http', scheme: 'bearer', description: 'API key (rm_…)' })
       .build()
   );
 }

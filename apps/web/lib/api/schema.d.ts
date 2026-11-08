@@ -3255,6 +3255,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description API key without photos:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Photo not found */
             404: {
                 headers: {
@@ -3283,6 +3290,13 @@ export interface operations {
                 content?: never;
             };
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without photos:read */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

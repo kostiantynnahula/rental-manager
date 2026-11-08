@@ -10,8 +10,10 @@ import {
   StreamableFile,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCookieAuth,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -19,6 +21,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Scopes } from '../auth/scopes.decorator.js';
 import { PhotoDetailResponseDto } from './dto/photo-detail-response.dto.js';
 import type { PhotoFile } from './interfaces/photo-file.interface.js';
 import { PhotosService } from './photos.service.js';
@@ -42,6 +45,10 @@ export class PhotosController {
   }
 
   @Get(':id/file')
+  // The worker downloads photos with an API key.
+  @Scopes('photos:read')
+  @ApiBearerAuth()
+  @ApiForbiddenResponse({ description: 'API key without photos:read' })
   @Header('Cache-Control', FILE_CACHE_CONTROL)
   @Header('X-Content-Type-Options', 'nosniff')
   @ApiProduces('image/jpeg', 'image/png', 'image/webp')
@@ -51,6 +58,10 @@ export class PhotosController {
   }
 
   @Get(':id/thumbnail')
+  // The worker downloads photos with an API key.
+  @Scopes('photos:read')
+  @ApiBearerAuth()
+  @ApiForbiddenResponse({ description: 'API key without photos:read' })
   @Header('Cache-Control', FILE_CACHE_CONTROL)
   @Header('X-Content-Type-Options', 'nosniff')
   @ApiProduces('image/webp')
