@@ -1,10 +1,7 @@
 import { z } from 'zod';
 import { readingValuesSchema } from '@/components/meters/helpers/reading-values-schema';
 import type { Meter } from '@/lib/api/queries/meters';
-import { formatDate, todayDateOnly } from '@/lib/format';
-import { isPeriod, readingDateWindow } from '@/lib/period';
-
-const DATE = /^\d{4}-\d{2}-\d{2}$/;
+import { readingDateIssue } from './reading-date-issue';
 
 const entrySchema = z.object({
   meterId: z.string(),
@@ -28,26 +25,9 @@ export function batchReadingsSchema(meters: Meter[], savedIds: ReadonlySet<strin
   return z
     .object({ period: z.string(), readingDate: z.string(), entries: z.array(entrySchema) })
     .superRefine((v, ctx) => {
-      if (!isPeriod(v.period))
-        ctx.addIssue({ code: 'custom', path: ['period'], message: 'Вкажіть місяць' });
-      else if (!DATE.test(v.readingDate))
-        ctx.addIssue({ code: 'custom', path: ['readingDate'], message: 'Вкажіть дату' });
-      else {
-        // Same rules as the API: within the period's window and not in the future.
-        const { from, to } = readingDateWindow(v.period);
-        if (v.readingDate > todayDateOnly())
-          ctx.addIssue({
-            code: 'custom',
-            path: ['readingDate'],
-            message: 'Не може бути в майбутньому',
-          });
-        else if (v.readingDate < from || v.readingDate > to)
-          ctx.addIssue({
-            code: 'custom',
-            path: ['readingDate'],
-            message: `Дата має бути між ${formatDate(from)} і ${formatDate(to)}`,
-          });
-      }
+      const dateIssue = readingDateIssue(v.period, v.readingDate);
+      if (dateIssue)
+        ctx.addIssue({ code: 'custom', path: [dateIssue.path], message: dateIssue.message });
 
       let filled = 0;
       v.entries.forEach((entry, i) => {

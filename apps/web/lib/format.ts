@@ -99,7 +99,12 @@ export function todayDateOnly(): string {
   return kyivDateFormatter.format(new Date());
 }
 
+// A timestamp from the API → its Kyiv calendar date: "2026-10-28T22:30:00.000Z" → "2026-10-29".
+export function instantDateOnly(timestamp: string): string {
+  return kyivDateFormatter.format(new Date(timestamp));
+}
+
 // A timestamp from the API (e.g. issuedAt) → its Kyiv date: "2026-10-28T22:30:00.000Z" → "29.10.2026".
 export function formatInstantDate(timestamp: string): string {
-  return formatDate(kyivDateFormatter.format(new Date(timestamp)));
+  return formatDate(instantDateOnly(timestamp));
 }

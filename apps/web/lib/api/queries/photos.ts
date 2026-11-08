@@ -5,6 +5,8 @@ import type { components } from '@/lib/api/schema';
 
 export type Photo = components['schemas']['PhotoListItemResponseDto'];
 export type PhotoUploadResult = components['schemas']['PhotoUploadResultDto'];
+export type PhotoDetail = components['schemas']['PhotoDetailResponseDto'];
+export type PhotoReading = components['schemas']['PhotoReadingResponseDto'];
 
 export const photoKeys = {
   all: ['photos'] as const,
@@ -29,6 +31,21 @@ function photoListOptions(apartmentId: string, unassigned: boolean) {
 
 export function useApartmentPhotos(apartmentId: string, unassigned: boolean) {
   return useQuery(photoListOptions(apartmentId, unassigned));
+}
+
+// For "Наступне фото": an up-to-date unassigned list on demand (staleTime 0 → refetched if the cache is stale,
+// e.g. right after a reading invalidated it).
+export function useFetchUnassignedPhotos(apartmentId: string) {
+  const queryClient = useQueryClient();
+  return () => queryClient.fetchQuery({ ...photoListOptions(apartmentId, true), staleTime: 0 });
+}
+
+export function usePhoto(id: string) {
+  return useQuery({
+    queryKey: photoKeys.detail(id),
+    queryFn: async (): Promise<PhotoDetail> =>
+      unwrap(await api.GET('/photos/{id}', { params: { path: { id } } })),
+  });
 }
 
 export function useUploadPhotos(apartmentId: string) {
