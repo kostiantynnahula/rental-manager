@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '../generated/prisma/client.js';
+import { UserKind } from '../generated/prisma/enums.js';
 import { PasswordService } from '../users/password.service.js';
 import { UsersService } from '../users/users.service.js';
 import type { AuthTokens } from './interfaces/auth-tokens.interface.js';
@@ -25,12 +26,16 @@ export class AuthService {
     userAgent: string | undefined,
   ): Promise<{ user: User; tokens: AuthTokens }> {
     const user = await this.users.findByEmail(email);
+    // Service users have no password (they use API keys): verify against the dummy hash like an
+    // unknown email, so every failure path costs the same.
+    const isHuman = user?.kind === UserKind.HUMAN;
+    const passwordHash = isHuman ? user.passwordHash : null;
     const valid = await this.passwords.verify(
-      user?.passwordHash ?? (await this.getDummyHash()),
+      passwordHash ?? (await this.getDummyHash()),
       password,
     );
-    // One message for unknown email, wrong password and inactive user.
-    if (!user || !valid || !user.isActive) {
+    // One message for unknown email, service user, wrong password and inactive user.
+    if (!user || !isHuman || !passwordHash || !valid || !user.isActive) {
       throw new UnauthorizedException('Invalid email or password');
     }
     const refreshToken = await this.sessions.create(user.id, userAgent);

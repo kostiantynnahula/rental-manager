@@ -13,6 +13,7 @@ const CONSTRAINT_MESSAGES: Record<string, string> = {
   leases_dates_check: 'endDate must be on or after startDate',
   lease_tenants_one_primary: 'A lease must have exactly one PRIMARY tenant',
   users_email_normalized: 'email must be lowercase and trimmed',
+  users_password_matches_kind: 'A human user needs a password; a service user must not have one',
   meters_removed_after_installed: 'removedAt must be on or after installedAt',
   readings_period_first_of_month: 'period must be the first day of a month',
   readings_confirmed_has_confirmer: 'A confirmed reading must record who confirmed it and when',

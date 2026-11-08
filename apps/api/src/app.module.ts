@@ -4,7 +4,7 @@ import { ApartmentsModule } from './apartments/apartments.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { AuthModule } from './auth/auth.module.js';
-import { validateEnv } from './config/env.validation.js';
+import { configModuleOptions } from './config/config-module-options.js';
 import { HealthController } from './health/health.controller.js';
 import { LeasesModule } from './leases/leases.module.js';
 import { MetersModule } from './meters/meters.module.js';
@@ -18,13 +18,7 @@ import { UsersModule } from './users/users.module.js';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      cache: true,
-      // cwd is apps/api: an optional local .env wins over the shared root .env.
-      envFilePath: ['.env', '../../.env'],
-      validate: validateEnv,
-    }),
+    ConfigModule.forRoot(configModuleOptions),
     PrismaModule,
     UsersModule,
     AuthModule,

@@ -28,6 +28,18 @@
 
 - **Apartment** is archived via `isActive = false`, never deleted. Leases reference it with `onDelete: Restrict`,
   so a delete with history fails at the DB level. Same for **Tenant** (via `LeaseTenant`).
+- **Users** (migration `add_service_users_api_keys`): `kind` HUMAN (password login) or SERVICE (worker, bots — API keys
+  only). Raw-SQL CHECK `users_password_matches_kind`: HUMAN ⇒ `passwordHash` NOT NULL, SERVICE ⇒ NULL. Service emails
+  use the reserved `.invalid` TLD (`worker@service.invalid`); email stays required and unique.
+- **ApiKey** belongs to a user (`onDelete: Restrict`): only `keyHash` (SHA-256) and a public `prefix` are stored,
+  `scopes String[]`; revoked via `revokedAt`, never deleted. Never log or return a key after creation.
+- **API keys** (`src/api-keys/`): scopes only from `API_KEY_SCOPES` (`constants/api-key-scopes.ts`, type
+  `ApiKeyScope`). Key = `rm_<8 hex>_<32 bytes base64url>`; `prefix` = `rm_<8 hex>` (public, shown in lists/logs),
+  `keyHash` = SHA-256 of the whole key (the lookup). `ApiKeysService.verify(token)` → `{ apiKey, user }` or null
+  (not `rm_…`, unknown, revoked, inactive or non-SERVICE user). Managed by the CLI (`src/cli/api-keys.ts`, own slim
+  `CliModule`; scripts build first): `pnpm --filter api apikey:create --service worker --name "<label>" --scopes
+photos:read`, `apikey:list`, `apikey:revoke <prefix>`. `create` upserts `<service>@service.invalid`; the full
+  key is printed once there and nowhere else.
 - **Money** is `Int` kopiyky (UAH), e.g. `monthlyRent: 1500000` = 15 000.00 UAH. Never floats.
 - **Lease** dates are `@db.Date` (no time); `endDate` is the _inclusive_ last day, `null` = open-ended.
 - Constraints written in raw SQL in migration `add_apartments_tenants_leases` (not visible in `schema.prisma`):

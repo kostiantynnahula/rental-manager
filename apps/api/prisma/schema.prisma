@@ -12,11 +12,20 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserKind {
+  HUMAN
+  SERVICE
+}
+
 model User {
   id                  String      @id @default(uuid()) @db.Uuid
   // Always lowercase + trimmed (normalizeEmail); enforced by a CHECK constraint in the migration.
+  // SERVICE users use the reserved `.invalid` TLD, e.g. `worker@service.invalid`.
   email               String      @unique
-  passwordHash        String
+  // HUMAN users log in with a password; SERVICE users (worker, bots) only with API keys.
+  kind                UserKind    @default(HUMAN)
+  // NULL exactly for SERVICE users (CHECK users_password_matches_kind in the migration).
+  passwordHash        String?
   name                String?
   isActive            Boolean     @default(true)
   createdAt           DateTime    @default(now())
@@ -27,8 +36,28 @@ model User {
   uploadedPhotos      Photo[]
   issuedStatements    Statement[] @relation("StatementIssuedBy")
   cancelledStatements Statement[] @relation("StatementCancelledBy")
+  apiKeys             ApiKey[]
 
   @@map("users")
+}
+
+// Long-lived key of a SERVICE user. Revoked via revokedAt, never deleted; the key itself is never stored or logged.
+model ApiKey {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid
+  user       User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  name       String
+  // Public, non-secret start of the key: shown in lists, identifies a key in logs.
+  prefix     String    @unique
+  // SHA-256 of the full key (random secret → a fast hash is fine, as for refresh tokens).
+  keyHash    String    @unique
+  scopes     String[]
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+  @@map("api_keys")
 }
 
 // One row per refresh token. Rotation revokes the row and links it to its successor.
