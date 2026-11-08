@@ -13,6 +13,7 @@ import { useApartment } from '@/lib/api/queries/apartments';
 import { ApartmentDetailSkeleton } from './apartment-detail-skeleton';
 import { ApartmentLeasesTab } from '@/components/leases/apartment-leases-tab';
 import { ApartmentMetersTab } from '@/components/meters/apartment-meters-tab';
+import { ApartmentPhotosTab } from '@/components/photos/apartment-photos-tab';
 import { ApartmentReadingsTab } from '@/components/readings/apartment-readings-tab';
 import { ApartmentStatementsTab } from '@/components/statements/apartment-statements-tab';
 import { ApartmentTariffsTab } from '@/components/tariffs/apartment-tariffs-tab';
@@ -101,18 +102,9 @@ export function ApartmentDetail() {
         <TabsContent value="leases" className="pt-2">
           <ApartmentLeasesTab apartment={data} />
         </TabsContent>
-        {APARTMENT_TABS.filter(
-          (t) =>
-            !['overview', 'readings', 'meters', 'tariffs', 'statements', 'leases'].includes(
-              t.value,
-            ),
-        ).map((t) => (
-          <TabsContent key={t.value} value={t.value} className="pt-2">
-            <p className="rounded-lg border border-dashed px-4 py-10 text-center text-muted-foreground">
-              Скоро
-            </p>
-          </TabsContent>
-        ))}
+        <TabsContent value="photos" className="pt-2">
+          <ApartmentPhotosTab apartment={data} />
+        </TabsContent>
       </Tabs>
     </section>
   );

@@ -24,4 +24,5 @@ paths:
   files → 400, too large → 413. `multer` isn't a direct dependency: don't import it at runtime (types come from `@types/multer`).
 - A photo backs 0..n readings (`Reading.photoId`, FK `Restrict`; `source = PHOTO`), always of the same apartment.
   "Unassigned" = no non-cancelled reading. DELETE only when unassigned; cancelled readings are unlinked first.
+  The list returns `canDelete` (= unassigned, counted via `photoWithUsageInclude`); the web follows it, DELETE re-checks.
 - File endpoints stream through the API (auth required), `Cache-Control: private, max-age=86400`.

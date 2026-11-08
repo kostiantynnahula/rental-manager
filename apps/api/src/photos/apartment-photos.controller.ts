@@ -25,7 +25,7 @@ import {
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { AuthUser } from '../auth/interfaces/auth-user.interface.js';
 import { ListApartmentPhotosQueryDto } from './dto/list-apartment-photos-query.dto.js';
-import { PhotoResponseDto } from './dto/photo-response.dto.js';
+import { PhotoListItemResponseDto } from './dto/photo-list-item-response.dto.js';
 import { PhotoUploadResultDto } from './dto/photo-upload-result.dto.js';
 import { PhotosService } from './photos.service.js';
 
@@ -71,12 +71,12 @@ export class ApartmentPhotosController {
   }
 
   @Get()
-  @ApiOkResponse({ type: [PhotoResponseDto], description: 'Newest first' })
+  @ApiOkResponse({ type: [PhotoListItemResponseDto], description: 'Newest first' })
   async list(
     @Param('apartmentId', ParseUUIDPipe) apartmentId: string,
     @Query() query: ListApartmentPhotosQueryDto,
-  ): Promise<PhotoResponseDto[]> {
+  ): Promise<PhotoListItemResponseDto[]> {
     const photos = await this.photos.list(apartmentId, query.unassigned === 'true');
-    return photos.map((p) => PhotoResponseDto.from(p));
+    return photos.map((p) => PhotoListItemResponseDto.fromListItem(p));
   }
 }

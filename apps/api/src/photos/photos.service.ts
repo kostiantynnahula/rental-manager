@@ -9,22 +9,23 @@ import {
 import { ApartmentsService } from '../apartments/apartments.service.js';
 import { todayDateOnly } from '../common/helpers/date-only.js';
 import type { Photo } from '../generated/prisma/client.js';
-import { ReadingStatus } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { StorageService } from '../storage/storage.service.js';
 import { detectImageType } from './helpers/image-type.js';
 import { cleanOriginalFilename } from './helpers/original-filename.js';
 import { photoKeys } from './helpers/photo-keys.js';
 import { photoWithReadingsInclude, type PhotoWithReadings } from './helpers/photo-with-readings.js';
+import {
+  activeReading,
+  photoWithUsageInclude,
+  type PhotoWithUsage,
+} from './helpers/photo-with-usage.js';
 import { sha256Hex } from './helpers/sha256.js';
 import { makeThumbnail, THUMBNAIL_MIME_TYPE } from './helpers/thumbnail.js';
 import type { ImageType } from './interfaces/image-type.interface.js';
 import type { PhotoFile } from './interfaces/photo-file.interface.js';
 import type { Thumbnail } from './interfaces/thumbnail.interface.js';
 import type { UploadedPhoto } from './interfaces/uploaded-photo.interface.js';
-
-// "Linked" = referenced by a reading that isn't CANCELLED.
-const activeReading = { status: { not: ReadingStatus.CANCELLED } };
 
 @Injectable()
 export class PhotosService {
@@ -72,10 +73,11 @@ export class PhotosService {
     return results;
   }
 
-  async list(apartmentId: string, unassigned: boolean): Promise<Photo[]> {
+  async list(apartmentId: string, unassigned: boolean): Promise<PhotoWithUsage[]> {
     await this.apartments.findOrThrow(apartmentId);
     return this.prisma.photo.findMany({
       where: { apartmentId, ...(unassigned && { readings: { none: activeReading } }) },
+      include: photoWithUsageInclude,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     });
   }

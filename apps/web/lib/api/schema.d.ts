@@ -1199,7 +1199,7 @@ export interface components {
             /** @description true = same file (by SHA-256) was already uploaded; existing record */
             duplicate: boolean;
         };
-        PhotoResponseDto: {
+        PhotoListItemResponseDto: {
             /** Format: uuid */
             id: string;
             /** Format: uuid */
@@ -1228,6 +1228,8 @@ export interface components {
             fileUrl: string;
             /** @example /api/photos/3f1c…/thumbnail */
             thumbnailUrl: string;
+            /** @description Computed by the server: DELETE would succeed (not linked to a non-cancelled reading) */
+            canDelete: boolean;
         };
         /** @enum {string} */
         ReadingStatus: "DRAFT" | "CONFIRMED" | "CANCELLED";
@@ -3068,7 +3070,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PhotoResponseDto"][];
+                    "application/json": components["schemas"]["PhotoListItemResponseDto"][];
                 };
             };
             401: {

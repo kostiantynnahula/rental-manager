@@ -1485,7 +1485,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/PhotoResponseDto"
+                    "$ref": "#/components/schemas/PhotoListItemResponseDto"
                   }
                 }
               }
@@ -4570,7 +4570,7 @@
           "duplicate"
         ]
       },
-      "PhotoResponseDto": {
+      "PhotoListItemResponseDto": {
         "type": "object",
         "properties": {
           "id": {
@@ -4621,6 +4621,10 @@
           "thumbnailUrl": {
             "type": "string",
             "example": "/api/photos/3f1c…/thumbnail"
+          },
+          "canDelete": {
+            "type": "boolean",
+            "description": "Computed by the server: DELETE would succeed (not linked to a non-cancelled reading)"
           }
         },
         "required": [
@@ -4635,7 +4639,8 @@
           "uploadedById",
           "createdAt",
           "fileUrl",
-          "thumbnailUrl"
+          "thumbnailUrl",
+          "canDelete"
         ]
       },
       "ReadingStatus": {
