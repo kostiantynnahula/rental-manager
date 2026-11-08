@@ -1390,6 +1390,11 @@ export interface components {
              */
             readingDate: string;
             kind: components["schemas"]["ReadingKind"];
+            /**
+             * Format: uuid
+             * @description Photo the reading was taken from (source PHOTO)
+             */
+            photoId: string | null;
             values: components["schemas"]["ReadingHistoryValueResponseDto"][];
         };
         ReadingHistoryPageResponseDto: {
@@ -1644,6 +1649,8 @@ export interface components {
              * @example 12.350
              */
             consumption: string;
+            /** @description Photos of the readings behind this consumption; empty for statements issued before photo links */
+            photoIds: string[];
         };
         StatementLineResponseDto: {
             type: components["schemas"]["StatementLineType"];

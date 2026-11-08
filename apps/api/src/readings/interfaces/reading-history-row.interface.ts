@@ -7,6 +7,7 @@ export interface ReadingHistoryRow {
   period: Date;
   readingDate: Date;
   kind: ReadingKind;
+  photoId: string | null;
   utility: UtilityType;
   label: string | null;
   serialNumber: string | null;

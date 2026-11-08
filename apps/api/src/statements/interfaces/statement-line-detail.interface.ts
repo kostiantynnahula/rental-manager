@@ -7,4 +7,6 @@ export interface StatementLineDetail {
   label: string | null;
   serialNumber: string | null;
   consumption: string;
+  // Missing in statements issued before photo links were added.
+  photoIds?: string[];
 }

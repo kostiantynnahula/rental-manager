@@ -40,11 +40,12 @@ export function useFetchUnassignedPhotos(apartmentId: string) {
   return () => queryClient.fetchQuery({ ...photoListOptions(apartmentId, true), staleTime: 0 });
 }
 
-export function usePhoto(id: string) {
+export function usePhoto(id: string, { enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: photoKeys.detail(id),
     queryFn: async (): Promise<PhotoDetail> =>
       unwrap(await api.GET('/photos/{id}', { params: { path: { id } } })),
+    enabled,
   });
 }
 

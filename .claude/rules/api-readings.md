@@ -20,4 +20,4 @@ confirm (or create with `confirm: true`); CONFIRMED → only cancel (`reason` ap
   or FINAL of that period, DRAFT = newest draft, MISSING = nothing yet.
 - History (`GET /apartments/:id/readings/history?from&to&meterIds&page&pageSize`): CONFIRMED readings (all kinds),
   paginated by reading (values grouped), order period DESC, utility (enum order), label NULLS FIRST, readingDate
-  DESC, id. Parameterized SQL fragments in `helpers/reading-history-sql.ts` (`Prisma.sql` / `Prisma.empty`).
+  DESC, id; each item has `photoId` (null unless entered from a photo). Parameterized SQL fragments in `helpers/reading-history-sql.ts` (`Prisma.sql` / `Prisma.empty`).

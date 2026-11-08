@@ -66,7 +66,9 @@ export class StatementLineResponseDto {
       quantity: l.quantity.toFixed(3),
       unitPrice: l.unitPrice.toFixed(4),
       amount: l.amount,
-      meters: (l.details as unknown as StatementLineDetail[] | null) ?? undefined,
+      meters: (l.details as unknown as StatementLineDetail[] | null)?.map((d) =>
+        StatementLineMeterResponseDto.fromDetail(d),
+      ),
     };
   }
 }

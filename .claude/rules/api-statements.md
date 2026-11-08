@@ -21,6 +21,8 @@ in the period; the service only loads data. Imports nothing from Prisma but `Pri
 - **Issued statements are snapshots** (migration `add_statements`): lines keep the name, utilities, prices and
   per-meter `details`; later tariff or reading changes don't touch them. Nothing flags a reading changed after issue:
   the fix is cancel + issue again. Line `details` and statement `warnings` are JSON.
+- Per-meter `photoIds` (photos of the readings behind the consumption, via `reading_consumption."readingId"` →
+  `readings."photoId"`) are part of the snapshot. Older `details` have no field → the DTO maps it to `[]`.
 - `POST /apartments/:apartmentId/statements { period, expectedTotal, acknowledgeWarnings? }`, one transaction: recompute
   with the calculator; total differs → 409 with the fresh `preview`; unacknowledged warnings → 422 with `warnings`; insert.
   An already issued period isn't checked in code: the partial unique index answers 409, races included.

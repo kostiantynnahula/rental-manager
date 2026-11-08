@@ -50,7 +50,12 @@ function meter(
 }
 
 function row(meterId: string, zone: Zone, consumption: string | null) {
-  return { meterId, zone, consumption: consumption === null ? null : dec(consumption) };
+  return {
+    meterId,
+    zone,
+    consumption: consumption === null ? null : dec(consumption),
+    photoId: null,
+  };
 }
 
 function input(over: Partial<StatementInput>): StatementInput {

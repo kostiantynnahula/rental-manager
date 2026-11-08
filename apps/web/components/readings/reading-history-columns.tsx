@@ -3,7 +3,9 @@
 import { createDataTableColumnHelper } from '@/components/data-table/features';
 import type { ReadingHistoryItem } from '@/lib/api/queries/readings';
 import { formatDate, formatPeriod } from '@/lib/format';
+import { PhotoLinkButton } from '@/components/photos/photo-link-button';
 import { formatHistoryValues } from './helpers/format-history-values';
+import { historyPhotoLabel } from './helpers/history-photo-label';
 import { HistoryMeterName } from './history-meter-name';
 
 const column = createDataTableColumnHelper<ReadingHistoryItem>();
@@ -36,8 +38,11 @@ export const readingHistoryColumns = column.columns([
     id: 'values',
     header: 'Показники',
     cell: ({ row }) => (
-      <span className="whitespace-nowrap tabular-nums">
+      <span className="inline-flex items-center gap-1 whitespace-nowrap tabular-nums">
         {formatHistoryValues(row.original, 'value')}
+        {row.original.photoId && (
+          <PhotoLinkButton photoId={row.original.photoId} label={historyPhotoLabel(row.original)} />
+        )}
       </span>
     ),
   }),

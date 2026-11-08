@@ -118,7 +118,7 @@ export class ReadingsService {
     const offset = (query.page - 1) * query.pageSize;
     const [rows, [{ total }]] = await Promise.all([
       this.prisma.$queryRaw<ReadingHistoryRow[]>`
-        SELECT r."id", r."meterId", r."period", r."readingDate", r."kind",
+        SELECT r."id", r."meterId", r."period", r."readingDate", r."kind", r."photoId",
                m."utility", m."label", m."serialNumber", m."removedAt"
         FROM "readings" r JOIN "meters" m ON m."id" = r."meterId"
         ${where}

@@ -22,6 +22,14 @@ export class ReadingHistoryItemResponseDto {
   @ApiProperty({ enum: ReadingKind, enumName: 'ReadingKind' })
   kind: ReadingKind;
 
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    format: 'uuid',
+    description: 'Photo the reading was taken from (source PHOTO)',
+  })
+  photoId: string | null;
+
   @ApiProperty({ type: [ReadingHistoryValueResponseDto] })
   values: ReadingHistoryValueResponseDto[];
 
@@ -32,6 +40,7 @@ export class ReadingHistoryItemResponseDto {
       period: formatPeriod(reading.period),
       readingDate: formatDateOnly(reading.readingDate),
       kind: reading.kind,
+      photoId: reading.photoId,
       values: values.map((v) => ReadingHistoryValueResponseDto.from(v)),
     };
   }

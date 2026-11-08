@@ -91,9 +91,10 @@ function meterShare(
   zone: Zone,
   consumption: StatementInput['consumption'],
 ): StatementLineMeter | undefined {
-  const values = consumption
-    .filter((r) => r.meterId === meter.id && r.zone === zone && r.consumption !== null)
-    .map((r) => r.consumption as Prisma.Decimal);
+  const rows = consumption.filter(
+    (r) => r.meterId === meter.id && r.zone === zone && r.consumption !== null,
+  );
+  const values = rows.map((r) => r.consumption as Prisma.Decimal);
   if (values.length === 0) return undefined;
   return {
     meterId: meter.id,
@@ -101,6 +102,7 @@ function meterShare(
     label: meter.label,
     serialNumber: meter.serialNumber,
     consumption: sum(values),
+    photoIds: [...new Set(rows.flatMap((r) => r.photoId ?? []))],
   };
 }
 

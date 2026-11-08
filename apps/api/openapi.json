@@ -5085,6 +5085,12 @@
               }
             ]
           },
+          "photoId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "Photo the reading was taken from (source PHOTO)"
+          },
           "values": {
             "type": "array",
             "items": {
@@ -5098,6 +5104,7 @@
           "period",
           "readingDate",
           "kind",
+          "photoId",
           "values"
         ]
       },
@@ -5712,6 +5719,14 @@
             "type": "string",
             "example": "12.350",
             "description": "Decimal string with 3 decimals"
+          },
+          "photoIds": {
+            "description": "Photos of the readings behind this consumption; empty for statements issued before photo links",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         },
         "required": [
@@ -5719,7 +5734,8 @@
           "utility",
           "label",
           "serialNumber",
-          "consumption"
+          "consumption",
+          "photoIds"
         ]
       },
       "StatementLineResponseDto": {

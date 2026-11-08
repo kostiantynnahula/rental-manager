@@ -15,5 +15,7 @@ paths:
   already taken from it, one-meter form. No worker yet → saved with `confirm: true` + `photoId` (source PHOTO).
   Meter select = `GET /apartments/:id/readings?period=` (MISSING preselected, CONFIRMED disabled); previous values
   from the meter's `lastReading`. Defaults live in `formDefaults()` so a worker DRAFT can prefill them later.
+- 📷 elsewhere (history, statement meters): `PhotoLinkButton({ photoId, label })` — loads the photo on tap and
+  opens `PhotoFullscreen` (the same zoom dialog the review screen uses); 404 → "Фото видалено".
 - Period/date rules shared with batch entry: `components/readings/helpers/reading-date-issue.ts`.
 - `useCreateReading` with a `photoId` also invalidates `photoKeys.all` (the photo leaves "unassigned").

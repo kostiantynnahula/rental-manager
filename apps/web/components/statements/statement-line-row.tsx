@@ -1,4 +1,5 @@
 import { ChevronRight } from 'lucide-react';
+import { PhotoLinkButton } from '@/components/photos/photo-link-button';
 import type { StatementLine } from '@/lib/api/queries/statements';
 import { formatMoney } from '@/lib/format';
 import { formatMeterValueCompact } from '@/lib/meter-values';
@@ -51,7 +52,14 @@ export function StatementLineRow({ line }: { line: StatementLine }) {
                     <span className="text-muted-foreground"> · № {meter.serialNumber}</span>
                   )}
                 </span>
-                <span className="shrink-0 whitespace-nowrap tabular-nums">
+                <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap tabular-nums">
+                  {meter.photoIds.map((photoId) => (
+                    <PhotoLinkButton
+                      key={photoId}
+                      photoId={photoId}
+                      label={statementMeterName(meter.utility, meter.label)}
+                    />
+                  ))}
                   {formatMeterValueCompact(meter.consumption)} {UTILITY_UNITS[meter.utility]}
                 </span>
               </li>

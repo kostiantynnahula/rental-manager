@@ -7,4 +7,6 @@ export interface StatementConsumptionRow {
   zone: Zone;
   // null when the meter/zone has no previous confirmed value (a meter's INITIAL reading).
   consumption: Prisma.Decimal | null;
+  // Photo of the reading behind the row, if it was entered from one.
+  photoId: string | null;
 }

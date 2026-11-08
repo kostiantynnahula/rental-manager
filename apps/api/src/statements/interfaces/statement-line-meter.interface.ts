@@ -8,4 +8,6 @@ export interface StatementLineMeter {
   label: string | null;
   serialNumber: string | null;
   consumption: Prisma.Decimal;
+  // Photos of the readings behind this consumption (distinct, in row order).
+  photoIds: string[];
 }

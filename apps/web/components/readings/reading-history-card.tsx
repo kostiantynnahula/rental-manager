@@ -1,6 +1,8 @@
 import type { ReadingHistoryItem } from '@/lib/api/queries/readings';
 import { formatDate, formatPeriod } from '@/lib/format';
+import { PhotoLinkButton } from '@/components/photos/photo-link-button';
 import { formatHistoryValues } from './helpers/format-history-values';
+import { historyPhotoLabel } from './helpers/history-photo-label';
 import { HistoryMeterName } from './history-meter-name';
 
 // Mobile (< md) row of the readings history.
@@ -13,7 +15,12 @@ export function ReadingHistoryCard({ item }: { item: ReadingHistoryItem }) {
       </div>
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
         <dt className="text-muted-foreground">Показники</dt>
-        <dd className="tabular-nums">{formatHistoryValues(item, 'value')}</dd>
+        <dd className="flex items-center gap-1 tabular-nums">
+          {formatHistoryValues(item, 'value')}
+          {item.photoId && (
+            <PhotoLinkButton photoId={item.photoId} label={historyPhotoLabel(item)} />
+          )}
+        </dd>
         <dt className="text-muted-foreground">Споживання</dt>
         <dd className="tabular-nums">{formatHistoryValues(item, 'consumption')}</dd>
         <dt className="text-muted-foreground">Подано</dt>

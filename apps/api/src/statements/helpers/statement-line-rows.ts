@@ -13,6 +13,7 @@ export function statementLineRows(
       label: m.label,
       serialNumber: m.serialNumber,
       consumption: m.consumption.toFixed(3),
+      photoIds: m.photoIds,
     }));
     return {
       position,
