@@ -13,7 +13,7 @@ let refreshInFlight: Promise<boolean> | null = null;
 
 // Single-flight: parallel 401s await the same refresh. Important because the API rotates the refresh token —
 // a second concurrent refresh would present the already-revoked token and count as reuse (all sessions revoked).
-function refreshOnce(): Promise<boolean> {
+export function refreshOnce(): Promise<boolean> {
   refreshInFlight ??= fetch('/api/auth/refresh', { method: 'POST', credentials: 'same-origin' })
     .then(
       (response) => response.ok,
@@ -25,7 +25,7 @@ function refreshOnce(): Promise<boolean> {
   return refreshInFlight;
 }
 
-function endSession(): void {
+export function endSession(): void {
   getQueryClient().clear();
   const { pathname, search } = window.location;
   if (pathname !== '/login') window.location.assign(loginUrl(pathname + search));
