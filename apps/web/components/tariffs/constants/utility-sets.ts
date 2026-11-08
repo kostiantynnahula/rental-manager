@@ -12,11 +12,6 @@ export const UTILITY_SETS = [
   { value: 'ELECTRICITY', label: 'Електроенергія', utilities: ['ELECTRICITY'] },
   { value: 'COLD_WATER', label: 'Холодна вода', utilities: ['COLD_WATER'] },
   { value: 'HOT_WATER', label: 'Гаряча вода', utilities: ['HOT_WATER'] },
-  {
-    value: 'WATER',
-    label: 'Холодна + гаряча вода',
-    utilities: ['COLD_WATER', 'HOT_WATER'],
-  },
   { value: 'GAS', label: 'Газ', utilities: ['GAS'] },
 ] as const satisfies readonly UtilitySet[];
 

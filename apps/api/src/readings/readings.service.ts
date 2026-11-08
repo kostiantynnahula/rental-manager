@@ -18,7 +18,11 @@ import { UpdateReadingDto } from './dto/update-reading.dto.js';
 import type { ApartmentReadingHistoryQueryDto } from './dto/apartment-reading-history-query.dto.js';
 import { checkConfirmRules } from './helpers/confirm-rules.js';
 import { pickPeriodReading } from './helpers/period-reading.js';
-import { consumption, findPreviousConfirmed } from './helpers/reading-order.js';
+import { consumptionByReading } from './helpers/consumption-by-reading.js';
+import {
+  confirmedConsumptionQuery,
+  unconfirmedConsumptionQuery,
+} from './helpers/reading-consumption-sql.js';
 import { readingWithValuesInclude, type ReadingWithValues } from './helpers/reading-with-values.js';
 import { READING_HISTORY_ORDER, readingHistoryWhere } from './helpers/reading-history-sql.js';
 import { zonesMismatch } from './helpers/zones.js';
@@ -50,20 +54,17 @@ export class ReadingsService {
     const to = query.to ? parsePeriod(query.to) : undefined;
     if (from && to && from > to) throw new BadRequestException('from must not be after to');
 
-    const [readings, confirmed] = await Promise.all([
-      this.prisma.reading.findMany({
-        where: {
-          meterId,
-          period: { gte: from, lte: to },
-          ...(query.includeCancelled ? {} : { status: { not: ReadingStatus.CANCELLED } }),
-        },
-        include: readingWithValuesInclude,
-        orderBy: [{ period: 'desc' }, { readingDate: 'desc' }, { createdAt: 'desc' }],
-      }),
-      // Consumption is relative to the previous confirmed reading, which may be outside from..to.
-      this.confirmedReadings(this.prisma, [meterId]),
-    ]);
-    return readings.map((r) => this.withConsumption(r, confirmed));
+    const readings = await this.prisma.reading.findMany({
+      where: {
+        meterId,
+        period: { gte: from, lte: to },
+        ...(query.includeCancelled ? {} : { status: { not: ReadingStatus.CANCELLED } }),
+      },
+      include: readingWithValuesInclude,
+      orderBy: [{ period: 'desc' }, { readingDate: 'desc' }, { createdAt: 'desc' }],
+    });
+    // The view sees the meter's full history, so the previous reading may be outside from..to.
+    return this.withConsumption(readings);
   }
 
   // Every meter active during the period, with its reading for it — or MISSING.
@@ -87,18 +88,18 @@ export class ReadingsService {
       },
       orderBy: [{ utility: 'asc' }, { label: 'asc' }, { installedAt: 'asc' }],
     });
-    const confirmed = await this.confirmedReadings(
-      this.prisma,
-      meters.map((m) => m.id),
+    const picked = meters.map(({ readings, ...meter }) => ({
+      meter,
+      ...pickPeriodReading(readings),
+    }));
+    const entries = await this.withConsumption(
+      picked.flatMap(({ reading }) => (reading ? [reading] : [])),
     );
-    return meters.map(({ readings, ...meter }) => {
-      const { status, reading } = pickPeriodReading(readings);
-      return {
-        meter,
-        status,
-        entry: reading ? this.withConsumption(reading, confirmed) : null,
-      };
-    });
+    return picked.map(({ meter, status, reading }) => ({
+      meter,
+      status,
+      entry: entries.find((e) => e.reading.id === reading?.id) ?? null,
+    }));
   }
 
   // Confirmed readings of the apartment, newest period first, one item per reading (values grouped).
@@ -152,9 +153,8 @@ export class ReadingsService {
   }
 
   async findOrThrow(id: string): Promise<ReadingWithConsumption> {
-    const reading = await this.getOrThrow(this.prisma, id);
-    const confirmed = await this.confirmedReadings(this.prisma, [reading.meterId]);
-    return this.withConsumption(reading, confirmed);
+    const [entry] = await this.withConsumption([await this.getOrThrow(this.prisma, id)]);
+    return entry;
   }
 
   async create(
@@ -302,15 +302,31 @@ export class ReadingsService {
     return values.map((v) => ({ zone: v.zone, value: new Prisma.Decimal(v.value) }));
   }
 
-  private withConsumption(
-    reading: ReadingWithValues,
-    confirmed: ReadingWithValues[],
-  ): ReadingWithConsumption {
-    const sameMeter = confirmed.filter((c) => c.meterId === reading.meterId);
-    return {
+  // Consumption from the reading_consumption view: CONFIRMED readings read their own rows, others are
+  // compared with the previous confirmed row (helpers/reading-consumption-sql.ts). One query per group.
+  private async withConsumption(readings: ReadingWithValues[]): Promise<ReadingWithConsumption[]> {
+    const confirmed = readings.filter((r) => r.status === ReadingStatus.CONFIRMED);
+    const unconfirmed = readings.filter((r) => r.status !== ReadingStatus.CONFIRMED);
+    const query = (group: ReadingWithValues[], build: typeof confirmedConsumptionQuery) =>
+      group.length === 0
+        ? Promise.resolve([])
+        : this.prisma.$queryRaw<ReadingConsumptionRow[]>(
+            build(
+              [...new Set(group.map((r) => r.meterId))],
+              group.map((r) => r.id),
+            ),
+          );
+    const rows = (
+      await Promise.all([
+        query(confirmed, confirmedConsumptionQuery),
+        query(unconfirmed, unconfirmedConsumptionQuery),
+      ])
+    ).flat();
+    const byReading = consumptionByReading(rows);
+    return readings.map((reading) => ({
       reading,
-      consumption: consumption(findPreviousConfirmed(sameMeter, reading), reading.values),
-    };
+      consumption: byReading.get(reading.id) ?? null,
+    }));
   }
 
   private confirmedReadings(

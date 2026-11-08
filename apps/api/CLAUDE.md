@@ -51,8 +51,7 @@
   kind INITIAL < REGULAR < FINAL, createdAt; NULL without a previous value). **The single place consumption is
   computed — billing must reuse it**, not re-implement it. Read it with `$queryRaw` (no Prisma model; Prisma ignores
   views when diffing). Filter it from outside by `"meterId"` (pushed into the view, so LAG still sees the full
-  history); never filter by period inside it. TODO: the per-reading responses still use `consumption()` from
-  `readings/helpers/reading-order.ts` (readingDate order) — move them to the view.
+  history); never filter by period inside it.
 - **Tariffs** (migration `add_tariffs`): one catalog for meter tariffs and fixed fees. `Tariff.kind` METERED
   (price per unit of the consumption of `utilities`, e.g. drainage = COLD_WATER + HOT_WATER) or FIXED (price per
   month, `utilities` empty). District-specific prices = a separate tariff. `TariffPrice` = price history:

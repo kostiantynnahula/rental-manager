@@ -1,5 +1,4 @@
-import { Prisma } from '../../generated/prisma/client.js';
-import { ReadingKind, Zone } from '../../generated/prisma/enums.js';
+import { ReadingKind } from '../../generated/prisma/enums.js';
 import type { ChronoReading } from '../interfaces/chrono-reading.interface.js';
 
 // Chronology of one meter: by readingDate (values grow over time, not by period); on the same day
@@ -35,16 +34,4 @@ export function findNextConfirmed<T extends ChronoReading>(
     .filter((r) => r.id !== target.id && compareChrono(r, target) > 0)
     .sort(compareChrono)
     .at(0);
-}
-
-// Per-zone difference to the previous confirmed reading; null without one (e.g. INITIAL).
-export function consumption(
-  previous: ChronoReading | undefined,
-  values: ReadonlyArray<{ zone: Zone; value: Prisma.Decimal }>,
-): { zone: Zone; value: Prisma.Decimal }[] | null {
-  if (!previous) return null;
-  return values.map(({ zone, value }) => ({
-    zone,
-    value: value.minus(previous.values.find((p) => p.zone === zone)?.value ?? 0),
-  }));
 }
