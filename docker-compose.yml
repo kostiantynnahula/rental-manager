@@ -39,6 +39,21 @@ services:
       retries: 10
     restart: unless-stopped
 
+  # BullMQ queues (api → worker). AOF so queued jobs survive a restart.
+  redis:
+    image: redis:8-alpine
+    command: redis-server --appendonly yes
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
   # One-off: creates the photos bucket, then exits. Safe to re-run.
   minio-init:
     image: pgsty/mc:RELEASE.2026-09-16T00-00-00Z
@@ -59,3 +74,4 @@ services:
 volumes:
   pgdata:
   minio-data:
+  redis-data:

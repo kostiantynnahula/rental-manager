@@ -11,3 +11,4 @@ allowBuilds:
   prisma: true
   esbuild: true # used by tsx (seed runner)
   argon2: true # native module; install only picks a prebuilt binary
+  msgpackr-extract: false # optional native speedup for msgpackr (bullmq); the JS fallback is enough

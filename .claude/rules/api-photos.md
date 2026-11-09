@@ -1,6 +1,6 @@
 ---
 paths:
-  - 'apps/api/src/{photos,storage}/**'
+  - 'apps/api/src/{photos,storage,queue}/**'
 ---
 
 # Photos (API)
@@ -26,3 +26,11 @@ paths:
   "Unassigned" = no non-cancelled reading. DELETE only when unassigned; cancelled readings are unlinked first.
   The list returns `canDelete` (= unassigned, counted via `photoWithUsageInclude`); the web follows it, DELETE re-checks.
 - File endpoints stream through the API (auth required), `Cache-Control: private, max-age=86400`.
+- **Parse job**: a newly stored photo gets one BullMQ job `parse-photo` (`{ photoId }`) on queue `photos`
+  (`PhotoJobsService.enqueueParse`, `src/queue/`; names and payload type from `@rental/shared`).
+  `jobId = photoId` (never queued twice), 5 attempts, exponential backoff from 10 s; completed jobs kept 7 days,
+  failed ones kept. Duplicates (`duplicate: true`, also a lost parallel race) get no job.
+- Enqueue failure is logged and **never fails the upload**. BullMQ waits for the Redis connection without a limit,
+  so `enqueueParse` gives up after 3 s (`ENQUEUE_TIMEOUT_MS`); the pending `add()` still lands if Redis comes back
+  (same `jobId`). Redis client = `ioredis` (bullmq 6 has it only as an optional peer). Config: `REDIS_HOST`,
+  `REDIS_PORT`, `REDIS_PASSWORD?`.

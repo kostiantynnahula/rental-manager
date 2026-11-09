@@ -79,6 +79,20 @@ export class Env {
   @Min(1)
   @Max(100)
   PHOTO_MAX_FILE_SIZE_MB: number = 15;
+
+  // Redis for the BullMQ queues (docker compose `redis` in dev, no password there).
+  @IsString()
+  @MinLength(1)
+  REDIS_HOST: string = 'localhost';
+
+  @IsInt()
+  @Min(1)
+  @Max(65535)
+  REDIS_PORT: number = 6379;
+
+  @IsOptional()
+  @IsString()
+  REDIS_PASSWORD?: string;
 }
 
 // Used by ConfigModule: fails fast at startup with all invalid vars listed.
