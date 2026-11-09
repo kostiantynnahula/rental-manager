@@ -49,8 +49,10 @@ pnpm workspaces monorepo:
 
 - `apps/api` — NestJS + Prisma + Postgres
 - `apps/web` — Next.js
-- `apps/worker` — photo parsing with LangChain.js (later). Consumes BullMQ jobs (Redis) that the API enqueues
-  on photo upload. Never touches the DB: it reads photos and saves proposed values (DRAFT readings) over HTTP.
+- `apps/worker` — photo parsing (see `apps/worker/CLAUDE.md`). NestJS standalone consumer of BullMQ jobs (Redis)
+  that the API enqueues on photo upload; authenticates to the API with an API key. Never touches the DB: it reads
+  photos and (later, with LangChain.js) saves proposed values (DRAFT readings) over HTTP. Skeleton for now: it loads
+  the photo + meters and logs them.
 - The API is the only way to data and business rules: every other app (web, worker, later a Telegram bot and an
   MCP server) is an HTTP client of it. No second Prisma client or raw SQL outside `apps/api`.
 - `packages/shared` — code shared by api and web that isn't part of the API contract (e.g. phone
@@ -67,7 +69,7 @@ Node 24 (`.nvmrc`), pnpm via corepack. First run: `cp .env.example .env && pnpm 
 
 - infra: `pnpm infra:up` / `pnpm infra:down` / `pnpm infra:logs` (Postgres on :5433, MinIO :9000, console :9001,
   Redis :6379 — inspect jobs with `docker compose exec redis redis-cli KEYS 'bull:*'`)
-- dev: `pnpm dev` (shared + api + web), or `pnpm dev:api` (:3001) / `pnpm dev:web` (:3000)
+- dev: `pnpm dev` (shared + api + web + worker), or `pnpm dev:api` (:3001) / `pnpm dev:web` (:3000) / `pnpm dev:worker`
 - test: `pnpm test`
 - lint: `pnpm lint` · format: `pnpm format` / `pnpm format:check`
 - build: `pnpm build`
