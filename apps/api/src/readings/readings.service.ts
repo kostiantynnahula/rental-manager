@@ -1,10 +1,12 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { ApartmentsService } from '../apartments/apartments.service.js';
+import type { AuthUser } from '../auth/interfaces/auth-user.interface.js';
 import { parseDateOnly, todayDateOnly } from '../common/helpers/date-only.js';
 import { parsePeriod, periodEnd } from '../common/helpers/period.js';
 import { Meter, Prisma } from '../generated/prisma/client.js';
@@ -160,8 +162,14 @@ export class ReadingsService {
   async create(
     meterId: string,
     dto: CreateReadingDto,
-    userId: string,
+    user: AuthUser,
   ): Promise<ReadingWithConsumption> {
+    const userId = user.id;
+    // API keys (the worker) only propose values: always a DRAFT backed by a photo.
+    if (user.apiKeyId) {
+      if (dto.confirm) throw new ForbiddenException('API keys cannot confirm readings');
+      if (!dto.photoId) throw new BadRequestException('photoId is required for API keys');
+    }
     const meter = await this.meters.findOrThrow(meterId);
     // The photo must show this apartment's meters (one photo can back several readings).
     if (dto.photoId) await this.photos.findForApartmentOrThrow(dto.photoId, meter.apartmentId);
@@ -181,7 +189,10 @@ export class ReadingsService {
 
     if (!dto.confirm) {
       this.assertDraftAllowed(meter, dto.values);
-      const created = await this.prisma.reading.create({ data: { ...base, values } });
+      const created = await this.prisma.$transaction(async (tx) => {
+        if (user.apiKeyId) await this.assertNoReadingFromPhoto(tx, meterId, dto.photoId!);
+        return tx.reading.create({ data: { ...base, values } });
+      });
       return this.findOrThrow(created.id);
     }
 
@@ -292,6 +303,29 @@ export class ReadingsService {
     if (meter.removedAt) throw new ConflictException('Meter is removed');
     const mismatch = zonesMismatch(meter.zoneScheme, values);
     if (mismatch) throw new BadRequestException(mismatch);
+  }
+
+  // Idempotency for the worker: a BullMQ retry of the same photo must not add a second reading.
+  // Any non-cancelled one counts — a draft I already confirmed is still "done". The body carries
+  // readingId so the worker can tell this 409 from others (e.g. "Meter is removed"). No unique index:
+  // jobs use jobId = photoId and the worker runs one at a time, so the check can't race itself.
+  private async assertNoReadingFromPhoto(
+    tx: Prisma.TransactionClient,
+    meterId: string,
+    photoId: string,
+  ): Promise<void> {
+    const existing = await tx.reading.findFirst({
+      where: { meterId, photoId, status: { not: ReadingStatus.CANCELLED } },
+      select: { id: true },
+    });
+    if (existing) {
+      throw new ConflictException({
+        statusCode: 409,
+        error: 'Conflict',
+        message: 'A reading from this photo already exists for this meter',
+        readingId: existing.id,
+      });
+    }
   }
 
   private confirmation(userId: string) {

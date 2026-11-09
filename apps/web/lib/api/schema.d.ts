@@ -418,6 +418,7 @@ export interface paths {
         };
         get: operations["MeterReadingsController_list"];
         put?: never;
+        /** @description API key scope: readings:create-draft. With a key: photoId required, confirm not allowed, always DRAFT + PHOTO; a second non-cancelled reading from the same photo → 409 with readingId */
         post: operations["MeterReadingsController_create"];
         delete?: never;
         options?: never;
@@ -3401,7 +3402,7 @@ export interface operations {
                     "application/json": components["schemas"]["ReadingResponseDto"];
                 };
             };
-            /** @description Zones mismatch; with confirm: date outside window/in future, value out of order */
+            /** @description Zones mismatch; with confirm: date outside window/in future, value out of order; API key without photoId */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3414,6 +3415,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description API key without readings:create-draft, or API key with confirm=true */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Meter not found */
             404: {
                 headers: {
@@ -3421,7 +3429,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Meter removed; with confirm: period already confirmed */
+            /** @description Meter removed; with confirm: period already confirmed; API key: reading from this photo exists (body has readingId) */
             409: {
                 headers: {
                     [name: string]: unknown;

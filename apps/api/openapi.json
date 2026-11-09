@@ -1764,6 +1764,7 @@
         ]
       },
       "post": {
+        "description": "API key scope: readings:create-draft. With a key: photoId required, confirm not allowed, always DRAFT + PHOTO; a second non-cancelled reading from the same photo → 409 with readingId",
         "operationId": "MeterReadingsController_create",
         "parameters": [
           {
@@ -1797,23 +1798,30 @@
             }
           },
           "400": {
-            "description": "Zones mismatch; with confirm: date outside window/in future, value out of order"
+            "description": "Zones mismatch; with confirm: date outside window/in future, value out of order; API key without photoId"
           },
           "401": {
             "description": ""
+          },
+          "403": {
+            "description": "API key without readings:create-draft, or API key with confirm=true"
           },
           "404": {
             "description": "Meter not found"
           },
           "409": {
-            "description": "Meter removed; with confirm: period already confirmed"
+            "description": "Meter removed; with confirm: period already confirmed; API key: reading from this photo exists (body has readingId)"
           }
         },
         "security": [
           {
             "cookie": []
+          },
+          {
+            "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "readings"
         ]

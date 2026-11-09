@@ -11,7 +11,8 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
 
 - Env (root `.env`, validated in `src/config/env.validation.ts`): `API_BASE_URL` (with the `/api` prefix, e.g.
   `http://localhost:3001/api`), `API_KEY`, `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD?`.
-- Key: `pnpm --filter api apikey:create --service worker --name "<label>" --scopes photos:read,meters:read`
+- Key: `pnpm --filter api apikey:create --service worker --name "<label>" --scopes photos:read,meters:read,readings:create-draft`
+  (scopes are fixed at creation — re-create the key when a new one is needed)
   → put the printed key into `API_KEY`. Missing scope → the job fails with a 403 hint, no retry.
 
 ## Rules
