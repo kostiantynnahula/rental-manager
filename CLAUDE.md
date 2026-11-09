@@ -54,16 +54,19 @@ pnpm workspaces monorepo:
 - The API is the only way to data and business rules: every other app (web, worker, later a Telegram bot and an
   MCP server) is an HTTP client of it. No second Prisma client or raw SQL outside `apps/api`.
 - `packages/shared` — code shared by api and web that isn't part of the API contract (e.g. phone
-  normalization). API request/response types are never put here: the web generates them from OpenAPI.
+  normalization), and the BullMQ contract between api and worker (queue/job names, job payloads).
+  API request/response types are never put here: the web generates them from OpenAPI.
 
 Infra in Docker Compose: Postgres, MinIO (S3-compatible photo storage;
-community `pgsty/minio` image, since official MinIO images are no longer published).
+community `pgsty/minio` image, since official MinIO images are no longer published), Redis (BullMQ queues,
+AOF persistence).
 
 ## Commands
 
 Node 24 (`.nvmrc`), pnpm via corepack. First run: `cp .env.example .env && pnpm install`.
 
-- infra: `pnpm infra:up` / `pnpm infra:down` / `pnpm infra:logs` (Postgres on :5433, MinIO :9000, console :9001)
+- infra: `pnpm infra:up` / `pnpm infra:down` / `pnpm infra:logs` (Postgres on :5433, MinIO :9000, console :9001,
+  Redis :6379 — inspect jobs with `docker compose exec redis redis-cli KEYS 'bull:*'`)
 - dev: `pnpm dev` (shared + api + web), or `pnpm dev:api` (:3001) / `pnpm dev:web` (:3000)
 - test: `pnpm test`
 - lint: `pnpm lint` · format: `pnpm format` / `pnpm format:check`

@@ -10,6 +10,7 @@ import { ApartmentsService } from '../apartments/apartments.service.js';
 import { todayDateOnly } from '../common/helpers/date-only.js';
 import type { Photo } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { PhotoJobsService } from '../queue/photo-jobs.service.js';
 import { StorageService } from '../storage/storage.service.js';
 import { detectImageType } from './helpers/image-type.js';
 import { cleanOriginalFilename } from './helpers/original-filename.js';
@@ -35,6 +36,7 @@ export class PhotosService {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly apartments: ApartmentsService,
+    private readonly photoJobs: PhotoJobsService,
   ) {}
 
   async upload(
@@ -68,7 +70,11 @@ export class PhotosService {
       } catch {
         throw new BadRequestException(`files[${i}]: the image is corrupt or can't be decoded`);
       }
-      results.push(await this.store(apartmentId, file, type, sha256, thumbnail, userId));
+      const stored = await this.store(apartmentId, file, type, sha256, thumbnail, userId);
+      // Only a newly stored photo gets a job; `duplicate` also covers losing a race to a parallel upload
+      // of the same file (the winner enqueued it).
+      if (!stored.duplicate) await this.photoJobs.enqueueParse(stored.photo.id);
+      results.push(stored);
     }
     return results;
   }
