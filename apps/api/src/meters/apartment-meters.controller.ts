@@ -1,15 +1,19 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCookieAuth,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/current-user.decorator.js';
+import { Scopes } from '../auth/scopes.decorator.js';
 import type { AuthUser } from '../auth/interfaces/auth-user.interface.js';
 import { CreateMeterDto } from './dto/create-meter.dto.js';
 import { ListMetersQueryDto } from './dto/list-meters-query.dto.js';
@@ -26,6 +30,11 @@ export class ApartmentMetersController {
   constructor(private readonly meters: MetersService) {}
 
   @Get()
+  // The worker needs the meters (utilities, zones, last values) to read a photo. POST stays closed to keys.
+  @Scopes('meters:read')
+  @ApiBearerAuth()
+  @ApiOperation({ description: 'API key scope: meters:read' })
+  @ApiForbiddenResponse({ description: 'API key without meters:read' })
   @ApiOkResponse({
     type: [MeterResponseDto],
     description: 'Each meter with its last confirmed values',

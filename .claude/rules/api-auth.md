@@ -29,5 +29,7 @@ paths:
     all listed scopes required). No `@Scopes` or a missing scope → `403`; unknown/revoked key or inactive user → `401`.
   - Humans ignore `@Scopes`; `@Public()` routes are open to keys too.
   - `req.user = { id, apiKeyId }` for keys (`apiKeyId` absent for humans). `lastUsedAt` is updated at most once a minute.
-  - Service routes also get `@ApiBearerAuth()`. Today: `GET /photos/:id/file` and `/thumbnail` (`photos:read`).
+  - Service routes also get `@ApiBearerAuth()` and `@ApiOperation({ description: 'API key scope: …' })`. Scope → routes:
+    `photos:read` → `GET /photos/:id`, `/file`, `/thumbnail`; `meters:read` → `GET /apartments/:apartmentId/meters`;
+    `readings:create-draft` → none yet (#5).
   - Never log the `Authorization` header or a key — only its prefix.

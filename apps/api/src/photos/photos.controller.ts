@@ -17,6 +17,7 @@ import {
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiProduces,
   ApiTags,
   ApiUnauthorizedResponse,
@@ -39,6 +40,11 @@ export class PhotosController {
   constructor(private readonly photos: PhotosService) {}
 
   @Get(':id')
+  // The worker reads the metadata (apartmentId, linked readings) with an API key.
+  @Scopes('photos:read')
+  @ApiBearerAuth()
+  @ApiOperation({ description: 'API key scope: photos:read' })
+  @ApiForbiddenResponse({ description: 'API key without photos:read' })
   @ApiOkResponse({ type: PhotoDetailResponseDto })
   async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<PhotoDetailResponseDto> {
     return PhotoDetailResponseDto.fromDetail(await this.photos.findOrThrow(id));
@@ -48,6 +54,7 @@ export class PhotosController {
   // The worker downloads photos with an API key.
   @Scopes('photos:read')
   @ApiBearerAuth()
+  @ApiOperation({ description: 'API key scope: photos:read' })
   @ApiForbiddenResponse({ description: 'API key without photos:read' })
   @Header('Cache-Control', FILE_CACHE_CONTROL)
   @Header('X-Content-Type-Options', 'nosniff')
@@ -61,6 +68,7 @@ export class PhotosController {
   // The worker downloads photos with an API key.
   @Scopes('photos:read')
   @ApiBearerAuth()
+  @ApiOperation({ description: 'API key scope: photos:read' })
   @ApiForbiddenResponse({ description: 'API key without photos:read' })
   @Header('Cache-Control', FILE_CACHE_CONTROL)
   @Header('X-Content-Type-Options', 'nosniff')
