@@ -968,6 +968,7 @@
     },
     "/apartments/{apartmentId}/meters": {
       "get": {
+        "description": "API key scope: meters:read",
         "operationId": "ApartmentMetersController_list",
         "parameters": [
           {
@@ -1009,6 +1010,9 @@
           "401": {
             "description": ""
           },
+          "403": {
+            "description": "API key without meters:read"
+          },
           "404": {
             "description": "Apartment not found"
           }
@@ -1016,8 +1020,12 @@
         "security": [
           {
             "cookie": []
+          },
+          {
+            "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "meters"
         ]
@@ -1510,6 +1518,7 @@
     },
     "/photos/{id}": {
       "get": {
+        "description": "API key scope: photos:read",
         "operationId": "PhotosController_findOne",
         "parameters": [
           {
@@ -1535,6 +1544,9 @@
           "401": {
             "description": ""
           },
+          "403": {
+            "description": "API key without photos:read"
+          },
           "404": {
             "description": "Photo not found"
           }
@@ -1542,8 +1554,12 @@
         "security": [
           {
             "cookie": []
+          },
+          {
+            "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "photos"
         ]
@@ -1586,6 +1602,7 @@
     },
     "/photos/{id}/file": {
       "get": {
+        "description": "API key scope: photos:read",
         "operationId": "PhotosController_file",
         "parameters": [
           {
@@ -1619,6 +1636,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "photos"
         ]
@@ -1626,6 +1644,7 @@
     },
     "/photos/{id}/thumbnail": {
       "get": {
+        "description": "API key scope: photos:read",
         "operationId": "PhotosController_thumbnail",
         "parameters": [
           {
@@ -1659,6 +1678,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "photos"
         ]

@@ -268,6 +268,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description API key scope: meters:read */
         get: operations["ApartmentMetersController_list"];
         put?: never;
         post: operations["ApartmentMetersController_create"];
@@ -364,6 +365,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description API key scope: photos:read */
         get: operations["PhotosController_findOne"];
         put?: never;
         post?: never;
@@ -380,6 +382,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description API key scope: photos:read */
         get: operations["PhotosController_file"];
         put?: never;
         post?: never;
@@ -396,6 +399,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description API key scope: photos:read */
         get: operations["PhotosController_thumbnail"];
         put?: never;
         post?: never;
@@ -2718,6 +2722,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description API key without meters:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Apartment not found */
             404: {
                 headers: {
@@ -3177,6 +3188,13 @@ export interface operations {
                 };
             };
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without photos:read */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
