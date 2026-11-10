@@ -50,8 +50,9 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
   fallback); no serial → utility + zone must fit exactly one meter. Also skipped: zone not on the meter, value not a
   meter number, the same meter + zone twice in one photo. The model's `meterId` decides nothing (a disagreement is
   logged). Skips are only logged.
-- Plausibility (`plausibility-warnings.ts`, BigInt thousandths, never floats) vs `lastReading`: lower value, or more
-  than `MONTHLY_LIMITS` × months → warning. Warnings + the model's confidence/issues (when not high) go into the
+- Plausibility (`plausibility-warnings.ts`, BigInt thousandths from `@rental/shared`, never floats) vs `lastReading`:
+  a lower value → warning (local check); otherwise the consumption goes through the shared `consumptionWarnings`
+  (limits per utility + zone, × months; `hasLease: false` — the worker can't see leases, so no zero check here). Warnings + the model's confidence/issues (when not high) go into the
   draft's `note` (`draft-note.ts`, Ukrainian — shown on the review screen); they never block the draft.
 - Expected refusals of `draft-values` are logged, not failures: 409 with `readingId` (zone already filled from another
   photo), 409 "Meter is removed", 400. No `ANTHROPIC_API_KEY` → `UnrecoverableError` (`ExtractionNotConfiguredError`).
