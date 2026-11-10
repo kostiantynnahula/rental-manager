@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Zone } from '../../generated/prisma/enums.js';
-import type { ReadingConsumptionRow } from '../interfaces/reading-consumption-row.interface.js';
+import { ReadingSource, Zone } from '../../generated/prisma/enums.js';
+import type { ReadingHistoryValueRow } from '../interfaces/reading-history-value-row.interface.js';
 
 export class ReadingHistoryValueResponseDto {
   @ApiProperty({ enum: Zone, enumName: 'Zone' })
@@ -18,11 +18,24 @@ export class ReadingHistoryValueResponseDto {
   })
   consumption: string | null;
 
-  static from(v: ReadingConsumptionRow): ReadingHistoryValueResponseDto {
+  @ApiProperty({ enum: ReadingSource, enumName: 'ReadingSource' })
+  source: ReadingSource;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    format: 'uuid',
+    description: 'Photo the value was read from (source PHOTO)',
+  })
+  photoId: string | null;
+
+  static from(v: ReadingHistoryValueRow): ReadingHistoryValueResponseDto {
     return {
       zone: v.zone,
       value: v.value.toFixed(3),
       consumption: v.consumption?.toFixed(3) ?? null,
+      source: v.source,
+      photoId: v.photoId,
     };
   }
 }

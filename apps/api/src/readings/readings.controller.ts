@@ -43,7 +43,9 @@ export class ReadingsController {
 
   @Patch(':id')
   @ApiOkResponse({ type: ReadingResponseDto })
-  @ApiBadRequestResponse({ description: "Invalid body or zones don't match the meter" })
+  @ApiBadRequestResponse({
+    description: 'Invalid body, unknown/duplicate zones, photo not found or of another apartment',
+  })
   @ApiConflictResponse({ description: 'Not a DRAFT' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -55,7 +57,10 @@ export class ReadingsController {
   @Post(':id/confirm')
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: ReadingResponseDto })
-  @ApiBadRequestResponse({ description: 'Date outside window/in future, value out of order' })
+  @ApiBadRequestResponse({
+    description:
+      'Zones missing (incomplete draft), date outside window/in future, value out of order',
+  })
   @ApiConflictResponse({ description: 'Not a DRAFT, meter removed, or period already confirmed' })
   async confirm(
     @Param('id', ParseUUIDPipe) id: string,

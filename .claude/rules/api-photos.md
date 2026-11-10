@@ -22,9 +22,12 @@ paths:
   objects (a failure only leaves a logged orphan object, never a row pointing at nothing).
 - Limits (`PHOTO_MAX_FILES`, `PHOTO_MAX_FILE_SIZE_MB`) go through `MulterModule.registerAsync` (in-memory). Too many
   files → 400, too large → 413. `multer` isn't a direct dependency: don't import it at runtime (types come from `@types/multer`).
-- A photo backs 0..n readings (`Reading.photoId`, FK `Restrict`; `source = PHOTO`), always of the same apartment.
-  "Unassigned" = no non-cancelled reading. DELETE only when unassigned; cancelled readings are unlinked first.
-  The list returns `canDelete` (= unassigned, counted via `photoWithUsageInclude`); the web follows it, DELETE re-checks.
+- A photo backs 0..n reading **values** (`ReadingValue.photoId`, FK `Restrict`; that value has `source = PHOTO`), always
+  of the same apartment — one photo shows one register, so a two-zone reading may link two photos. "Unassigned" = no
+  value of a non-cancelled reading. DELETE only when unassigned; values of cancelled readings are unlinked first and
+  become `MANUAL` (CHECK `reading_values_source_matches_photo`). The list returns `canDelete` (= unassigned, counted via
+  `photoWithUsageInclude`); the web follows it, DELETE re-checks. Detail lists each linked reading once with the
+  `zones` read from this photo (`helpers/photo-readings.ts`).
 - File endpoints stream through the API (auth required), `Cache-Control: private, max-age=86400`.
 - **Parse job**: a newly stored photo gets one BullMQ job `parse-photo` (`{ photoId }`) on queue `photos`
   (`PhotoJobsService.enqueueParse`, `src/queue/`; names and payload type from `@rental/shared`).

@@ -55,6 +55,7 @@ photos:read`, `apikey:list`, `apikey:revoke <prefix>`. `create` upserts `<servic
   - `meters_removed_after_installed`: `removedAt >= installedAt`.
   - `reading_values_non_negative`: `value >= 0`.
   - `readings_confirmed_has_confirmer`: CONFIRMED ⇒ `confirmedAt` and `confirmedById` set.
+  - `reading_values_source_matches_photo` (migration `reading_value_photo`): `source = PHOTO` ⇔ `photoId` set.
   - Partial unique indexes over CONFIRMED rows only (drafts/cancelled may repeat):
     `readings_one_confirmed_regular_per_period` (meter + period), `readings_one_confirmed_initial`,
     `readings_one_confirmed_final` (one each per meter).
@@ -78,7 +79,8 @@ photos:read`, `apikey:list`, `apikey:revoke <prefix>`. `create` upserts `<servic
   - Services must enforce: DAY/NIGHT prices only for METERED tariffs with ELECTRICITY; `kind`/`utilities` of a
     tariff in use never change (archive it and create a new one).
 - Reading rules the **services** must enforce (the DB doesn't):
-  - Zones match the meter: SINGLE → exactly TOTAL; DAY_NIGHT → exactly DAY and NIGHT.
+  - Zones match the meter: SINGLE → exactly TOTAL; DAY_NIGHT → exactly DAY and NIGHT (confirmed readings; a DRAFT
+    may hold a subset — no unknown or duplicate zones).
   - Confirmed values never decrease within one meter and zone (compare with the previous confirmed reading);
     INITIAL is the meter's first reading, FINAL its last — nothing after FINAL.
   - CONFIRMED readings are immutable — correct by cancelling and creating a new one.
@@ -116,7 +118,7 @@ photos:read`, `apikey:list`, `apikey:revoke <prefix>`. `create` upserts `<servic
   `Prisma.Decimal`.
 - **Period**: `"YYYY-MM"` in the API, 1st of the month in the DB (`periodOfDate` / `formatPeriod`, `src/common/helpers/period.ts`).
 - **Reading rules are shared pure functions** in `src/readings/helpers/` — reuse, don't re-implement:
-  `zonesMismatch(scheme, values)` (zones vs `zoneScheme`), `decreasedZones(previous, next)` (values never decrease),
+  `zonesMismatch(scheme, values)` (zones vs `zoneScheme`), `zonesInvalid` (drafts: subset allowed), `missingZones`, `decreasedZones(previous, next)` (values never decrease),
   `lastConfirmedReadingInclude` (a meter's latest CONFIRMED reading). They return data; services throw 400/409.
 - **Meter lifecycle** (`src/meters/`): create = meter + CONFIRMED INITIAL reading; wrong initial value = cancel the
   INITIAL + create a new one (only before any non-cancelled REGULAR reading); remove = CONFIRMED FINAL + `removedAt`;

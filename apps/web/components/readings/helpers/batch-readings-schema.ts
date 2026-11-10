@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { readingValuesSchema } from '@/components/meters/helpers/reading-values-schema';
 import type { Meter } from '@/lib/api/queries/meters';
+import type { ReadingValueField } from '@/components/meters/helpers/reading-values-schema';
+import { isUntouchedPrefill } from './is-untouched-prefill';
 import { readingDateIssue } from './reading-date-issue';
 
 const entrySchema = z.object({
@@ -20,8 +22,13 @@ export function isEntryEmpty(entry: BatchReadingsValues['entries'][number]): boo
 }
 
 // `meters` gives each entry its previous values (last confirmed); `savedIds` = meters already saved in this
-// session (locked, not validated again).
-export function batchReadingsSchema(meters: Meter[], savedIds: ReadonlySet<string>) {
+// session (locked, not validated again); `prefilled` = inputs prefilled from a draft per meter (skipped while
+// nobody edits them).
+export function batchReadingsSchema(
+  meters: Meter[],
+  savedIds: ReadonlySet<string>,
+  prefilled: Readonly<Record<string, ReadingValueField[]>> = {},
+) {
   return z
     .object({ period: z.string(), readingDate: z.string(), entries: z.array(entrySchema) })
     .superRefine((v, ctx) => {
@@ -32,6 +39,7 @@ export function batchReadingsSchema(meters: Meter[], savedIds: ReadonlySet<strin
       let filled = 0;
       v.entries.forEach((entry, i) => {
         if (savedIds.has(entry.meterId) || isEntryEmpty(entry)) return;
+        if (isUntouchedPrefill(entry, prefilled)) return;
         filled += 1;
         const previous = meters.find((m) => m.id === entry.meterId)?.lastReading?.values;
         const result = readingValuesSchema(previous).safeParse(entry.values);

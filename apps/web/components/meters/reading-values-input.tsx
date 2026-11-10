@@ -20,7 +20,7 @@ import {
 
 interface ReadingValuesInputProps<T extends FieldValues> {
   control: Control<T>;
-  // Path to a ReadingValueField[] in the form, in zonesFor(zoneScheme) order (see helpers/empty-values.ts).
+  // Path to a ReadingValueField[] in the form, one entry per zone in `zones` order (see helpers/empty-values.ts).
   name: Path<T>;
   zoneScheme: ZoneScheme;
   utility: UtilityType;
@@ -28,6 +28,9 @@ interface ReadingValuesInputProps<T extends FieldValues> {
   previous?: ReadonlyArray<{ zone: Zone; value: string }>;
   idPrefix: string;
   disabled?: boolean;
+  // Only these zones (in this order; `name` holds one entry per zone), e.g. the ones read from a photo.
+  // Default: every zone of the scheme.
+  zones?: Zone[];
 }
 
 // One decimal input per zone of the meter, with the zone name and unit. Reused by meters, readings and photo
@@ -40,9 +43,9 @@ export function ReadingValuesInput<T extends FieldValues>({
   previous,
   idPrefix,
   disabled,
+  zones = zonesFor(zoneScheme),
 }: ReadingValuesInputProps<T>) {
   const unit = UTILITY_UNITS[utility];
-  const zones = zonesFor(zoneScheme);
 
   return (
     <div className={zones.length > 1 ? 'grid gap-4 sm:grid-cols-2' : 'grid gap-4'}>

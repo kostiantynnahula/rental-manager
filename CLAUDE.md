@@ -29,7 +29,9 @@ consumption × tariff per utility + fixed fees.
     actually read (e.g. 2026-10-28 for period 2026-10).
   - `kind`: REGULAR (monthly), INITIAL (on installation — starts the meter), FINAL (on removal — ends it).
   - `status`: DRAFT (entered or parsed from a photo) → CONFIRMED by me, or CANCELLED. Confirmed readings are never
-    edited: a correction = cancel + new reading. `source`: MANUAL or PHOTO.
+    edited: a correction = cancel + new reading.
+  - `source` (MANUAL or PHOTO) and the photo belong to each **value**: one photo shows one register, so a two-zone
+    reading may come from two photos. A DRAFT may hold only some zones (filled zone by zone); confirming needs all.
 - **Meter replacement** — the old meter gets a FINAL reading and `removedAt`; the new one gets `installedAt` and
   an INITIAL reading. That month's consumption = (FINAL old − previous old) + (current new − INITIAL new).
 - **Tariff** — price per unit, versioned by effective date.

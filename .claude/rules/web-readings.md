@@ -24,6 +24,10 @@ paths:
 - Batch entry (`/apartments/[id]/readings/new`): one `POST /meters/:id/readings` per filled meter, in parallel
   (`Promise.allSettled`), `confirm: true`. Saved meters get locked, failed ones keep a per-meter message
   (`readingErrorMessage` translates the API's rule messages). Empty meter = skipped.
+- Drafts in the batch form: a meter with a DRAFT for the month is prefilled with it (`draftFields`) and badged
+  "Чернетка · бракує: Ніч". Untouched → skipped (a complete one has "Підтвердити чернетку"); edited → PATCH (changed
+  values lose their photo, unchanged keep it) + confirm. Every zone is required, so an incomplete draft can't be
+  confirmed. Helpers: `missingZones`, `missingZonesLabel`, `mergeDraftValues`, `isUntouchedPrefill`.
 - Previous values = the meter's `lastReading` (last confirmed); the API re-checks order against all confirmed readings.
 - History (tab "Показання", `reading-history.tsx`): `GET /apartments/:id/readings/history`, server-side pagination.
   Filters + page in the URL via `hooks/use-history-filters.ts` (`from`, `to`, `meters`, `size`, `page`; one

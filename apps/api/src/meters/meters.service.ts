@@ -8,12 +8,7 @@ import { ApartmentsService } from '../apartments/apartments.service.js';
 import { formatDateOnly, parseDateOnly, todayDateOnly } from '../common/helpers/date-only.js';
 import { periodOfDate } from '../common/helpers/period.js';
 import { Prisma } from '../generated/prisma/client.js';
-import {
-  ReadingKind,
-  ReadingSource,
-  ReadingStatus,
-  ZoneScheme,
-} from '../generated/prisma/enums.js';
+import { ReadingKind, ReadingStatus, ZoneScheme } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { meterFlags, NO_USAGE, type MeterUsage } from './helpers/meter-flags.js';
 import type { MeterWithFlags } from './interfaces/meter-with-flags.interface.js';
@@ -277,7 +272,6 @@ export class MetersService {
       period: periodOfDate(readingDate),
       readingDate,
       status: ReadingStatus.CONFIRMED,
-      source: ReadingSource.MANUAL,
       createdById: userId,
       confirmedById: userId,
       confirmedAt: new Date(),

@@ -1,9 +1,8 @@
 import type { ReadingHistoryItem } from '@/lib/api/queries/readings';
 import { formatDate, formatPeriod } from '@/lib/format';
-import { PhotoLinkButton } from '@/components/photos/photo-link-button';
 import { formatHistoryValues } from './helpers/format-history-values';
-import { historyPhotoLabel } from './helpers/history-photo-label';
 import { HistoryMeterName } from './history-meter-name';
+import { HistoryPhotoLinks } from './history-photo-links';
 
 // Mobile (< md) row of the readings history.
 export function ReadingHistoryCard({ item }: { item: ReadingHistoryItem }) {
@@ -17,9 +16,7 @@ export function ReadingHistoryCard({ item }: { item: ReadingHistoryItem }) {
         <dt className="text-muted-foreground">Показники</dt>
         <dd className="flex items-center gap-1 tabular-nums">
           {formatHistoryValues(item, 'value')}
-          {item.photoId && (
-            <PhotoLinkButton photoId={item.photoId} label={historyPhotoLabel(item)} />
-          )}
+          <HistoryPhotoLinks item={item} />
         </dd>
         <dt className="text-muted-foreground">Споживання</dt>
         <dd className="tabular-nums">{formatHistoryValues(item, 'consumption')}</dd>

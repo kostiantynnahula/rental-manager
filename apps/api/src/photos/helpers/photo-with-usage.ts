@@ -1,14 +1,14 @@
 import type { Prisma } from '../../generated/prisma/client.js';
 import { ReadingStatus } from '../../generated/prisma/enums.js';
 
-// "Linked" = referenced by a reading that isn't CANCELLED.
-export const activeReading = {
-  status: { not: ReadingStatus.CANCELLED },
-} satisfies Prisma.ReadingWhereInput;
+// "Linked" = referenced by a value of a reading that isn't CANCELLED.
+export const activeReadingValue = {
+  reading: { status: { not: ReadingStatus.CANCELLED } },
+} satisfies Prisma.ReadingValueWhereInput;
 
-// Counts only the readings that block DELETE.
+// Counts only the values that block DELETE.
 export const photoWithUsageInclude = {
-  _count: { select: { readings: { where: activeReading } } },
+  _count: { select: { readingValues: { where: activeReadingValue } } },
 } satisfies Prisma.PhotoInclude;
 
 export type PhotoWithUsage = Prisma.PhotoGetPayload<{ include: typeof photoWithUsageInclude }>;

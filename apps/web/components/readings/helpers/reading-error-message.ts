@@ -13,6 +13,9 @@ const KNOWN: { fragment: string; message: string }[] = [
   { fragment: 'before the meter was installed', message: 'Дата раніше встановлення лічильника' },
   { fragment: 'already exists', message: 'За цей місяць уже є підтверджене показання' },
   { fragment: 'Meter is removed', message: 'Лічильник знято' },
+  { fragment: 'missing)', message: 'Заповнено не всі зони лічильника' },
+  { fragment: 'belongs to another apartment', message: 'Фото належить іншій квартирі' },
+  { fragment: 'photo not found', message: 'Фото не знайдено' },
 ];
 
 export function readingErrorMessage(error: unknown): string {

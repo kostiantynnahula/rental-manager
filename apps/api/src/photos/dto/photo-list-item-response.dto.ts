@@ -10,6 +10,6 @@ export class PhotoListItemResponseDto extends PhotoResponseDto {
   canDelete: boolean;
 
   static fromListItem(p: PhotoWithUsage): PhotoListItemResponseDto {
-    return { ...PhotoResponseDto.from(p), canDelete: p._count.readings === 0 };
+    return { ...PhotoResponseDto.from(p), canDelete: p._count.readingValues === 0 };
   }
 }

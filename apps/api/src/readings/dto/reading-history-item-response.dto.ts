@@ -23,14 +23,9 @@ export class ReadingHistoryItemResponseDto {
   kind: ReadingKind;
 
   @ApiProperty({
-    type: String,
-    nullable: true,
-    format: 'uuid',
-    description: 'Photo the reading was taken from (source PHOTO)',
+    type: [ReadingHistoryValueResponseDto],
+    description: 'Each value carries its own photo (a two-zone reading may link two photos)',
   })
-  photoId: string | null;
-
-  @ApiProperty({ type: [ReadingHistoryValueResponseDto] })
   values: ReadingHistoryValueResponseDto[];
 
   static from({ reading, values }: ReadingHistoryItem): ReadingHistoryItemResponseDto {
@@ -40,7 +35,6 @@ export class ReadingHistoryItemResponseDto {
       period: formatPeriod(reading.period),
       readingDate: formatDateOnly(reading.readingDate),
       kind: reading.kind,
-      photoId: reading.photoId,
       values: values.map((v) => ReadingHistoryValueResponseDto.from(v)),
     };
   }

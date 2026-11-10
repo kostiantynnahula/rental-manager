@@ -138,11 +138,11 @@ export class StatementsService {
     ]);
     // The period filter stays outside the view: it isn't a PARTITION BY column, so it isn't pushed down and LAG
     // still sees each meter's full history.
-    // The readings join only adds the photo (for 📷 links in the statement).
+    // The reading_values join only adds the value's photo (for 📷 links in the statement).
     const consumption = await db.$queryRaw<StatementConsumptionRow[]>`
-      SELECT rc."meterId", rc."zone", rc."consumption", r."photoId"
+      SELECT rc."meterId", rc."zone", rc."consumption", v."photoId"
       FROM "reading_consumption" rc
-      JOIN "readings" r ON r."id" = rc."readingId"
+      JOIN "reading_values" v ON v."readingId" = rc."readingId" AND v."zone" = rc."zone"
       WHERE rc."meterId" = ANY(${meters.map((m) => m.id)}::uuid[])
         AND rc."period" = ${period}::date`;
     return calculateStatement({ period, attachments, meters, leases, consumption });

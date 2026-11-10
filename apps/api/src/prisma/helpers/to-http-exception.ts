@@ -18,6 +18,7 @@ const CONSTRAINT_MESSAGES: Record<string, string> = {
   readings_period_first_of_month: 'period must be the first day of a month',
   readings_confirmed_has_confirmer: 'A confirmed reading must record who confirmed it and when',
   reading_values_non_negative: 'Meter values must not be negative',
+  reading_values_source_matches_photo: 'A value has source PHOTO exactly when it has a photo',
   readings_one_confirmed_regular_per_period:
     'A confirmed reading for this period already exists — cancel it first',
   readings_one_confirmed_initial: 'This meter already has a confirmed INITIAL reading',
