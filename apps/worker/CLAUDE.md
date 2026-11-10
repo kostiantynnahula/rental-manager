@@ -56,7 +56,8 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
   `temperature`: current models think adaptively, `outputConfig.effort` sets the depth.
 - The SDK turns JSON-schema `enum` into a description hint (not enforced by the API), so `meterId` is a plain string
   and `normalizeExtraction()` (pure, `helpers/`) enforces the candidates: unknown id → null + issue; also comma → dot,
-  serial → digits, value not a meter number / zone not on the meter → issue + `confidence: low`. Nothing is dropped.
+  leading zeros dropped (`00532.20` → `532.20`), serial → digits, value not a meter number / zone not on the meter →
+  issue + `confidence: low`. Nothing is dropped.
 - Prompt rules (OBIS codes, drums, water colours, stickers, serial formats) live in `helpers/extraction-prompt.ts`;
   candidates go in the user message (`describeCandidates`). The image is auto-oriented and fit into 1568 px
   (`prepareImage`, sharp) — Claude's base64 limit is 5 MB, the API accepts 15 MB photos.
