@@ -4,6 +4,7 @@ import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Env, ExtractionProvider } from '../config/env.validation.js';
+import { ExtractionNotConfiguredError } from './errors/extraction-not-configured.error.js';
 import { describeCandidates } from './helpers/describe-candidates.js';
 import { EXTRACTION_SYSTEM_PROMPT } from './helpers/extraction-prompt.js';
 import { extractionSchema } from './helpers/extraction-schema.js';
@@ -56,7 +57,11 @@ export class PhotoExtractorService {
     switch (provider) {
       case ExtractionProvider.Anthropic: {
         const apiKey = this.config.get('ANTHROPIC_API_KEY', { infer: true });
-        if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not set: photo extraction needs it');
+        if (!apiKey) {
+          throw new ExtractionNotConfiguredError(
+            'ANTHROPIC_API_KEY is not set: photo extraction needs it',
+          );
+        }
         // No thinking/temperature: current models think adaptively by default; effort sets the depth.
         return new ChatAnthropic({
           model: this.config.get('EXTRACTION_MODEL', { infer: true }),
