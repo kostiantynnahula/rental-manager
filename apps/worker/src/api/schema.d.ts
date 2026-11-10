@@ -418,8 +418,25 @@ export interface paths {
         };
         get: operations["MeterReadingsController_list"];
         put?: never;
-        /** @description A DRAFT may hold a subset of the meter zones; confirm=true needs all of them. API key scope: readings:create-draft. With a key: photoId on every value required, confirm not allowed, always DRAFT + PHOTO; a second non-cancelled reading of the meter from the same photo → 409 with readingId */
+        /** @description A DRAFT may hold a subset of the meter zones; confirm=true needs all of them. Not for API keys: they add values with POST /meters/{meterId}/draft-values */
         post: operations["MeterReadingsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/meters/{meterId}/draft-values": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description API key scope: readings:create-draft (keys only). Adds the zone to the key user's open DRAFT of the meter and period (never a human draft), or creates one. An existing draft keeps its readingDate; note is appended. Same zone from the same photo → 200, no change (job retry). */
+        post: operations["MeterDraftValuesController_add"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1364,6 +1381,32 @@ export interface components {
              * @default false
              */
             confirm: boolean;
+        };
+        CreateDraftValueDto: {
+            /**
+             * @description Month the reading is for
+             * @example 2026-10
+             */
+            period: string;
+            /**
+             * Format: date
+             * @description Used for a new draft; an existing draft keeps its own
+             * @example 2026-10-28
+             */
+            readingDate: string;
+            zone: components["schemas"]["Zone"];
+            /**
+             * @description Decimal string, >= 0, up to 3 decimals
+             * @example 1520.350
+             */
+            value: string;
+            /**
+             * Format: uuid
+             * @description Photo of this apartment the value was read from
+             */
+            photoId: string;
+            /** @description Appended to the draft's note */
+            note?: string;
         };
         MeterSummaryResponseDto: {
             /** Format: uuid */
@@ -3428,7 +3471,7 @@ export interface operations {
                     "application/json": components["schemas"]["ReadingResponseDto"];
                 };
             };
-            /** @description Unknown/duplicate zones; photo not found or of another apartment; with confirm: zones missing, date outside window/in future, value out of order; API key with a value without photoId */
+            /** @description Unknown/duplicate zones; photo not found or of another apartment; with confirm: zones missing, date outside window/in future, value out of order */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3441,7 +3484,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description API key without readings:create-draft, or API key with confirm=true */
+            /** @description API key (closed to keys) */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -3455,7 +3498,76 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Meter removed; with confirm: period already confirmed; API key: reading from this photo exists (body has readingId) */
+            /** @description Meter removed; with confirm: period already confirmed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MeterDraftValuesController_add: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                meterId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDraftValueDto"];
+            };
+        };
+        responses: {
+            /** @description Zone added to the open draft, or already there from this photo (no change) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadingResponseDto"];
+                };
+            };
+            /** @description New DRAFT with this zone */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadingResponseDto"];
+                };
+            };
+            /** @description Zone not in the meter's scheme; photo not found or of another apartment */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an API key, or a key without readings:create-draft */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Meter not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Meter removed; zone already filled from another photo (body has readingId) */
             409: {
                 headers: {
                     [name: string]: unknown;

@@ -18,10 +18,15 @@ confirm (or create with `confirm: true`); CONFIRMED → only cancel (`reason` ap
   it can be filled zone by zone from separate photos; PATCH `values` replaces all of them (send kept ones with their
   `photoId`). The full zone match (`zonesMismatch`, "NIGHT missing") is a confirm rule — confirm and create with
   `confirm: true`. Other draft checks: meter not removed; dates, value order and duplicates only on confirm.
-- **API keys** (worker, scope `readings:create-draft`) may only `POST /meters/:meterId/readings`: `confirm: true` →
-  403, a value without `photoId` → 400, result always DRAFT + PHOTO. Idempotent per photo + meter: any non-cancelled
-  reading of the meter with a value from one of the photos → 409 with `readingId` in the body (so the worker tells a
-  retry from other 409s). Humans skip this check. Confirm/PATCH/cancel/delete have no `@Scopes` → closed to keys.
+- **API keys** (worker, scope `readings:create-draft`) may only `POST /meters/:meterId/draft-values`
+  (`MeterDraftValuesController` → `DraftValuesService`; a cookie request → 403): body
+  `{ period, readingDate, zone, value, photoId, note? }`, one zone from one photo. The API picks the draft: the key
+  user's open DRAFT REGULAR of the meter + period (never a human's) gets the zone (keeps its `readingDate`, `note`
+  appended) → 200; none → new DRAFT → 201. Decision in the pure `helpers/draft-value-action.ts`: same zone from the
+  same photo → 200 no change (job retry); same zone from another photo → 409 with `readingId`, nothing overwritten.
+  Zone not in the scheme / photo of another apartment → 400. **No locking**: relies on the worker's concurrency 1 —
+  revisit (e.g. a partial unique index) if that changes. `POST /meters/:meterId/readings`, PATCH, confirm, cancel and
+  delete have no `@Scopes` → closed to keys.
 - Confirm rules order a meter's readings by `(readingDate, kind)` with INITIAL < REGULAR < FINAL on the same day
   (`helpers/reading-order.ts`).
 - `consumption` in per-reading responses comes from the `reading_consumption` view
