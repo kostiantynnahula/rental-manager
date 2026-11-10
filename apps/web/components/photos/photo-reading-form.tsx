@@ -32,6 +32,7 @@ import {
   type ApartmentMeterReading,
 } from '@/lib/api/queries/readings';
 import { formatDate, formatPeriod, todayDateOnly } from '@/lib/format';
+import { useHasLease } from '@/components/readings/hooks/use-has-lease';
 import { defaultReadingPeriod, isPeriod, readingDateWindow } from '@/lib/period';
 import { UTILITY_ORDER, ZONE_LABELS, zonesFor, type Zone } from '@/lib/utilities';
 import { PERIOD_STATUS_LABELS } from './constants/reading-statuses';
@@ -94,6 +95,7 @@ export function PhotoReadingForm({ apartmentId, photo, meters }: PhotoReadingFor
   });
   const { isSubmitting, isDirty } = form.formState;
   const period = useWatch({ control: form.control, name: 'period' });
+  const hasLease = useHasLease(apartmentId, period);
   const meterId = useWatch({ control: form.control, name: 'meterId' });
   const values = useWatch({ control: form.control, name: 'values' });
   const validPeriod = isPeriod(period);
@@ -435,6 +437,11 @@ export function PhotoReadingForm({ apartmentId, photo, meters }: PhotoReadingFor
             zoneScheme={selectedMeter.zoneScheme}
             utility={selectedMeter.utility}
             previous={selectedMeter.lastReading?.values}
+            check={
+              selectedMeter.lastReading
+                ? { previousPeriod: selectedMeter.lastReading.period, period, hasLease }
+                : undefined
+            }
             idPrefix={`photo-reading-${selectedMeter.id}`}
             disabled={busy}
             zones={chosenZones}

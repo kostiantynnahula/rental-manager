@@ -30,6 +30,9 @@ interface MeterReadingEntryProps {
   untouchedDraft?: boolean;
   confirming?: boolean;
   onConfirmDraft?: (readingId: string) => void;
+  // The month being entered and whether a lease covers it (consumption warnings).
+  period: string;
+  hasLease: boolean;
 }
 
 // One meter in the batch form: title, previous values and an input per zone; plus its save result. A draft shows
@@ -44,6 +47,8 @@ export function MeterReadingEntry({
   untouchedDraft,
   confirming,
   onConfirmDraft,
+  period,
+  hasLease,
 }: MeterReadingEntryProps) {
   const saved = result?.status === 'saved';
   const last = meter.lastReading;
@@ -80,6 +85,7 @@ export function MeterReadingEntry({
           zoneScheme={meter.zoneScheme}
           utility={meter.utility}
           previous={last?.values}
+          check={last ? { previousPeriod: last.period, period, hasLease } : undefined}
           idPrefix={`reading-${meter.id}`}
           disabled={saved || disabled}
         />

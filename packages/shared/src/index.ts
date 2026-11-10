@@ -3,6 +3,7 @@ export const CURRENCY = 'UAH' as const;
 
 export {
   CONSUMPTION_LIMITS,
+  CONSUMPTION_WARNINGS,
   consumptionLimit,
   consumptionWarnings,
   type ConsumptionInput,

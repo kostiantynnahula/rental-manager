@@ -30,6 +30,7 @@ import {
   isEntryEmpty,
   type BatchReadingsValues,
 } from './helpers/batch-readings-schema';
+import { useHasLease } from './hooks/use-has-lease';
 import { isUntouchedPrefill } from './helpers/is-untouched-prefill';
 import { draftFields } from './helpers/draft-fields';
 import { mergeDraftValues } from './helpers/merge-draft-values';
@@ -97,6 +98,7 @@ export function ReadingEntryForm({ apartmentId, meters, initialPeriod }: Reading
   const { isSubmitting } = form.formState;
   const entries = useWatch({ control: form.control, name: 'entries' });
   const period = useWatch({ control: form.control, name: 'period' });
+  const hasLease = useHasLease(apartmentId, period);
   const isUntouchedDraft = (e: BatchReadingsValues['entries'][number]) =>
     isUntouchedPrefill(e, prefilledFields);
   // Unsaved = something typed for a meter that isn't saved yet (a prefilled draft nobody edited isn't).
@@ -300,6 +302,8 @@ export function ReadingEntryForm({ apartmentId, meters, initialPeriod }: Reading
               untouchedDraft={isUntouchedDraft(entries[index])}
               confirming={confirmingId === meter.id}
               onConfirmDraft={(id) => void confirmDraft(meter.id, id)}
+              period={period}
+              hasLease={hasLease}
             />
           ))}
         </div>

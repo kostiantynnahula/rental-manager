@@ -36,4 +36,7 @@ confirm (or create with `confirm: true`); CONFIRMED → only cancel (`reason` ap
   or FINAL of that period, DRAFT = newest draft, MISSING = nothing yet.
 - History (`GET /apartments/:id/readings/history?from&to&meterIds&page&pageSize`): CONFIRMED readings (all kinds),
   paginated by reading (values grouped), order period DESC, utility (enum order), label NULLS FIRST, readingDate
-  DESC, id; each value has `photoId`/`source` (joined from `reading_values` on `readingId` + `zone`). Parameterized SQL fragments in `helpers/reading-history-sql.ts` (`Prisma.sql` / `Prisma.empty`).
+  DESC, id; each value has `photoId`/`source` (joined from `reading_values` on `readingId` + `zone`) and `warnings`
+  (`ConsumptionWarningReason[]`, `helpers/history-value-warnings.ts`): the shared `consumptionWarnings` on the value's
+  consumption, `months` from the view's `previousPeriod`, `hasLease` = a lease of the apartment overlaps the reading's
+  period (`leaseOverlapsPeriod`, also used by statements). Never blocks anything. Parameterized SQL fragments in `helpers/reading-history-sql.ts` (`Prisma.sql` / `Prisma.empty`).

@@ -11,6 +11,11 @@ paths:
   `zoneSchemesFor` — day/night exists only for electricity).
 - Meter values are decimal strings end to end (`lib/meter-values.ts`: `normalizeMeterValue` → API "1520.350",
   `compareMeterValues`, `formatMeterValue` → "1520,350"); never `Number(...)`.
+- Consumption warnings (shared rule, never block): `ReadingValuesInput` `check={{ previousPeriod, period, hasLease }}`
+  → amber line under the zone ("Спожито 340 кВт·год — більше за звичні 130/міс."); passed by batch entry and photo
+  review only (`hooks/use-has-lease.ts` → `useApartmentLeases` + `leaseCoversPeriod`). Texts: `lib/consumption.ts`.
+  History: value `warnings` from the API → ⚠ next to the consumption (`history-consumption.tsx`; the mobile card also
+  shows the text).
 - Reusable pair for any reading entry: `ReadingValuesInput` (one input per zone, unit, "Попереднє: …") +
   `readingValuesSchema(previous?)` (required, ≤3 decimals, not lower than previous) and `toReadingValuesInput()`.
 - `canDelete` / `canEditInitialValues` come from the API; disabled menu items stay visible with a reason.

@@ -1477,6 +1477,11 @@ export interface components {
             /** @description The meter has been removed (replaced or taken out) */
             removed: boolean;
         };
+        /**
+         * @description Shared consumption rule (limit per month × months since the previous reading; zero electricity while a lease covers the period); empty = fine
+         * @enum {string}
+         */
+        ConsumptionWarningReason: "ABOVE_LIMIT" | "ZERO_CONSUMPTION";
         ReadingHistoryValueResponseDto: {
             zone: components["schemas"]["Zone"];
             /**
@@ -1495,6 +1500,8 @@ export interface components {
              * @description Photo the value was read from (source PHOTO)
              */
             photoId: string | null;
+            /** @description Shared consumption rule (limit per month × months since the previous reading; zero electricity while a lease covers the period); empty = fine */
+            warnings: components["schemas"]["ConsumptionWarningReason"][];
         };
         ReadingHistoryItemResponseDto: {
             /** Format: uuid */
@@ -1803,8 +1810,6 @@ export interface components {
          * @enum {string}
          */
         StatementWarningCode: "MISSING_READING" | "NO_PRICE" | "NO_METERS" | "MULTIPLE_LEASES" | "UNUSUAL_CONSUMPTION";
-        /** @enum {string} */
-        ConsumptionWarningReason: "ABOVE_LIMIT" | "ZERO_CONSUMPTION";
         StatementWarningResponseDto: {
             /** @description MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details. UNUSUAL_CONSUMPTION: meterId, utility, label, zone, consumption, limit, months, reason */
             code: components["schemas"]["StatementWarningCode"];

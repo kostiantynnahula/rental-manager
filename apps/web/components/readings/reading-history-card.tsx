@@ -1,6 +1,7 @@
 import type { ReadingHistoryItem } from '@/lib/api/queries/readings';
 import { formatDate, formatPeriod } from '@/lib/format';
 import { formatHistoryValues } from './helpers/format-history-values';
+import { HistoryConsumption } from './history-consumption';
 import { HistoryMeterName } from './history-meter-name';
 import { HistoryPhotoLinks } from './history-photo-links';
 
@@ -19,7 +20,9 @@ export function ReadingHistoryCard({ item }: { item: ReadingHistoryItem }) {
           <HistoryPhotoLinks item={item} />
         </dd>
         <dt className="text-muted-foreground">Споживання</dt>
-        <dd className="tabular-nums">{formatHistoryValues(item, 'consumption')}</dd>
+        <dd>
+          <HistoryConsumption item={item} showTexts />
+        </dd>
         <dt className="text-muted-foreground">Подано</dt>
         <dd>
           {formatDate(item.readingDate)}

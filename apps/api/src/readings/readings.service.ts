@@ -1,3 +1,4 @@
+import { historyValueWarnings } from './helpers/history-value-warnings.js';
 import {
   BadRequestException,
   ConflictException,
@@ -117,7 +118,7 @@ export class ReadingsService {
 
     const where = readingHistoryWhere({ apartmentId, from, to, meterIds: query.meterIds });
     const offset = (query.page - 1) * query.pageSize;
-    const [rows, [{ total }]] = await Promise.all([
+    const [rows, [{ total }], leases] = await Promise.all([
       this.prisma.$queryRaw<ReadingHistoryRow[]>`
         SELECT r."id", r."meterId", r."period", r."readingDate", r."kind",
                m."utility", m."label", m."serialNumber", m."removedAt"
@@ -129,13 +130,18 @@ export class ReadingsService {
         SELECT COUNT(*)::int AS "total"
         FROM "readings" r JOIN "meters" m ON m."id" = r."meterId"
         ${where}`,
+      this.prisma.lease.findMany({
+        where: { apartmentId },
+        select: { startDate: true, endDate: true },
+      }),
     ]);
 
     const values =
       rows.length === 0
         ? []
         : await this.prisma.$queryRaw<ReadingHistoryValueRow[]>`
-            SELECT rc."readingId", rc."zone", rc."value", rc."consumption", v."photoId", v."source"
+            SELECT rc."readingId", rc."zone", rc."value", rc."consumption", rc."previousPeriod",
+                   v."photoId", v."source"
             FROM "reading_consumption" rc
             -- The join only adds the value's photo and source.
             JOIN "reading_values" v ON v."readingId" = rc."readingId" AND v."zone" = rc."zone"
@@ -147,7 +153,19 @@ export class ReadingsService {
     return {
       items: rows.map((reading) => ({
         reading,
-        values: values.filter((v) => v.readingId === reading.id),
+        values: values
+          .filter((v) => v.readingId === reading.id)
+          .map((v) => ({
+            ...v,
+            warnings: historyValueWarnings({
+              utility: reading.utility,
+              zone: v.zone,
+              consumption: v.consumption,
+              previousPeriod: v.previousPeriod,
+              period: reading.period,
+              leases,
+            }),
+          })),
       })),
       total,
       page: query.page,
