@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { CONSUMPTION_WARNINGS, type ConsumptionWarning } from '@rental/shared';
 import { ReadingSource, Zone } from '../../generated/prisma/enums.js';
-import type { ReadingHistoryValueRow } from '../interfaces/reading-history-value-row.interface.js';
+import type { ReadingHistoryItem } from '../interfaces/reading-history-item.interface.js';
 
 export class ReadingHistoryValueResponseDto {
   @ApiProperty({ enum: Zone, enumName: 'Zone' })
@@ -29,13 +30,23 @@ export class ReadingHistoryValueResponseDto {
   })
   photoId: string | null;
 
-  static from(v: ReadingHistoryValueRow): ReadingHistoryValueResponseDto {
+  @ApiProperty({
+    enum: CONSUMPTION_WARNINGS,
+    enumName: 'ConsumptionWarningReason',
+    isArray: true,
+    description:
+      'Shared consumption rule (limit per month × months since the previous reading; zero electricity while a lease covers the period); empty = fine',
+  })
+  warnings: ConsumptionWarning[];
+
+  static from(v: ReadingHistoryItem['values'][number]): ReadingHistoryValueResponseDto {
     return {
       zone: v.zone,
       value: v.value.toFixed(3),
       consumption: v.consumption?.toFixed(3) ?? null,
       source: v.source,
       photoId: v.photoId,
+      warnings: v.warnings,
     };
   }
 }

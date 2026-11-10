@@ -6,7 +6,8 @@ paths:
 # Consumption warnings (`packages/shared/src/consumption.ts`)
 
 - One rule for the worker (draft notes, `hasLease: false`), statements (`UNUSUAL_CONSUMPTION`, see
-  `api-statements.md`) and the readings form / history (#43). Tune the limits
+  `api-statements.md`), the readings history (value `warnings`) and the web's reading entry (`apps/web/lib/consumption.ts`).
+  Codes: `CONSUMPTION_WARNINGS` (the API's `ConsumptionWarningReason` enum). Tune the limits
   only in `CONSUMPTION_LIMITS` — never copy them into an app.
 - Static monthly limits per utility + zone (not history averages: new tenants, meter replacements and vacations
   break them): ELECTRICITY DAY 130, NIGHT 70, TOTAL (single-zone) 200 kWh; COLD_WATER 20, HOT_WATER 20, GAS 20 m³.

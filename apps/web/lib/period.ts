@@ -25,7 +25,25 @@ export function defaultReadingPeriod(today: string): string {
   return Number(today.slice(8, 10)) <= READINGS_DEADLINE_DAY ? addMonths(current, -1) : current;
 }
 
-function lastDay(period: string): string {
+// Whole months between two periods: "2026-09" → "2026-11" = 2.
+export function monthsBetween(from: string, to: string): number {
+  const index = (p: string) => Number(p.slice(0, 4)) * 12 + Number(p.slice(5, 7));
+  return index(to) - index(from);
+}
+
+// A lease (inclusive "YYYY-MM-DD" dates, endDate null = open-ended) overlaps the period's month. Date strings of one
+// format compare correctly as text.
+export function leaseCoversPeriod(
+  lease: { startDate: string; endDate: string | null },
+  period: string,
+): boolean {
+  return (
+    lease.startDate <= periodLastDay(period) &&
+    (lease.endDate === null || lease.endDate >= `${period}-01`)
+  );
+}
+
+export function periodLastDay(period: string): string {
   const [year, month] = period.split('-').map(Number);
   // Day 0 of the next month = last day of this one.
   const day = new Date(Date.UTC(year, month, 0)).getUTCDate();
@@ -34,5 +52,5 @@ function lastDay(period: string): string {
 
 // Same window the API enforces for readingDate: from the 1st of the period to the end of the next month.
 export function readingDateWindow(period: string): { from: string; to: string } {
-  return { from: `${period}-01`, to: lastDay(addMonths(period, 1)) };
+  return { from: `${period}-01`, to: periodLastDay(addMonths(period, 1)) };
 }

@@ -3,7 +3,8 @@ import { toThousandths } from './decimal.js';
 // Same values as the API's UtilityType / Zone enums (shared never imports the generated API types).
 export type Utility = 'ELECTRICITY' | 'COLD_WATER' | 'HOT_WATER' | 'GAS';
 export type MeterZone = 'TOTAL' | 'DAY' | 'NIGHT';
-export type ConsumptionWarning = 'ABOVE_LIMIT' | 'ZERO_CONSUMPTION';
+export const CONSUMPTION_WARNINGS = ['ABOVE_LIMIT', 'ZERO_CONSUMPTION'] as const;
+export type ConsumptionWarning = (typeof CONSUMPTION_WARNINGS)[number];
 
 // Usual consumption per month for one apartment, per utility + zone — the one place to tune them. Static on purpose
 // (history averages break on new tenants, meter replacements, vacations). Above → a warning, never a block.

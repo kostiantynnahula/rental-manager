@@ -25,6 +25,16 @@ export function monthsBetween(from: Date, to: Date): number {
   );
 }
 
+// A lease (inclusive dates, endDate null = open-ended) overlaps the period's month.
+export function leaseOverlapsPeriod(
+  lease: { startDate: Date; endDate: Date | null },
+  period: Date,
+): boolean {
+  return (
+    lease.startDate <= periodEnd(period) && (lease.endDate === null || lease.endDate >= period)
+  );
+}
+
 // Last day of the period's month.
 export function periodEnd(period: Date): Date {
   return new Date(addMonths(period, 1).getTime() - 24 * 60 * 60 * 1000);

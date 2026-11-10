@@ -4,6 +4,7 @@ import { createDataTableColumnHelper } from '@/components/data-table/features';
 import type { ReadingHistoryItem } from '@/lib/api/queries/readings';
 import { formatDate, formatPeriod } from '@/lib/format';
 import { formatHistoryValues } from './helpers/format-history-values';
+import { HistoryConsumption } from './history-consumption';
 import { HistoryMeterName } from './history-meter-name';
 import { HistoryPhotoLinks } from './history-photo-links';
 
@@ -46,10 +47,6 @@ export const readingHistoryColumns = column.columns([
   column.display({
     id: 'consumption',
     header: 'Споживання',
-    cell: ({ row }) => (
-      <span className="whitespace-nowrap tabular-nums">
-        {formatHistoryValues(row.original, 'consumption')}
-      </span>
-    ),
+    cell: ({ row }) => <HistoryConsumption item={row.original} />,
   }),
 ]);

@@ -5,4 +5,6 @@ import type { ReadingConsumptionRow } from './reading-consumption-row.interface.
 export interface ReadingHistoryValueRow extends ReadingConsumptionRow {
   photoId: string | null;
   source: ReadingSource;
+  // Period of the previous confirmed value of the meter/zone (null with consumption null).
+  previousPeriod: Date | null;
 }

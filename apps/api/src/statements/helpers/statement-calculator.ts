@@ -1,10 +1,6 @@
-import {
-  consumptionLimit,
-  consumptionWarnings,
-  fromThousandths,
-  toThousandths,
-} from '@rental/shared';
-import { monthsBetween, periodEnd } from '../../common/helpers/period.js';
+import { consumptionLimit, consumptionWarnings } from '@rental/shared';
+import { consumptionString } from '../../common/helpers/consumption-string.js';
+import { leaseOverlapsPeriod, monthsBetween, periodEnd } from '../../common/helpers/period.js';
 import { Prisma } from '../../generated/prisma/client.js';
 import { TariffKind, UtilityType, Zone } from '../../generated/prisma/enums.js';
 import { priceForPeriod } from '../../tariffs/helpers/price-for-period.js';
@@ -188,8 +184,7 @@ function unusualConsumption(
         .flatMap((r) => r.previousPeriod ?? [])
         .reduce<Date | null>((min, p) => (min === null || p < min ? p : min), null);
       const months = Math.max(1, previous ? monthsBetween(previous, input.period) : 1);
-      // toFixed never uses exponent notation; the round trip drops trailing zeros ("340.000" → "340").
-      const consumption = fromThousandths(toThousandths(share.consumption.toFixed()));
+      const consumption = consumptionString(share.consumption);
       const reasons = consumptionWarnings({
         utility: meter.utility,
         zone,
@@ -223,9 +218,7 @@ export function calculateStatement(input: StatementInput): StatementPreview {
   const activeMeters = input.meters.filter(
     (m) => m.installedAt <= periodEnd(period) && (m.removedAt === null || m.removedAt >= period),
   );
-  const leases = input.leases.filter(
-    (l) => l.startDate <= periodEnd(period) && (l.endDate === null || l.endDate >= period),
-  );
+  const leases = input.leases.filter((l) => leaseOverlapsPeriod(l, period));
   const metered = tariffs
     .filter((t) => t.kind === TariffKind.METERED)
     .sort(
