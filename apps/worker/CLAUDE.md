@@ -14,7 +14,8 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
 - Env (root `.env`, validated in `src/config/env.validation.ts`): `API_BASE_URL` (with the `/api` prefix, e.g.
   `http://localhost:3001/api`), `API_KEY`, `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD?`.
   Extraction: `ANTHROPIC_API_KEY?` (the worker starts without it; extracting then throws), `EXTRACTION_PROVIDER`
-  (`anthropic`), `EXTRACTION_MODEL` (default `claude-sonnet-5-5`; `claude-opus-5-5` if accuracy falls short),
+  (`anthropic`), `EXTRACTION_MODEL` (code default `claude-sonnet-5-5`; `.env.example` uses `claude-haiku-5-5`, which reads
+  the golden set fine — go up to Sonnet/Opus only if accuracy falls short),
   `EXTRACTION_EFFORT` (`low`…`max`, default `medium`).
 - Key: `pnpm --filter api apikey:create --service worker --name "<label>" --scopes photos:read,meters:read,readings:create-draft,photos:parse-result`
   (scopes are fixed at creation — re-create the key when a new one is needed)
