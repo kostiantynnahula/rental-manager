@@ -1799,12 +1799,14 @@ export interface components {
             meters?: components["schemas"]["StatementLineMeterResponseDto"][];
         };
         /**
-         * @description MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details
+         * @description MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details. UNUSUAL_CONSUMPTION: meterId, utility, label, zone, consumption, limit, months, reason
          * @enum {string}
          */
-        StatementWarningCode: "MISSING_READING" | "NO_PRICE" | "NO_METERS" | "MULTIPLE_LEASES";
+        StatementWarningCode: "MISSING_READING" | "NO_PRICE" | "NO_METERS" | "MULTIPLE_LEASES" | "UNUSUAL_CONSUMPTION";
+        /** @enum {string} */
+        ConsumptionWarningReason: "ABOVE_LIMIT" | "ZERO_CONSUMPTION";
         StatementWarningResponseDto: {
-            /** @description MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details */
+            /** @description MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details. UNUSUAL_CONSUMPTION: meterId, utility, label, zone, consumption, limit, months, reason */
             code: components["schemas"]["StatementWarningCode"];
             /** Format: uuid */
             meterId?: string;
@@ -1814,6 +1816,16 @@ export interface components {
             tariffId?: string;
             tariffName?: string;
             zone?: components["schemas"]["Zone"];
+            /**
+             * @description Decimal string
+             * @example 340.5
+             */
+            consumption?: string;
+            /** @description Usual consumption per month */
+            limit?: number;
+            /** @description Months since the previous reading (>= 1) */
+            months?: number;
+            reason?: components["schemas"]["ConsumptionWarningReason"];
         };
         StatementPreviewResponseDto: {
             /** @example 2026-10 */

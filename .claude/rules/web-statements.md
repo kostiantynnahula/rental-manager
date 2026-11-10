@@ -17,3 +17,5 @@ paths:
   already issued (`isStatementTotalChanged`). Mutations invalidate in `onSettled`, so failures refresh the screen too.
 - Saved statements are snapshots: never recompute them on the client. Correcting = cancel + "Виставити заново".
 - The readings form takes `?period=` (from a `MISSING_READING` warning).
+- `UNUSUAL_CONSUMPTION` text (`statementWarningMessage`): "спожито X од. за N міс. — більше за звичні L/міс." or
+  "нульове споживання, хоча є договір"; no link (nothing to enter — check the reading).

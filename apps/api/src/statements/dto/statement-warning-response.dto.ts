@@ -1,6 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UtilityType, Zone } from '../../generated/prisma/enums.js';
-import { STATEMENT_WARNING_CODES, type StatementWarningCode } from '../constants/statement.js';
+import {
+  CONSUMPTION_WARNING_REASONS,
+  STATEMENT_WARNING_CODES,
+  type StatementWarningCode,
+} from '../constants/statement.js';
 import type { StatementWarning } from '../interfaces/statement-warning.interface.js';
 
 export class StatementWarningResponseDto {
@@ -8,7 +12,7 @@ export class StatementWarningResponseDto {
     enum: STATEMENT_WARNING_CODES,
     enumName: 'StatementWarningCode',
     description:
-      'MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details',
+      'MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details. UNUSUAL_CONSUMPTION: meterId, utility, label, zone, consumption, limit, months, reason',
   })
   code: StatementWarningCode;
 
@@ -29,6 +33,18 @@ export class StatementWarningResponseDto {
 
   @ApiPropertyOptional({ enum: Zone, enumName: 'Zone' })
   zone?: Zone;
+
+  @ApiPropertyOptional({ description: 'Decimal string', example: '340.5' })
+  consumption?: string;
+
+  @ApiPropertyOptional({ description: 'Usual consumption per month' })
+  limit?: number;
+
+  @ApiPropertyOptional({ description: 'Months since the previous reading (>= 1)' })
+  months?: number;
+
+  @ApiPropertyOptional({ enum: CONSUMPTION_WARNING_REASONS, enumName: 'ConsumptionWarningReason' })
+  reason?: (typeof CONSUMPTION_WARNING_REASONS)[number];
 
   static from(w: StatementWarning): StatementWarningResponseDto {
     return { ...w };

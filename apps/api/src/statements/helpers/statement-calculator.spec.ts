@@ -49,11 +49,17 @@ function meter(
   };
 }
 
-function row(meterId: string, zone: Zone, consumption: string | null) {
+function row(
+  meterId: string,
+  zone: Zone,
+  consumption: string | null,
+  previousPeriod = '2026-09-01',
+) {
   return {
     meterId,
     zone,
     consumption: consumption === null ? null : dec(consumption),
+    previousPeriod: consumption === null ? null : date(previousPeriod),
     photoId: null,
   };
 }
@@ -368,5 +374,117 @@ describe('calculateStatement', () => {
       ['Вивіз сміття', undefined],
       ['Ліфт', undefined],
     ]);
+  });
+
+  describe('unusual consumption', () => {
+    const lease = { id: 'lease-7', startDate: date('2026-01-01'), endDate: null, monthlyRent: 100 };
+    const unusual = (warnings: { code: string }[]) =>
+      warnings.filter((w) => w.code === 'UNUSUAL_CONSUMPTION');
+
+    it('warns about a zone above its monthly limit', () => {
+      const result = calculateStatement(
+        input({
+          attachments: [electricity([['2026-01-01', Zone.TOTAL, '4.32']])],
+          meters: [meter('m1', UtilityType.ELECTRICITY, { label: 'кухня' })],
+          consumption: [row('m1', Zone.DAY, '130.500'), row('m1', Zone.NIGHT, '70')],
+        }),
+      );
+      expect(result.warnings).toEqual([
+        {
+          code: 'UNUSUAL_CONSUMPTION',
+          meterId: 'm1',
+          utility: UtilityType.ELECTRICITY,
+          label: 'кухня',
+          zone: Zone.DAY,
+          consumption: '130.5',
+          limit: 130,
+          months: 1,
+          reason: 'ABOVE_LIMIT',
+        },
+      ]);
+    });
+
+    it('scales the limit by the months since the previous reading', () => {
+      const run = (consumption: string) =>
+        calculateStatement(
+          input({
+            attachments: [electricity([['2026-01-01', Zone.TOTAL, '1']])],
+            meters: [meter('m1', UtilityType.ELECTRICITY)],
+            consumption: [row('m1', Zone.DAY, consumption, '2026-07-01')],
+          }),
+        ).warnings;
+      expect(run('390')).toEqual([]);
+      expect(unusual(run('391'))).toMatchObject([{ months: 3, consumption: '391' }]);
+    });
+
+    it('counts INITIAL + REGULAR in one month as one month', () => {
+      const result = calculateStatement(
+        input({
+          attachments: [electricity([['2026-01-01', Zone.TOTAL, '1']])],
+          meters: [meter('new', UtilityType.ELECTRICITY, { installedAt: date('2026-10-01') })],
+          consumption: [row('new', Zone.TOTAL, null), row('new', Zone.TOTAL, '250', '2026-10-01')],
+        }),
+      );
+      expect(unusual(result.warnings)).toMatchObject([{ months: 1, limit: 200 }]);
+    });
+
+    it('flags zero electricity only while a lease covers the period', () => {
+      const run = (leases: (typeof lease)[]) =>
+        calculateStatement(
+          input({
+            attachments: [electricity([['2026-01-01', Zone.TOTAL, '1']])],
+            meters: [meter('m1', UtilityType.ELECTRICITY)],
+            leases,
+            consumption: [row('m1', Zone.TOTAL, '0.000')],
+          }),
+        ).warnings;
+      expect(unusual(run([lease]))).toMatchObject([
+        { zone: Zone.TOTAL, consumption: '0', reason: 'ZERO_CONSUMPTION' },
+      ]);
+      expect(run([])).toEqual([]);
+    });
+
+    it("doesn't flag zero water, even with a lease", () => {
+      const result = calculateStatement(
+        input({
+          attachments: [
+            tariff(
+              'Вода',
+              TariffKind.METERED,
+              [UtilityType.COLD_WATER],
+              [['2026-01-01', Zone.TOTAL, '1']],
+            ),
+          ],
+          meters: [meter('cold', UtilityType.COLD_WATER)],
+          leases: [lease],
+          consumption: [row('cold', Zone.TOTAL, '0')],
+        }),
+      );
+      expect(unusual(result.warnings)).toEqual([]);
+    });
+
+    it('warns once about a meter billed by two tariffs', () => {
+      const result = calculateStatement(
+        input({
+          attachments: [
+            tariff(
+              'Вода',
+              TariffKind.METERED,
+              [UtilityType.COLD_WATER],
+              [['2026-01-01', Zone.TOTAL, '30']],
+            ),
+            tariff(
+              'Водовідведення',
+              TariffKind.METERED,
+              [UtilityType.COLD_WATER],
+              [['2026-01-01', Zone.TOTAL, '10']],
+            ),
+          ],
+          meters: [meter('cold', UtilityType.COLD_WATER)],
+          consumption: [row('cold', Zone.TOTAL, '25')],
+        }),
+      );
+      expect(unusual(result.warnings)).toMatchObject([{ meterId: 'cold', limit: 20 }]);
+    });
   });
 });

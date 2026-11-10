@@ -231,8 +231,9 @@ model Meter {
 
 // Raw-SQL constraints in migration add_meters_readings: readings_period_first_of_month,
 // readings_confirmed_has_confirmer, readings_one_confirmed_{regular_per_period,initial,final}.
-// View reading_consumption (migration add_reading_consumption_view): per-value consumption of CONFIRMED
-// readings; read with $queryRaw (no Prisma model).
+// View reading_consumption (migration add_reading_consumption_view, + previousPeriod in
+// reading_consumption_previous_period): per-value consumption of CONFIRMED readings; read with $queryRaw (no Prisma
+// model).
 model Reading {
   id            String         @id @default(uuid()) @db.Uuid
   meterId       String         @db.Uuid

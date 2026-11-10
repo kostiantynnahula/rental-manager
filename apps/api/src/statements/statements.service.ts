@@ -140,7 +140,7 @@ export class StatementsService {
     // still sees each meter's full history.
     // The reading_values join only adds the value's photo (for 📷 links in the statement).
     const consumption = await db.$queryRaw<StatementConsumptionRow[]>`
-      SELECT rc."meterId", rc."zone", rc."consumption", v."photoId"
+      SELECT rc."meterId", rc."zone", rc."consumption", rc."previousPeriod", v."photoId"
       FROM "reading_consumption" rc
       JOIN "reading_values" v ON v."readingId" = rc."readingId" AND v."zone" = rc."zone"
       WHERE rc."meterId" = ANY(${meters.map((m) => m.id)}::uuid[])

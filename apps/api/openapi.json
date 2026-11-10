@@ -6171,15 +6171,23 @@
           "MISSING_READING",
           "NO_PRICE",
           "NO_METERS",
-          "MULTIPLE_LEASES"
+          "MULTIPLE_LEASES",
+          "UNUSUAL_CONSUMPTION"
         ],
-        "description": "MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details"
+        "description": "MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details. UNUSUAL_CONSUMPTION: meterId, utility, label, zone, consumption, limit, months, reason"
+      },
+      "ConsumptionWarningReason": {
+        "type": "string",
+        "enum": [
+          "ABOVE_LIMIT",
+          "ZERO_CONSUMPTION"
+        ]
       },
       "StatementWarningResponseDto": {
         "type": "object",
         "properties": {
           "code": {
-            "description": "MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details",
+            "description": "MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details. UNUSUAL_CONSUMPTION: meterId, utility, label, zone, consumption, limit, months, reason",
             "allOf": [
               {
                 "$ref": "#/components/schemas/StatementWarningCode"
@@ -6212,6 +6220,26 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/Zone"
+              }
+            ]
+          },
+          "consumption": {
+            "type": "string",
+            "description": "Decimal string",
+            "example": "340.5"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Usual consumption per month"
+          },
+          "months": {
+            "type": "number",
+            "description": "Months since the previous reading (>= 1)"
+          },
+          "reason": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConsumptionWarningReason"
               }
             ]
           }

@@ -18,6 +18,13 @@ export function addMonths(period: Date, n: number): Date {
   return new Date(Date.UTC(period.getUTCFullYear(), period.getUTCMonth() + n, 1));
 }
 
+// Whole months from one period to another: 2026-09-01 → 2026-11-01 = 2.
+export function monthsBetween(from: Date, to: Date): number {
+  return (
+    (to.getUTCFullYear() - from.getUTCFullYear()) * 12 + (to.getUTCMonth() - from.getUTCMonth())
+  );
+}
+
 // Last day of the period's month.
 export function periodEnd(period: Date): Date {
   return new Date(addMonths(period, 1).getTime() - 24 * 60 * 60 * 1000);
