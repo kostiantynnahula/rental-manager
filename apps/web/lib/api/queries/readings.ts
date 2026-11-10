@@ -1,4 +1,10 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
 import { unwrap } from '@/lib/api/errors';
 import { meterKeys } from '@/lib/api/queries/meters';
@@ -6,7 +12,10 @@ import { photoKeys } from '@/lib/api/queries/photos';
 import type { components, operations } from '@/lib/api/schema';
 
 export type Reading = components['schemas']['ReadingResponseDto'];
+export type ReadingValue = Reading['values'][number];
 export type CreateReadingInput = components['schemas']['CreateReadingDto'];
+export type UpdateReadingInput = components['schemas']['UpdateReadingDto'];
+export type ReadingValueInput = CreateReadingInput['values'][number];
 export type ApartmentMeterReading = components['schemas']['ApartmentMeterReadingResponseDto'];
 export type PeriodReadingStatus = components['schemas']['PeriodReadingStatus'];
 export type ReadingHistoryPage = components['schemas']['ReadingHistoryPageResponseDto'];
@@ -77,12 +86,38 @@ export function useCreateReading() {
       body: CreateReadingInput;
     }): Promise<Reading> =>
       unwrap(await api.POST('/meters/{meterId}/readings', { params: { path: { meterId } }, body })),
-    // A confirmed reading becomes the meter's last values (meter cards, previous values) and a history row;
-    // with a photoId it also takes the photo out of "unassigned".
-    onSuccess: (_reading, { body }) => {
-      void queryClient.invalidateQueries({ queryKey: meterKeys.all });
-      void queryClient.invalidateQueries({ queryKey: readingKeys.all });
-      if (body.photoId) void queryClient.invalidateQueries({ queryKey: photoKeys.all });
-    },
+    onSuccess: (_reading, { body }) => invalidateAfterReading(queryClient, body.values),
   });
+}
+
+// Edits a DRAFT: `values` replace all of them (send the kept ones with their photoId).
+export function useUpdateReading() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, body }: { id: string; body: UpdateReadingInput }): Promise<Reading> =>
+      unwrap(await api.PATCH('/readings/{id}', { params: { path: { id } }, body })),
+    onSuccess: (_reading, { body }) => invalidateAfterReading(queryClient, body.values),
+  });
+}
+
+// DRAFT → CONFIRMED; the API refuses an incomplete draft (a zone missing).
+export function useConfirmReading() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string): Promise<Reading> =>
+      unwrap(await api.POST('/readings/{id}/confirm', { params: { path: { id } } })),
+    onSuccess: (reading) => invalidateAfterReading(queryClient, reading.values),
+  });
+}
+
+// A confirmed reading becomes the meter's last values (meter cards, previous values) and a history row; a value
+// with a photoId also takes the photo out of "unassigned" (and changes what the photo lists as taken from it).
+function invalidateAfterReading(
+  queryClient: QueryClient,
+  values: ReadonlyArray<{ photoId?: string | null }> | undefined,
+) {
+  void queryClient.invalidateQueries({ queryKey: meterKeys.all });
+  void queryClient.invalidateQueries({ queryKey: readingKeys.all });
+  if (values?.some((v) => v.photoId))
+    void queryClient.invalidateQueries({ queryKey: photoKeys.all });
 }

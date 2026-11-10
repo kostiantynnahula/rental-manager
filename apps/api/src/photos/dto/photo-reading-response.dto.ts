@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { formatPeriod } from '../../common/helpers/period.js';
-import { ReadingKind, ReadingStatus } from '../../generated/prisma/enums.js';
-import type { PhotoWithReadings } from '../helpers/photo-with-readings.js';
+import { ReadingKind, ReadingStatus, Zone } from '../../generated/prisma/enums.js';
+import type { PhotoReading } from '../interfaces/photo-reading.interface.js';
 
 // A reading linked to a photo (details via GET /readings/:id).
 export class PhotoReadingResponseDto {
@@ -20,13 +20,22 @@ export class PhotoReadingResponseDto {
   @ApiProperty({ example: '2026-10' })
   period: string;
 
-  static from(r: PhotoWithReadings['readings'][number]): PhotoReadingResponseDto {
+  @ApiProperty({
+    enum: Zone,
+    enumName: 'Zone',
+    isArray: true,
+    description: 'Zones whose values were read from this photo',
+  })
+  zones: Zone[];
+
+  static from({ reading: r, zones }: PhotoReading): PhotoReadingResponseDto {
     return {
       id: r.id,
       meterId: r.meterId,
       kind: r.kind,
       status: r.status,
       period: formatPeriod(r.period),
+      zones,
     };
   }
 }

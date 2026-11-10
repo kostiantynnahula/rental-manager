@@ -418,7 +418,7 @@ export interface paths {
         };
         get: operations["MeterReadingsController_list"];
         put?: never;
-        /** @description API key scope: readings:create-draft. With a key: photoId required, confirm not allowed, always DRAFT + PHOTO; a second non-cancelled reading from the same photo → 409 with readingId */
+        /** @description A DRAFT may hold a subset of the meter zones; confirm=true needs all of them. API key scope: readings:create-draft. With a key: photoId on every value required, confirm not allowed, always DRAFT + PHOTO; a second non-cancelled reading of the meter from the same photo → 409 with readingId */
         post: operations["MeterReadingsController_create"];
         delete?: never;
         options?: never;
@@ -1247,6 +1247,8 @@ export interface components {
             status: components["schemas"]["ReadingStatus"];
             /** @example 2026-10 */
             period: string;
+            /** @description Zones whose values were read from this photo */
+            zones: components["schemas"]["Zone"][];
         };
         PhotoDetailResponseDto: {
             /** Format: uuid */
@@ -1277,11 +1279,25 @@ export interface components {
             fileUrl: string;
             /** @example /api/photos/3f1c…/thumbnail */
             thumbnailUrl: string;
-            /** @description All linked readings, incl. cancelled */
+            /** @description All readings with a value from this photo, incl. cancelled */
             readings: components["schemas"]["PhotoReadingResponseDto"][];
         };
         /** @enum {string} */
         ReadingSource: "MANUAL" | "PHOTO";
+        ReadingValueDetailResponseDto: {
+            zone: components["schemas"]["Zone"];
+            /**
+             * @description Decimal string with 3 decimals
+             * @example 1520.350
+             */
+            value: string;
+            source: components["schemas"]["ReadingSource"];
+            /**
+             * Format: uuid
+             * @description Photo the value was read from (source PHOTO)
+             */
+            photoId: string | null;
+        };
         ReadingResponseDto: {
             /** Format: uuid */
             id: string;
@@ -1289,7 +1305,6 @@ export interface components {
             meterId: string;
             kind: components["schemas"]["ReadingKind"];
             status: components["schemas"]["ReadingStatus"];
-            source: components["schemas"]["ReadingSource"];
             /**
              * @description Month the reading is for (YYYY-MM)
              * @example 2026-10
@@ -1301,9 +1316,8 @@ export interface components {
              */
             readingDate: string;
             note: string | null;
-            /** Format: uuid */
-            photoId: string | null;
-            values: components["schemas"]["ReadingValueResponseDto"][];
+            /** @description In zone order; a DRAFT may lack some of the meter zones */
+            values: components["schemas"]["ReadingValueDetailResponseDto"][];
             /** @description Per zone since the previous CONFIRMED reading of this meter; null if none */
             consumption: components["schemas"]["ReadingValueResponseDto"][] | null;
             /** Format: uuid */
@@ -1317,6 +1331,19 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        ReadingDraftValueInputDto: {
+            zone: components["schemas"]["Zone"];
+            /**
+             * @description Decimal string, >= 0, up to 3 decimals
+             * @example 1520.350
+             */
+            value: string;
+            /**
+             * Format: uuid
+             * @description Photo of this apartment the value was read from → source PHOTO, else MANUAL
+             */
+            photoId?: string;
+        };
         CreateReadingDto: {
             /**
              * @description Month the reading is for
@@ -1329,18 +1356,14 @@ export interface components {
              * @example 2026-10-28
              */
             readingDate: string;
-            values: components["schemas"]["ReadingValueInputDto"][];
+            /** @description A DRAFT may hold a subset of the meter zones (no unknown or duplicate ones); confirm needs all of them */
+            values: components["schemas"]["ReadingDraftValueInputDto"][];
             note?: string;
             /**
              * @description true = create CONFIRMED right away (manual entry); default DRAFT
              * @default false
              */
             confirm: boolean;
-            /**
-             * Format: uuid
-             * @description Photo of this apartment the reading was taken from → source PHOTO
-             */
-            photoId?: string;
         };
         MeterSummaryResponseDto: {
             /** Format: uuid */
@@ -1382,6 +1405,12 @@ export interface components {
              * @example 120.000
              */
             consumption: string | null;
+            source: components["schemas"]["ReadingSource"];
+            /**
+             * Format: uuid
+             * @description Photo the value was read from (source PHOTO)
+             */
+            photoId: string | null;
         };
         ReadingHistoryItemResponseDto: {
             /** Format: uuid */
@@ -1395,11 +1424,7 @@ export interface components {
              */
             readingDate: string;
             kind: components["schemas"]["ReadingKind"];
-            /**
-             * Format: uuid
-             * @description Photo the reading was taken from (source PHOTO)
-             */
-            photoId: string | null;
+            /** @description Each value carries its own photo (a two-zone reading may link two photos) */
             values: components["schemas"]["ReadingHistoryValueResponseDto"][];
         };
         ReadingHistoryPageResponseDto: {
@@ -1418,7 +1443,8 @@ export interface components {
              * @example 2026-10-28
              */
             readingDate?: string;
-            values?: components["schemas"]["ReadingValueInputDto"][];
+            /** @description Replaces all values (send the kept ones with their photoId); may be a subset of the zones */
+            values?: components["schemas"]["ReadingDraftValueInputDto"][];
             note?: string | null;
         };
         CancelReadingDto: {
@@ -3402,7 +3428,7 @@ export interface operations {
                     "application/json": components["schemas"]["ReadingResponseDto"];
                 };
             };
-            /** @description Zones mismatch; with confirm: date outside window/in future, value out of order; API key without photoId */
+            /** @description Unknown/duplicate zones; photo not found or of another apartment; with confirm: zones missing, date outside window/in future, value out of order; API key with a value without photoId */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3627,7 +3653,7 @@ export interface operations {
                     "application/json": components["schemas"]["ReadingResponseDto"];
                 };
             };
-            /** @description Invalid body or zones don't match the meter */
+            /** @description Invalid body, unknown/duplicate zones, photo not found or of another apartment */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3675,7 +3701,7 @@ export interface operations {
                     "application/json": components["schemas"]["ReadingResponseDto"];
                 };
             };
-            /** @description Date outside window/in future, value out of order */
+            /** @description Zones missing (incomplete draft), date outside window/in future, value out of order */
             400: {
                 headers: {
                     [name: string]: unknown;

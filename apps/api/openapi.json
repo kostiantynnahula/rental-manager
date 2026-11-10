@@ -1764,7 +1764,7 @@
         ]
       },
       "post": {
-        "description": "API key scope: readings:create-draft. With a key: photoId required, confirm not allowed, always DRAFT + PHOTO; a second non-cancelled reading from the same photo → 409 with readingId",
+        "description": "A DRAFT may hold a subset of the meter zones; confirm=true needs all of them. API key scope: readings:create-draft. With a key: photoId on every value required, confirm not allowed, always DRAFT + PHOTO; a second non-cancelled reading of the meter from the same photo → 409 with readingId",
         "operationId": "MeterReadingsController_create",
         "parameters": [
           {
@@ -1798,7 +1798,7 @@
             }
           },
           "400": {
-            "description": "Zones mismatch; with confirm: date outside window/in future, value out of order; API key without photoId"
+            "description": "Unknown/duplicate zones; photo not found or of another apartment; with confirm: zones missing, date outside window/in future, value out of order; API key with a value without photoId"
           },
           "401": {
             "description": ""
@@ -2058,7 +2058,7 @@
             }
           },
           "400": {
-            "description": "Invalid body or zones don't match the meter"
+            "description": "Invalid body, unknown/duplicate zones, photo not found or of another apartment"
           },
           "401": {
             "description": ""
@@ -2140,7 +2140,7 @@
             }
           },
           "400": {
-            "description": "Date outside window/in future, value out of order"
+            "description": "Zones missing (incomplete draft), date outside window/in future, value out of order"
           },
           "401": {
             "description": ""
@@ -4725,6 +4725,13 @@
           "period": {
             "type": "string",
             "example": "2026-10"
+          },
+          "zones": {
+            "type": "array",
+            "description": "Zones whose values were read from this photo",
+            "items": {
+              "$ref": "#/components/schemas/Zone"
+            }
           }
         },
         "required": [
@@ -4732,7 +4739,8 @@
           "meterId",
           "kind",
           "status",
-          "period"
+          "period",
+          "zones"
         ]
       },
       "PhotoDetailResponseDto": {
@@ -4788,7 +4796,7 @@
             "example": "/api/photos/3f1c…/thumbnail"
           },
           "readings": {
-            "description": "All linked readings, incl. cancelled",
+            "description": "All readings with a value from this photo, incl. cancelled",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PhotoReadingResponseDto"
@@ -4818,6 +4826,42 @@
           "PHOTO"
         ]
       },
+      "ReadingValueDetailResponseDto": {
+        "type": "object",
+        "properties": {
+          "zone": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Zone"
+              }
+            ]
+          },
+          "value": {
+            "type": "string",
+            "example": "1520.350",
+            "description": "Decimal string with 3 decimals"
+          },
+          "source": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReadingSource"
+              }
+            ]
+          },
+          "photoId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Photo the value was read from (source PHOTO)"
+          }
+        },
+        "required": [
+          "zone",
+          "value",
+          "source",
+          "photoId"
+        ]
+      },
       "ReadingResponseDto": {
         "type": "object",
         "properties": {
@@ -4843,13 +4887,6 @@
               }
             ]
           },
-          "source": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ReadingSource"
-              }
-            ]
-          },
           "period": {
             "type": "string",
             "example": "2026-10",
@@ -4864,15 +4901,11 @@
             "type": "string",
             "nullable": true
           },
-          "photoId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
           "values": {
+            "description": "In zone order; a DRAFT may lack some of the meter zones",
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ReadingValueResponseDto"
+              "$ref": "#/components/schemas/ReadingValueDetailResponseDto"
             }
           },
           "consumption": {
@@ -4911,11 +4944,9 @@
           "meterId",
           "kind",
           "status",
-          "source",
           "period",
           "readingDate",
           "note",
-          "photoId",
           "values",
           "consumption",
           "createdById",
@@ -4923,6 +4954,32 @@
           "confirmedById",
           "createdAt",
           "updatedAt"
+        ]
+      },
+      "ReadingDraftValueInputDto": {
+        "type": "object",
+        "properties": {
+          "zone": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Zone"
+              }
+            ]
+          },
+          "value": {
+            "type": "string",
+            "example": "1520.350",
+            "description": "Decimal string, >= 0, up to 3 decimals"
+          },
+          "photoId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Photo of this apartment the value was read from → source PHOTO, else MANUAL"
+          }
+        },
+        "required": [
+          "zone",
+          "value"
         ]
       },
       "CreateReadingDto": {
@@ -4940,9 +4997,10 @@
             "description": "From the 1st of the period to the end of the next month; not in the future"
           },
           "values": {
+            "description": "A DRAFT may hold a subset of the meter zones (no unknown or duplicate ones); confirm needs all of them",
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ReadingValueInputDto"
+              "$ref": "#/components/schemas/ReadingDraftValueInputDto"
             }
           },
           "note": {
@@ -4952,11 +5010,6 @@
             "type": "boolean",
             "default": false,
             "description": "true = create CONFIRMED right away (manual entry); default DRAFT"
-          },
-          "photoId": {
-            "type": "string",
-            "format": "uuid",
-            "description": "Photo of this apartment the reading was taken from → source PHOTO"
           }
         },
         "required": [
@@ -5097,12 +5150,27 @@
             "nullable": true,
             "example": "120.000",
             "description": "Since the previous confirmed reading of the meter and zone; null if there is none"
+          },
+          "source": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReadingSource"
+              }
+            ]
+          },
+          "photoId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "Photo the value was read from (source PHOTO)"
           }
         },
         "required": [
           "zone",
           "value",
-          "consumption"
+          "consumption",
+          "source",
+          "photoId"
         ]
       },
       "ReadingHistoryItemResponseDto": {
@@ -5131,13 +5199,8 @@
               }
             ]
           },
-          "photoId": {
-            "type": "string",
-            "nullable": true,
-            "format": "uuid",
-            "description": "Photo the reading was taken from (source PHOTO)"
-          },
           "values": {
+            "description": "Each value carries its own photo (a two-zone reading may link two photos)",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ReadingHistoryValueResponseDto"
@@ -5150,7 +5213,6 @@
           "period",
           "readingDate",
           "kind",
-          "photoId",
           "values"
         ]
       },
@@ -5195,9 +5257,10 @@
             "example": "2026-10-28"
           },
           "values": {
+            "description": "Replaces all values (send the kept ones with their photoId); may be a subset of the zones",
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ReadingValueInputDto"
+              "$ref": "#/components/schemas/ReadingDraftValueInputDto"
             }
           },
           "note": {

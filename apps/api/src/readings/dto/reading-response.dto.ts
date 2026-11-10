@@ -1,8 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { formatDateOnly } from '../../common/helpers/date-only.js';
 import { formatPeriod } from '../../common/helpers/period.js';
-import { ReadingKind, ReadingSource, ReadingStatus } from '../../generated/prisma/enums.js';
+import { ReadingKind, ReadingStatus } from '../../generated/prisma/enums.js';
 import type { ReadingWithConsumption } from '../interfaces/reading-with-consumption.interface.js';
+import { ReadingValueDetailResponseDto } from './reading-value-detail-response.dto.js';
 import { ReadingValueResponseDto } from './reading-value-response.dto.js';
 
 export class ReadingResponseDto {
@@ -18,9 +19,6 @@ export class ReadingResponseDto {
   @ApiProperty({ enum: ReadingStatus, enumName: 'ReadingStatus' })
   status: ReadingStatus;
 
-  @ApiProperty({ enum: ReadingSource, enumName: 'ReadingSource' })
-  source: ReadingSource;
-
   @ApiProperty({ example: '2026-10', description: 'Month the reading is for (YYYY-MM)' })
   period: string;
 
@@ -30,11 +28,11 @@ export class ReadingResponseDto {
   @ApiProperty({ type: String, nullable: true })
   note: string | null;
 
-  @ApiProperty({ type: String, format: 'uuid', nullable: true })
-  photoId: string | null;
-
-  @ApiProperty({ type: [ReadingValueResponseDto] })
-  values: ReadingValueResponseDto[];
+  @ApiProperty({
+    type: [ReadingValueDetailResponseDto],
+    description: 'In zone order; a DRAFT may lack some of the meter zones',
+  })
+  values: ReadingValueDetailResponseDto[];
 
   @ApiProperty({
     type: [ReadingValueResponseDto],
@@ -64,12 +62,10 @@ export class ReadingResponseDto {
       meterId: r.meterId,
       kind: r.kind,
       status: r.status,
-      source: r.source,
       period: formatPeriod(r.period),
       readingDate: formatDateOnly(r.readingDate),
       note: r.note,
-      photoId: r.photoId,
-      values: r.values.map((v) => ReadingValueResponseDto.from(v)),
+      values: r.values.map((v) => ReadingValueDetailResponseDto.from(v)),
       consumption: consumption?.map((c) => ReadingValueResponseDto.from(c)) ?? null,
       createdById: r.createdById,
       confirmedAt: r.confirmedAt,

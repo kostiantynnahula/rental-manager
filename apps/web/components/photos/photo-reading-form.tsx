@@ -11,6 +11,10 @@ import { meterTitle } from '@/components/meters/helpers/meter-title';
 import { toReadingValuesInput } from '@/components/meters/helpers/reading-values-schema';
 import { ReadingValuesInput } from '@/components/meters/reading-values-input';
 import { NativeSelect } from '@/components/native-select';
+import { DraftValues } from '@/components/readings/draft-values';
+import { mergeDraftValues } from '@/components/readings/helpers/merge-draft-values';
+import { missingZones } from '@/components/readings/helpers/missing-zones';
+import { missingZonesLabel } from '@/components/readings/helpers/missing-zones-label';
 import { readingErrorMessage } from '@/components/readings/helpers/reading-error-message';
 import { Button } from '@/components/ui/button';
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
@@ -19,10 +23,16 @@ import { useResetAfterSave } from '@/hooks/use-reset-after-save';
 import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import type { Meter } from '@/lib/api/queries/meters';
 import { useFetchUnassignedPhotos, type PhotoDetail } from '@/lib/api/queries/photos';
-import { useApartmentPeriodReadings, useCreateReading } from '@/lib/api/queries/readings';
+import {
+  useApartmentPeriodReadings,
+  useConfirmReading,
+  useCreateReading,
+  useUpdateReading,
+  type ApartmentMeterReading,
+} from '@/lib/api/queries/readings';
 import { formatDate, formatPeriod, todayDateOnly } from '@/lib/format';
 import { defaultReadingPeriod, isPeriod, readingDateWindow } from '@/lib/period';
-import { UTILITY_ORDER } from '@/lib/utilities';
+import { UTILITY_ORDER, ZONE_LABELS, zonesFor, type Zone } from '@/lib/utilities';
 import { PERIOD_STATUS_LABELS } from './constants/reading-statuses';
 import { photoReadingDate } from './helpers/photo-reading-date';
 import { photoReadingSchema, type PhotoReadingValues } from './helpers/photo-reading-schema';
@@ -46,13 +56,30 @@ interface PhotoReadingFormProps {
   meters: Meter[];
 }
 
-// One meter's reading typed from the photo; saved CONFIRMED right away with the photo attached (source PHOTO).
+// A saved meter in this session; `missing` = zones its draft still lacks (empty = confirmed).
+interface SavedEntry {
+  meterId: string;
+  period: string;
+  missing: Zone[];
+}
+
+// The month's DRAFT of a meter (MISSING/CONFIRMED → null).
+function draftOf(rows: ApartmentMeterReading[], meterId: string) {
+  const row = rows.find((r) => r.meter.id === meterId);
+  return row?.status === 'DRAFT' ? row.reading : null;
+}
+
+// One meter's values typed from the photo, each with the photo attached (source PHOTO). One photo shows one register,
+// so a two-zone meter may take only some zones from it: they complete the month's draft if there is one. Complete →
+// CONFIRMED right away; otherwise saved as a DRAFT that another photo (or the batch form) completes.
 export function PhotoReadingForm({ apartmentId, photo, meters }: PhotoReadingFormProps) {
   const router = useRouter();
   const create = useCreateReading();
+  const update = useUpdateReading();
+  const confirm = useConfirmReading();
   const fetchUnassigned = useFetchUnassignedPhotos(apartmentId);
   const tabHref = `/apartments/${apartmentId}?tab=photos`;
-  const [saved, setSaved] = useState<{ meterId: string; period: string }[]>([]);
+  const [saved, setSaved] = useState<SavedEntry[]>([]);
   const [justSaved, setJustSaved] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [goingNext, setGoingNext] = useState(false);
@@ -65,6 +92,7 @@ export function PhotoReadingForm({ apartmentId, photo, meters }: PhotoReadingFor
   const { isSubmitting, isDirty } = form.formState;
   const period = useWatch({ control: form.control, name: 'period' });
   const meterId = useWatch({ control: form.control, name: 'meterId' });
+  const values = useWatch({ control: form.control, name: 'values' });
   const validPeriod = isPeriod(period);
 
   const periodReadings = useApartmentPeriodReadings(apartmentId, period, { enabled: validPeriod });
@@ -74,17 +102,42 @@ export function PhotoReadingForm({ apartmentId, photo, meters }: PhotoReadingFor
     return UTILITY_ORDER.flatMap((u) => data.filter((r) => r.meter.utility === u));
   }, [periodReadings.data, validPeriod]);
   const savedHere = useMemo(
-    () => new Set(saved.filter((s) => s.period === period).map((s) => s.meterId)),
+    () => new Map(saved.filter((s) => s.period === period).map((s) => [s.meterId, s])),
     [saved, period],
   );
   // CONFIRMED (or saved just now) can't take another reading for the month — the API would refuse it.
   const isSelectable = (id: string) =>
     !savedHere.has(id) && rows.some((r) => r.meter.id === id && r.status !== 'CONFIRMED');
 
+  // Inputs for the zones the meter still lacks this month (all of them without a draft).
   function selectMeter(id: string) {
     const meter = meters.find((m) => m.id === id);
+    const draft = draftOf(rows, id);
     form.setValue('meterId', id, { shouldValidate: form.formState.isSubmitted });
-    form.setValue('values', meter ? emptyValues(meter.zoneScheme) : []);
+    form.setValue(
+      'values',
+      meter
+        ? emptyValues(meter.zoneScheme).filter(
+            (v) => !draft || missingZones(meter.zoneScheme, draft.values).includes(v.zone),
+          )
+        : [],
+    );
+  }
+
+  // "Зони на цьому фото": add/remove a zone's input, keeping what was typed in the others.
+  function toggleZone(zone: Zone, on: boolean) {
+    const meter = meters.find((m) => m.id === meterId);
+    if (!meter) return;
+    const current = form.getValues('values');
+    const next = on
+      ? zonesFor(meter.zoneScheme).flatMap((z) =>
+          z === zone ? [{ zone, value: '' }] : current.filter((v) => v.zone === z),
+        )
+      : current.filter((v) => v.zone !== zone);
+    form.setValue('values', next, {
+      shouldDirty: true,
+      shouldValidate: form.formState.isSubmitted,
+    });
   }
 
   // Preselect the first MISSING meter; again when the month changes and the chosen one isn't available.
@@ -117,24 +170,53 @@ export function PhotoReadingForm({ apartmentId, photo, meters }: PhotoReadingFor
 
   async function onSubmit(v: PhotoReadingValues) {
     setSubmitError(null);
+    const meter = meters.find((m) => m.id === v.meterId);
+    if (!meter) return;
+    const fromPhoto = toReadingValuesInput(v.values).map((x) => ({ ...x, photoId: photo.id }));
+    const draft = draftOf(rows, v.meterId);
+    const all = draft ? mergeDraftValues(meter.zoneScheme, draft.values, fromPhoto) : fromPhoto;
+    const missing = missingZones(meter.zoneScheme, all);
     try {
-      await create.mutateAsync({
-        meterId: v.meterId,
-        body: {
-          period: v.period,
-          readingDate: v.readingDate,
-          values: toReadingValuesInput(v.values),
-          photoId: photo.id,
-          confirm: true,
-        },
-      });
+      if (draft) {
+        await update.mutateAsync({
+          id: draft.id,
+          body: { readingDate: v.readingDate, values: all },
+        });
+        if (missing.length === 0) await confirm.mutateAsync(draft.id);
+      } else {
+        await create.mutateAsync({
+          meterId: v.meterId,
+          body: {
+            period: v.period,
+            readingDate: v.readingDate,
+            values: fromPhoto,
+            confirm: missing.length === 0,
+          },
+        });
+      }
     } catch (error) {
       setSubmitError(readingErrorMessage(error));
       return;
     }
-    setSaved((list) => [...list, { meterId: v.meterId, period: v.period }]);
+    saveDone({ meterId: v.meterId, period: v.period, missing });
+  }
+
+  // A complete draft (e.g. proposed by the worker) only needs confirming.
+  async function confirmDraft(id: string) {
+    setSubmitError(null);
+    try {
+      await confirm.mutateAsync(id);
+    } catch (error) {
+      setSubmitError(readingErrorMessage(error));
+      return;
+    }
+    saveDone({ meterId, period, missing: [] });
+  }
+
+  function saveDone(entry: SavedEntry) {
+    setSaved((list) => [...list, entry]);
     setJustSaved(true);
-    toast.success('Показання збережено');
+    toast.success(entry.missing.length === 0 ? 'Показання збережено' : 'Чернетку збережено');
   }
 
   // "Ще показання з цього фото": same month and date, the next meter.
@@ -167,8 +249,30 @@ export function PhotoReadingForm({ apartmentId, photo, meters }: PhotoReadingFor
   const lastSaved = saved.at(-1);
   const lastSavedMeter = lastSaved && meters.find((m) => m.id === lastSaved.meterId);
   const selectedMeter = meters.find((m) => m.id === meterId);
+  const draft = selectedMeter ? draftOf(rows, selectedMeter.id) : null;
+  // Zones this photo can still fill: all of them, or the ones the draft lacks.
+  const openZones = selectedMeter
+    ? missingZones(selectedMeter.zoneScheme, draft?.values ?? [])
+    : [];
+  const chosenZones = values.map((v) => v.zone);
+  const completes =
+    !!selectedMeter &&
+    missingZones(selectedMeter.zoneScheme, [...(draft?.values ?? []), ...values]).length === 0;
   const dateWindow = validPeriod ? readingDateWindow(period) : null;
-  const busy = isSubmitting || justSaved || goingNext;
+  const busy = isSubmitting || confirm.isPending || justSaved || goingNext;
+  const valuesError =
+    form.formState.errors.values?.message ?? form.formState.errors.values?.root?.message;
+
+  // A meter's state in the select: saved here, or the month's status (+ what its draft lacks).
+  function meterStatusLabel(r: ApartmentMeterReading): string {
+    const here = savedHere.get(r.meter.id);
+    if (here) return here.missing.length === 0 ? 'збережено' : 'чернетку збережено';
+    const lacking =
+      r.status === 'DRAFT' && r.reading ? missingZones(r.meter.zoneScheme, r.reading.values) : [];
+    return lacking.length > 0
+      ? `${PERIOD_STATUS_LABELS[r.status]}, ${missingZonesLabel(lacking)}`
+      : PERIOD_STATUS_LABELS[r.status];
+  }
 
   return (
     <form noValidate onSubmit={form.handleSubmit(onSubmit)}>
@@ -245,8 +349,7 @@ export function PhotoReadingForm({ apartmentId, photo, meters }: PhotoReadingFor
                 <option value="">Оберіть лічильник</option>
                 {rows.map((r) => (
                   <option key={r.meter.id} value={r.meter.id} disabled={!isSelectable(r.meter.id)}>
-                    {meterTitle(r.meter)} —{' '}
-                    {savedHere.has(r.meter.id) ? 'збережено' : PERIOD_STATUS_LABELS[r.status]}
+                    {meterTitle(r.meter)} — {meterStatusLabel(r)}
                   </option>
                 ))}
               </NativeSelect>
@@ -265,7 +368,37 @@ export function PhotoReadingForm({ apartmentId, photo, meters }: PhotoReadingFor
           )}
         />
 
-        {selectedMeter && (
+        {selectedMeter && draft && !justSaved && (
+          <DraftValues
+            values={draft.values}
+            utility={selectedMeter.utility}
+            label={`${meterTitle(selectedMeter)}, ${formatPeriod(period)}`}
+          />
+        )}
+        {selectedMeter && openZones.length > 1 && !justSaved && (
+          <fieldset className="space-y-1">
+            <legend className="text-sm font-medium">Зони на цьому фото</legend>
+            <div className="flex flex-wrap gap-x-6">
+              {openZones.map((zone) => (
+                <label
+                  key={zone}
+                  className="flex min-h-11 cursor-pointer items-center gap-3 text-sm md:min-h-8"
+                >
+                  <input
+                    type="checkbox"
+                    checked={chosenZones.includes(zone)}
+                    onChange={(e) => toggleZone(zone, e.target.checked)}
+                    disabled={busy}
+                    className="size-5 shrink-0 accent-primary"
+                  />
+                  {ZONE_LABELS[zone]}
+                </label>
+              ))}
+            </div>
+            {valuesError && <FieldError errors={[{ message: valuesError }]} />}
+          </fieldset>
+        )}
+        {selectedMeter && values.length > 0 && (
           <ReadingValuesInput
             control={form.control}
             name="values"
@@ -274,9 +407,19 @@ export function PhotoReadingForm({ apartmentId, photo, meters }: PhotoReadingFor
             previous={selectedMeter.lastReading?.values}
             idPrefix={`photo-reading-${selectedMeter.id}`}
             disabled={busy}
+            zones={chosenZones}
           />
         )}
-        {selectedMeter?.lastReading && !justSaved && (
+        {selectedMeter && !completes && values.length > 0 && !justSaved && (
+          <p className="-mt-4 text-xs text-muted-foreground">
+            Збережеться як чернетка (
+            {missingZonesLabel(
+              missingZones(selectedMeter.zoneScheme, [...(draft?.values ?? []), ...values]),
+            )}
+            ) — її можна доповнити з іншого фото
+          </p>
+        )}
+        {selectedMeter?.lastReading && !justSaved && openZones.length > 0 && (
           <p className="-mt-4 text-xs text-muted-foreground">
             Попереднє показання від {formatDate(selectedMeter.lastReading.readingDate)}
           </p>
@@ -299,8 +442,12 @@ export function PhotoReadingForm({ apartmentId, photo, meters }: PhotoReadingFor
               className="flex items-start gap-2 rounded-lg border border-green-600 bg-green-50 px-3 py-2 text-sm text-green-800"
             >
               <CircleCheck className="mt-0.5 size-4 shrink-0" />
-              Збережено{lastSavedMeter && `: ${meterTitle(lastSavedMeter)}`}
+              {lastSaved && lastSaved.missing.length > 0 ? 'Чернетку збережено' : 'Збережено'}
+              {lastSavedMeter && `: ${meterTitle(lastSavedMeter)}`}
               {lastSaved && ` за ${formatPeriod(lastSaved.period)}`}
+              {lastSaved &&
+                lastSaved.missing.length > 0 &&
+                ` (${missingZonesLabel(lastSaved.missing)})`}
             </p>
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
               <Button type="button" variant="outline" onClick={another} disabled={goingNext}>
@@ -326,9 +473,19 @@ export function PhotoReadingForm({ apartmentId, photo, meters }: PhotoReadingFor
             >
               {saved.length > 0 ? 'Готово' : 'Скасувати'}
             </Button>
-            <Button type="submit" disabled={busy || !selectedMeter}>
-              {isSubmitting ? 'Збереження…' : 'Зберегти показання'}
-            </Button>
+            {draft && openZones.length === 0 ? (
+              <Button type="button" onClick={() => void confirmDraft(draft.id)} disabled={busy}>
+                {confirm.isPending ? 'Підтвердження…' : 'Підтвердити чернетку'}
+              </Button>
+            ) : (
+              <Button type="submit" disabled={busy || !selectedMeter}>
+                {isSubmitting
+                  ? 'Збереження…'
+                  : completes
+                    ? 'Зберегти показання'
+                    : 'Зберегти чернетку'}
+              </Button>
+            )}
           </div>
         )}
       </FieldGroup>

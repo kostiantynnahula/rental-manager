@@ -52,8 +52,9 @@ export class MeterReadingsController {
   @ApiBearerAuth()
   @ApiOperation({
     description:
-      'API key scope: readings:create-draft. With a key: photoId required, confirm not allowed, ' +
-      'always DRAFT + PHOTO; a second non-cancelled reading from the same photo → 409 with readingId',
+      'A DRAFT may hold a subset of the meter zones; confirm=true needs all of them. ' +
+      'API key scope: readings:create-draft. With a key: photoId on every value required, confirm not allowed, ' +
+      'always DRAFT + PHOTO; a second non-cancelled reading of the meter from the same photo → 409 with readingId',
   })
   @ApiCreatedResponse({
     type: ReadingResponseDto,
@@ -61,8 +62,8 @@ export class MeterReadingsController {
   })
   @ApiBadRequestResponse({
     description:
-      'Zones mismatch; with confirm: date outside window/in future, value out of order; ' +
-      'API key without photoId',
+      'Unknown/duplicate zones; photo not found or of another apartment; with confirm: zones missing, ' +
+      'date outside window/in future, value out of order; API key with a value without photoId',
   })
   @ApiForbiddenResponse({
     description: 'API key without readings:create-draft, or API key with confirm=true',

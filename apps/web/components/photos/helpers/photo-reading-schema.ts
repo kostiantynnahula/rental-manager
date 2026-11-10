@@ -7,10 +7,11 @@ export type PhotoReadingValues = {
   period: string;
   readingDate: string;
   meterId: string;
+  // Only the zones read from this photo (a draft may get the others from another photo).
   values: { zone: 'TOTAL' | 'DAY' | 'NIGHT'; value: string }[];
 };
 
-// One meter's reading from a photo. `meters` gives the previous (last confirmed) values.
+// One meter's values from a photo. `meters` gives the previous (last confirmed) values.
 export function photoReadingSchema(meters: Meter[]) {
   return z
     .object({
@@ -27,6 +28,10 @@ export function photoReadingSchema(meters: Meter[]) {
       const meter = meters.find((m) => m.id === v.meterId);
       if (!meter) {
         ctx.addIssue({ code: 'custom', path: ['meterId'], message: 'Оберіть лічильник' });
+        return;
+      }
+      if (v.values.length === 0) {
+        ctx.addIssue({ code: 'custom', path: ['values'], message: 'Оберіть зону з фото' });
         return;
       }
       const result = readingValuesSchema(meter.lastReading?.values).safeParse(v.values);

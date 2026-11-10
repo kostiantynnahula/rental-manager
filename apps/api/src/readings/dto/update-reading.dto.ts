@@ -3,7 +3,7 @@ import { IsOptional, IsString, MaxLength } from 'class-validator';
 import { IsDateOnly } from '../../common/validators/is-date-only.decorator.js';
 import { IsPeriod } from '../../common/validators/is-period.decorator.js';
 import { IsReadingValues } from '../validators/is-reading-values.decorator.js';
-import { ReadingValueInputDto } from './reading-value-input.dto.js';
+import { ReadingDraftValueInputDto } from './reading-draft-value-input.dto.js';
 
 // DRAFT readings only. Omitted = unchanged; values replace the whole list; note null = clear.
 export class UpdateReadingDto {
@@ -17,10 +17,14 @@ export class UpdateReadingDto {
   @IsDateOnly()
   readingDate?: string;
 
-  @ApiPropertyOptional({ type: [ReadingValueInputDto] })
+  @ApiPropertyOptional({
+    type: [ReadingDraftValueInputDto],
+    description:
+      'Replaces all values (send the kept ones with their photoId); may be a subset of the zones',
+  })
   @IsOptional()
-  @IsReadingValues()
-  values?: ReadingValueInputDto[];
+  @IsReadingValues(ReadingDraftValueInputDto)
+  values?: ReadingDraftValueInputDto[];
 
   @ApiPropertyOptional({ type: String, nullable: true })
   @IsOptional()

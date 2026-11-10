@@ -1,9 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
 import { IsDateOnly } from '../../common/validators/is-date-only.decorator.js';
 import { IsPeriod } from '../../common/validators/is-period.decorator.js';
 import { IsReadingValues } from '../validators/is-reading-values.decorator.js';
-import { ReadingValueInputDto } from './reading-value-input.dto.js';
+import { ReadingDraftValueInputDto } from './reading-draft-value-input.dto.js';
 
 export class CreateReadingDto {
   @ApiProperty({ example: '2026-10', description: 'Month the reading is for' })
@@ -18,9 +18,13 @@ export class CreateReadingDto {
   @IsDateOnly()
   readingDate: string;
 
-  @ApiProperty({ type: [ReadingValueInputDto] })
-  @IsReadingValues()
-  values: ReadingValueInputDto[];
+  @ApiProperty({
+    type: [ReadingDraftValueInputDto],
+    description:
+      'A DRAFT may hold a subset of the meter zones (no unknown or duplicate ones); confirm needs all of them',
+  })
+  @IsReadingValues(ReadingDraftValueInputDto)
+  values: ReadingDraftValueInputDto[];
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -35,12 +39,4 @@ export class CreateReadingDto {
   @IsOptional()
   @IsBoolean()
   confirm?: boolean;
-
-  @ApiPropertyOptional({
-    format: 'uuid',
-    description: 'Photo of this apartment the reading was taken from → source PHOTO',
-  })
-  @IsOptional()
-  @IsUUID()
-  photoId?: string;
 }

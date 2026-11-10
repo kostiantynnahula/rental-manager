@@ -9,6 +9,7 @@ import {
 import { ApartmentsService } from '../apartments/apartments.service.js';
 import { todayDateOnly } from '../common/helpers/date-only.js';
 import type { Photo } from '../generated/prisma/client.js';
+import { ReadingSource } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PhotoJobsService } from '../queue/photo-jobs.service.js';
 import { StorageService } from '../storage/storage.service.js';
@@ -17,7 +18,7 @@ import { cleanOriginalFilename } from './helpers/original-filename.js';
 import { photoKeys } from './helpers/photo-keys.js';
 import { photoWithReadingsInclude, type PhotoWithReadings } from './helpers/photo-with-readings.js';
 import {
-  activeReading,
+  activeReadingValue,
   photoWithUsageInclude,
   type PhotoWithUsage,
 } from './helpers/photo-with-usage.js';
@@ -82,7 +83,7 @@ export class PhotosService {
   async list(apartmentId: string, unassigned: boolean): Promise<PhotoWithUsage[]> {
     await this.apartments.findOrThrow(apartmentId);
     return this.prisma.photo.findMany({
-      where: { apartmentId, ...(unassigned && { readings: { none: activeReading } }) },
+      where: { apartmentId, ...(unassigned && { readingValues: { none: activeReadingValue } }) },
       include: photoWithUsageInclude,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     });
@@ -118,10 +119,14 @@ export class PhotosService {
     const photo = await this.prisma.$transaction(async (tx) => {
       const found = await tx.photo.findUnique({ where: { id } });
       if (!found) throw new NotFoundException('Photo not found');
-      const linked = await tx.reading.count({ where: { photoId: id, ...activeReading } });
+      const linked = await tx.readingValue.count({ where: { photoId: id, ...activeReadingValue } });
       if (linked > 0) throw new ConflictException('Photo is linked to a reading — cancel it first');
-      // Cancelled readings stay as history, just without the photo (the FK is RESTRICT).
-      await tx.reading.updateMany({ where: { photoId: id }, data: { photoId: null } });
+      // Cancelled readings stay as history, just without the photo (the FK is RESTRICT); their values
+      // become MANUAL (CHECK reading_values_source_matches_photo).
+      await tx.readingValue.updateMany({
+        where: { photoId: id },
+        data: { photoId: null, source: ReadingSource.MANUAL },
+      });
       await tx.photo.delete({ where: { id } });
       return found;
     });
