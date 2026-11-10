@@ -23,11 +23,16 @@ paths:
 - Limits (`PHOTO_MAX_FILES`, `PHOTO_MAX_FILE_SIZE_MB`) go through `MulterModule.registerAsync` (in-memory). Too many
   files → 400, too large → 413. `multer` isn't a direct dependency: don't import it at runtime (types come from `@types/multer`).
 - A photo backs 0..n reading **values** (`ReadingValue.photoId`, FK `Restrict`; that value has `source = PHOTO`), always
-  of the same apartment — one photo shows one register, so a two-zone reading may link two photos. "Unassigned" = no
-  value of a non-cancelled reading. DELETE only when unassigned; values of cancelled readings are unlinked first and
+  of the same apartment — one photo shows one register, so a two-zone reading may link two photos. "Unassigned"
+  (the `unassigned=true` list, "Нерозібрані") = no value of a non-cancelled reading **or** a value still in a DRAFT
+  (e.g. the worker's — it stays listed until a human confirms it). DELETE only when unassigned; values of cancelled readings are unlinked first and
   become `MANUAL` (CHECK `reading_values_source_matches_photo`). The list returns `canDelete` (= unassigned, counted via
   `photoWithUsageInclude`); the web follows it, DELETE re-checks. Detail lists each linked reading once with the
   `zones` read from this photo (`helpers/photo-readings.ts`).
+- **Parse status** (`Photo.parseStatus` / `parseNote`, enum `photo_parse_status`): `PENDING` on upload (every new
+  photo gets a job; it stays PENDING if the enqueue failed) → the worker sets `PARSED` (drafts created), `NOT_MATCHED`
+  (+ why) or `FAILED` (+ error) via `PUT /photos/:id/parse-result` (API keys only, scope `photos:parse-result`, 204).
+  `null` = photos from before parsing existed. The web polls while PENDING.
 - File endpoints stream through the API (auth required), `Cache-Control: private, max-age=86400`.
 - **Parse job**: a newly stored photo gets one BullMQ job `parse-photo` (`{ photoId }`) on queue `photos`
   (`PhotoJobsService.enqueueParse`, `src/queue/`; names and payload type from `@rental/shared`).

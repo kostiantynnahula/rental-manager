@@ -2,14 +2,16 @@ import { randomUUID } from 'node:crypto';
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { ApartmentsService } from '../apartments/apartments.service.js';
+import type { AuthUser } from '../auth/interfaces/auth-user.interface.js';
 import { todayDateOnly } from '../common/helpers/date-only.js';
-import type { Photo } from '../generated/prisma/client.js';
-import { ReadingSource } from '../generated/prisma/enums.js';
+import type { Photo, Prisma } from '../generated/prisma/client.js';
+import { PhotoParseStatus, ReadingSource, ReadingStatus } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PhotoJobsService } from '../queue/photo-jobs.service.js';
 import { StorageService } from '../storage/storage.service.js';
@@ -23,11 +25,21 @@ import {
   type PhotoWithUsage,
 } from './helpers/photo-with-usage.js';
 import { sha256Hex } from './helpers/sha256.js';
+import { SetParseResultDto } from './dto/set-parse-result.dto.js';
 import { makeThumbnail, THUMBNAIL_MIME_TYPE } from './helpers/thumbnail.js';
 import type { ImageType } from './interfaces/image-type.interface.js';
 import type { PhotoFile } from './interfaces/photo-file.interface.js';
 import type { Thumbnail } from './interfaces/thumbnail.interface.js';
 import type { UploadedPhoto } from './interfaces/uploaded-photo.interface.js';
+
+// "Нерозібрані": nothing taken from the photo yet (no value of a non-cancelled reading), or a value still in a DRAFT
+// (e.g. proposed by the worker) — it stays here until a human confirms it.
+const unassignedPhoto = {
+  OR: [
+    { readingValues: { none: activeReadingValue } },
+    { readingValues: { some: { reading: { status: ReadingStatus.DRAFT } } } },
+  ],
+} satisfies Prisma.PhotoWhereInput;
 
 @Injectable()
 export class PhotosService {
@@ -83,10 +95,20 @@ export class PhotosService {
   async list(apartmentId: string, unassigned: boolean): Promise<PhotoWithUsage[]> {
     await this.apartments.findOrThrow(apartmentId);
     return this.prisma.photo.findMany({
-      where: { apartmentId, ...(unassigned && { readingValues: { none: activeReadingValue } }) },
+      where: { apartmentId, ...(unassigned && unassignedPhoto) },
       include: photoWithUsageInclude,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     });
+  }
+
+  // The worker's verdict when its job ends (API keys only: a human never sets it).
+  async setParseResult(id: string, dto: SetParseResultDto, user: AuthUser): Promise<void> {
+    if (!user.apiKeyId) throw new ForbiddenException('Only API keys can set the parse result');
+    const { count } = await this.prisma.photo.updateMany({
+      where: { id },
+      data: { parseStatus: dto.status, parseNote: dto.note ?? null },
+    });
+    if (count === 0) throw new NotFoundException('Photo not found');
   }
 
   async findOrThrow(id: string): Promise<PhotoWithReadings> {
@@ -169,6 +191,8 @@ export class PhotosService {
           height: thumbnail.height,
           originalFilename: cleanOriginalFilename(file.originalname),
           uploadedById: userId,
+          // Every newly stored photo gets a parse job right after this.
+          parseStatus: PhotoParseStatus.PENDING,
         },
       });
       return { photo, duplicate: false };

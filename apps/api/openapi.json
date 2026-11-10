@@ -1684,6 +1684,61 @@
         ]
       }
     },
+    "/photos/{id}/parse-result": {
+      "put": {
+        "description": "API key scope: photos:parse-result (keys only)",
+        "operationId": "PhotosController_setParseResult",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetParseResultDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "parseStatus and parseNote set"
+          },
+          "400": {
+            "description": ""
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": "Not an API key, or a key without photos:parse-result"
+          },
+          "404": {
+            "description": "Photo not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "photos"
+        ]
+      }
+    },
     "/meters/{meterId}/readings": {
       "get": {
         "operationId": "MeterReadingsController_list",
@@ -4612,6 +4667,16 @@
           "installed"
         ]
       },
+      "PhotoParseStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "PARSED",
+          "NOT_MATCHED",
+          "FAILED"
+        ],
+        "description": "The worker's parse job: PENDING until it ends; null = never queued (older photos)"
+      },
       "PhotoUploadResultDto": {
         "type": "object",
         "properties": {
@@ -4656,6 +4721,20 @@
             "format": "date-time",
             "type": "string"
           },
+          "parseStatus": {
+            "nullable": true,
+            "description": "The worker's parse job: PENDING until it ends; null = never queued (older photos)",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PhotoParseStatus"
+              }
+            ]
+          },
+          "parseNote": {
+            "type": "string",
+            "nullable": true,
+            "description": "Why nothing was matched, or the error (worker text, for the owner)"
+          },
           "fileUrl": {
             "type": "string",
             "example": "/api/photos/3f1c…/file"
@@ -4680,6 +4759,8 @@
           "originalFilename",
           "uploadedById",
           "createdAt",
+          "parseStatus",
+          "parseNote",
           "fileUrl",
           "thumbnailUrl",
           "duplicate"
@@ -4729,6 +4810,20 @@
             "format": "date-time",
             "type": "string"
           },
+          "parseStatus": {
+            "nullable": true,
+            "description": "The worker's parse job: PENDING until it ends; null = never queued (older photos)",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PhotoParseStatus"
+              }
+            ]
+          },
+          "parseNote": {
+            "type": "string",
+            "nullable": true,
+            "description": "Why nothing was matched, or the error (worker text, for the owner)"
+          },
           "fileUrl": {
             "type": "string",
             "example": "/api/photos/3f1c…/file"
@@ -4753,6 +4848,8 @@
           "originalFilename",
           "uploadedById",
           "createdAt",
+          "parseStatus",
+          "parseNote",
           "fileUrl",
           "thumbnailUrl",
           "canDelete"
@@ -4856,6 +4953,20 @@
             "format": "date-time",
             "type": "string"
           },
+          "parseStatus": {
+            "nullable": true,
+            "description": "The worker's parse job: PENDING until it ends; null = never queued (older photos)",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PhotoParseStatus"
+              }
+            ]
+          },
+          "parseNote": {
+            "type": "string",
+            "nullable": true,
+            "description": "Why nothing was matched, or the error (worker text, for the owner)"
+          },
           "fileUrl": {
             "type": "string",
             "example": "/api/photos/3f1c…/file"
@@ -4883,9 +4994,38 @@
           "originalFilename",
           "uploadedById",
           "createdAt",
+          "parseStatus",
+          "parseNote",
           "fileUrl",
           "thumbnailUrl",
           "readings"
+        ]
+      },
+      "PhotoParseResult": {
+        "type": "string",
+        "enum": [
+          "PARSED",
+          "NOT_MATCHED",
+          "FAILED"
+        ]
+      },
+      "SetParseResultDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PhotoParseResult"
+              }
+            ]
+          },
+          "note": {
+            "type": "string",
+            "description": "Why nothing was matched, or the error"
+          }
+        },
+        "required": [
+          "status"
         ]
       },
       "ReadingSource": {

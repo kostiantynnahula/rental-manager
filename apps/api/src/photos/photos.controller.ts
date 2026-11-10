@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
@@ -7,9 +8,11 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Put,
   StreamableFile,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCookieAuth,
@@ -22,8 +25,11 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { CurrentUser } from '../auth/current-user.decorator.js';
+import type { AuthUser } from '../auth/interfaces/auth-user.interface.js';
 import { Scopes } from '../auth/scopes.decorator.js';
 import { PhotoDetailResponseDto } from './dto/photo-detail-response.dto.js';
+import { SetParseResultDto } from './dto/set-parse-result.dto.js';
 import type { PhotoFile } from './interfaces/photo-file.interface.js';
 import { PhotosService } from './photos.service.js';
 
@@ -76,6 +82,23 @@ export class PhotosController {
   @ApiOkResponse({ description: 'WebP, max 400px' })
   async thumbnail(@Param('id', ParseUUIDPipe) id: string): Promise<StreamableFile> {
     return toStreamableFile(await this.photos.openFile(id, 'thumbnail'));
+  }
+
+  @Put(':id/parse-result')
+  // The worker reports how its parse job ended (API keys only).
+  @Scopes('photos:parse-result')
+  @ApiBearerAuth()
+  @ApiOperation({ description: 'API key scope: photos:parse-result (keys only)' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiNoContentResponse({ description: 'parseStatus and parseNote set' })
+  @ApiBadRequestResponse()
+  @ApiForbiddenResponse({ description: 'Not an API key, or a key without photos:parse-result' })
+  async setParseResult(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SetParseResultDto,
+    @CurrentUser() user: AuthUser,
+  ): Promise<void> {
+    await this.photos.setParseResult(id, dto, user);
   }
 
   @Delete(':id')

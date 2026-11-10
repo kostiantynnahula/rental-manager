@@ -1,8 +1,10 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useEffect } from 'react';
 import { NotFoundState } from '@/components/not-found-state';
 import { QueryError } from '@/components/query-error';
 import { Button } from '@/components/ui/button';
@@ -10,8 +12,10 @@ import { isNotFoundError } from '@/lib/api/api-error';
 import { useApartment } from '@/lib/api/queries/apartments';
 import { useApartmentMeters } from '@/lib/api/queries/meters';
 import { usePhoto } from '@/lib/api/queries/photos';
+import { readingKeys } from '@/lib/api/queries/readings';
 import { formatInstantDate } from '@/lib/format';
 import { PhotoLinkedReadings } from './photo-linked-readings';
+import { PhotoParseStatusLine } from './photo-parse-status-line';
 import { PhotoReadingForm } from './photo-reading-form';
 import { PhotoReviewSkeleton } from './photo-review-skeleton';
 import { PhotoViewer } from './photo-viewer';
@@ -24,6 +28,15 @@ export function PhotoReview() {
   // Incl. removed: a meter removed later can still be the one on an older photo.
   const meters = useApartmentMeters(id, true);
   const tabHref = `/apartments/${id}?tab=photos`;
+  const queryClient = useQueryClient();
+  const parseStatus = photo.data?.parseStatus ?? null;
+
+  // The worker just finished: its drafts are new, so the month's meter statuses are stale.
+  useEffect(() => {
+    if (parseStatus && parseStatus !== 'PENDING') {
+      void queryClient.invalidateQueries({ queryKey: readingKeys.periods() });
+    }
+  }, [parseStatus, queryClient]);
 
   if (apartment.isPending || photo.isPending || meters.isPending) return <PhotoReviewSkeleton />;
   if (apartment.isError) {
@@ -53,11 +66,18 @@ export function PhotoReview() {
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold">Фото лічильника</h1>
         <p className="text-sm text-muted-foreground">Завантажено {date}</p>
+        <PhotoParseStatusLine status={photo.data.parseStatus} note={photo.data.parseNote} />
       </div>
       <PhotoViewer photo={photo.data} alt={`Фото лічильника від ${date}`} />
       <PhotoLinkedReadings readings={photo.data.readings} meters={meters.data} />
-      {/* key: the page stays mounted (hidden) between photos, so another photo needs a fresh form. */}
-      <PhotoReadingForm key={photoId} apartmentId={id} photo={photo.data} meters={meters.data} />
+      {/* key: the page stays mounted (hidden) between photos, so another photo needs a fresh form; a new parse
+          status (the worker finished) too — it prefills the worker's draft. */}
+      <PhotoReadingForm
+        key={`${photoId}:${parseStatus}`}
+        apartmentId={id}
+        photo={photo.data}
+        meters={meters.data}
+      />
     </section>
   );
 }
