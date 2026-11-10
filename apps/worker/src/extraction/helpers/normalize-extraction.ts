@@ -6,9 +6,9 @@ import type { Extraction } from '../interfaces/extraction.interface.js';
 const METER_VALUE = /^\d+(\.\d{1,3})?$/;
 const ZONES_BY_SCHEME = { SINGLE: ['TOTAL'], DAY_NIGHT: ['DAY', 'NIGHT'] } as const;
 
-// Our own checks on the model's answer: decimal comma → dot, serial → digits only; a value that isn't a meter
-// number, an unknown meter or a zone the matched meter doesn't have → an issue and low confidence. Nothing is
-// dropped — a human reviews every reading.
+// Our own checks on the model's answer: decimal comma → dot, leading zeros dropped (drums show "00532.20"),
+// serial → digits only; a value that isn't a meter number, an unknown meter or a zone the matched meter doesn't
+// have → an issue and low confidence. Nothing is dropped — a human reviews every reading.
 export function normalizeExtraction(
   raw: Extraction,
   meters: ReadonlyArray<ExtractionCandidate>,
@@ -24,7 +24,10 @@ function normalizeReading(
   meters: ReadonlyArray<ExtractionCandidate>,
 ): ExtractedReading {
   const issues = [...r.issues];
-  const value = r.value.trim().replace(',', '.');
+  const value = r.value
+    .trim()
+    .replace(',', '.')
+    .replace(/^0+(?=\d)/, '');
   if (!METER_VALUE.test(value)) issues.push('value is not a meter number');
   const digits = r.serialNumber?.replace(/\D/g, '') ?? '';
   const meter = meters.find((m) => m.id === r.meterId);
