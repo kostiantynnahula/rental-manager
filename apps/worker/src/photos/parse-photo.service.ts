@@ -10,6 +10,7 @@ import { draftNote } from './helpers/draft-note.js';
 import { kyivDate } from './helpers/kyiv-date.js';
 import { matchReadings } from './helpers/match-readings.js';
 import { plausibilityWarnings } from './helpers/plausibility-warnings.js';
+import { ParseResultReporter } from './parse-result-reporter.service.js';
 
 type Meter = components['schemas']['MeterResponseDto'];
 type DraftValue = components['schemas']['CreateDraftValueDto'];
@@ -25,6 +26,7 @@ export class ParsePhotoService {
   constructor(
     @Inject(API_CLIENT) private readonly api: ApiClient,
     private readonly extractor: PhotoExtractorService,
+    private readonly results: ParseResultReporter,
   ) {}
 
   async run(photoId: string): Promise<void> {
@@ -47,6 +49,7 @@ export class ParsePhotoService {
       this.logger.warn(
         `photo ${photoId} (apartment ${apartmentId}): no installed meters, nothing to read`,
       );
+      await this.results.report(photoId, 'NOT_MATCHED', 'no installed meters');
       return;
     }
 
@@ -102,6 +105,16 @@ export class ParsePhotoService {
       `photo ${photoId}: ${extraction.readings.length} readings, ${posted} posted` +
         lines.map((l) => `\n  - ${l}`).join(''),
     );
+    // Not matched: the same lines as the log (why each reading was skipped / refused), or why the photo is unreadable.
+    if (posted > 0) await this.results.report(photoId, 'PARSED');
+    else {
+      const why = [...extraction.photoIssues, ...lines];
+      await this.results.report(
+        photoId,
+        'NOT_MATCHED',
+        why.length > 0 ? why.join('\n') : 'no readings',
+      );
+    }
   }
 
   private async extract(image: Buffer, meters: Meter[]) {

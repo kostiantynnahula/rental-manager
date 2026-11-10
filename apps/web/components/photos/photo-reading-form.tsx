@@ -6,16 +6,17 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
-import { emptyValues } from '@/components/meters/helpers/empty-values';
 import { meterTitle } from '@/components/meters/helpers/meter-title';
 import { toReadingValuesInput } from '@/components/meters/helpers/reading-values-schema';
 import { ReadingValuesInput } from '@/components/meters/reading-values-input';
 import { NativeSelect } from '@/components/native-select';
 import { DraftValues } from '@/components/readings/draft-values';
+import { draftFields } from '@/components/readings/helpers/draft-fields';
 import { mergeDraftValues } from '@/components/readings/helpers/merge-draft-values';
 import { missingZones } from '@/components/readings/helpers/missing-zones';
 import { missingZonesLabel } from '@/components/readings/helpers/missing-zones-label';
 import { readingErrorMessage } from '@/components/readings/helpers/reading-error-message';
+import { sameFields } from '@/components/readings/helpers/same-fields';
 import { Button } from '@/components/ui/button';
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
@@ -36,11 +37,13 @@ import { UTILITY_ORDER, ZONE_LABELS, zonesFor, type Zone } from '@/lib/utilities
 import { PERIOD_STATUS_LABELS } from './constants/reading-statuses';
 import { photoReadingDate } from './helpers/photo-reading-date';
 import { photoReadingSchema, type PhotoReadingValues } from './helpers/photo-reading-schema';
+import { photoDraftZones } from './helpers/photo-draft-zones';
 import { pickMeter } from './helpers/pick-meter';
 
-// All defaults in one place: a worker DRAFT can prefill them here later.
+// All defaults in one place. A draft holding a value from this photo (the worker's) opens on its month.
 function formDefaults(photo: PhotoDetail): PhotoReadingValues {
-  const period = defaultReadingPeriod(todayDateOnly());
+  const draft = photo.readings.find((r) => r.status === 'DRAFT' && r.kind === 'REGULAR');
+  const period = draft?.period ?? defaultReadingPeriod(todayDateOnly());
   return {
     period,
     readingDate: photoReadingDate(photo.createdAt, period),
@@ -109,19 +112,21 @@ export function PhotoReadingForm({ apartmentId, photo, meters }: PhotoReadingFor
   const isSelectable = (id: string) =>
     !savedHere.has(id) && rows.some((r) => r.meter.id === id && r.status !== 'CONFIRMED');
 
-  // Inputs for the zones the meter still lacks this month (all of them without a draft).
+  // Inputs: the zones the draft took from this photo, prefilled and editable (the worker's proposal to check);
+  // otherwise the zones the meter still lacks this month (all of them without a draft).
   function selectMeter(id: string) {
     const meter = meters.find((m) => m.id === id);
     const draft = draftOf(rows, id);
-    form.setValue('meterId', id, { shouldValidate: form.formState.isSubmitted });
-    form.setValue(
-      'values',
-      meter
-        ? emptyValues(meter.zoneScheme).filter(
+    const fromPhoto = draft ? photoDraftZones(draft.values, photo.id) : [];
+    const fields = !meter
+      ? []
+      : fromPhoto.length > 0
+        ? draftFields(meter.zoneScheme, draft!.values).filter((v) => fromPhoto.includes(v.zone))
+        : draftFields(meter.zoneScheme, []).filter(
             (v) => !draft || missingZones(meter.zoneScheme, draft.values).includes(v.zone),
-          )
-        : [],
-    );
+          );
+    form.setValue('meterId', id, { shouldValidate: form.formState.isSubmitted });
+    form.setValue('values', fields);
   }
 
   // "Зони на цьому фото": add/remove a zone's input, keeping what was typed in the others.
@@ -129,9 +134,12 @@ export function PhotoReadingForm({ apartmentId, photo, meters }: PhotoReadingFor
     const meter = meters.find((m) => m.id === meterId);
     if (!meter) return;
     const current = form.getValues('values');
+    // A zone the draft took from this photo comes back with its value.
+    const stored = draftFields(meter.zoneScheme, draftOf(rows, meter.id)?.values ?? []);
+    const back = photoZones.includes(zone) ? stored.find((v) => v.zone === zone) : undefined;
     const next = on
       ? zonesFor(meter.zoneScheme).flatMap((z) =>
-          z === zone ? [{ zone, value: '' }] : current.filter((v) => v.zone === z),
+          z === zone ? [{ zone, value: back?.value ?? '' }] : current.filter((v) => v.zone === z),
         )
       : current.filter((v) => v.zone !== zone);
     form.setValue('values', next, {
@@ -147,6 +155,7 @@ export function PhotoReadingForm({ apartmentId, photo, meters }: PhotoReadingFor
     const next = pickMeter(
       rows.filter((r) => r.status !== 'CONFIRMED'),
       savedHere,
+      photo.id,
     );
     if (next !== meterId) selectMeter(next);
     // selectMeter only uses the form API and `meters`.
@@ -250,14 +259,29 @@ export function PhotoReadingForm({ apartmentId, photo, meters }: PhotoReadingFor
   const lastSavedMeter = lastSaved && meters.find((m) => m.id === lastSaved.meterId);
   const selectedMeter = meters.find((m) => m.id === meterId);
   const draft = selectedMeter ? draftOf(rows, selectedMeter.id) : null;
-  // Zones this photo can still fill: all of them, or the ones the draft lacks.
+  // Zones the draft already took from this photo: editable here.
+  const photoZones = draft ? photoDraftZones(draft.values, photo.id) : [];
+  // Zones this photo can fill: all of them, or the ones the draft lacks, plus its own.
   const openZones = selectedMeter
-    ? missingZones(selectedMeter.zoneScheme, draft?.values ?? [])
+    ? zonesFor(selectedMeter.zoneScheme).filter(
+        (z) =>
+          photoZones.includes(z) ||
+          missingZones(selectedMeter.zoneScheme, draft?.values ?? []).includes(z),
+      )
     : [];
   const chosenZones = values.map((v) => v.zone);
   const completes =
     !!selectedMeter &&
     missingZones(selectedMeter.zoneScheme, [...(draft?.values ?? []), ...values]).length === 0;
+  // The proposal from this photo as prefilled (nobody edited it): nothing to save, only to confirm.
+  const prefill =
+    selectedMeter && draft
+      ? draftFields(selectedMeter.zoneScheme, draft.values).filter((v) =>
+          photoZones.includes(v.zone),
+        )
+      : [];
+  const untouched = prefill.length > 0 && sameFields(values, prefill);
+  const confirmOnly = !!draft && completes && (openZones.length === 0 || untouched);
   const dateWindow = validPeriod ? readingDateWindow(period) : null;
   const busy = isSubmitting || confirm.isPending || justSaved || goingNext;
   const valuesError =
@@ -368,9 +392,15 @@ export function PhotoReadingForm({ apartmentId, photo, meters }: PhotoReadingFor
           )}
         />
 
+        {draft?.note && !justSaved && (
+          <p className="rounded-lg bg-muted px-3 py-2 text-sm break-words whitespace-pre-wrap">
+            <span className="text-muted-foreground">Примітка: </span>
+            {draft.note}
+          </p>
+        )}
         {selectedMeter && draft && !justSaved && (
           <DraftValues
-            values={draft.values}
+            values={draft.values.filter((v) => !chosenZones.includes(v.zone))}
             utility={selectedMeter.utility}
             label={`${meterTitle(selectedMeter)}, ${formatPeriod(period)}`}
           />
@@ -473,7 +503,7 @@ export function PhotoReadingForm({ apartmentId, photo, meters }: PhotoReadingFor
             >
               {saved.length > 0 ? 'Готово' : 'Скасувати'}
             </Button>
-            {draft && openZones.length === 0 ? (
+            {draft && confirmOnly ? (
               <Button type="button" onClick={() => void confirmDraft(draft.id)} disabled={busy}>
                 {confirm.isPending ? 'Підтвердження…' : 'Підтвердити чернетку'}
               </Button>

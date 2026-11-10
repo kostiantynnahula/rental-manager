@@ -409,6 +409,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/photos/{id}/parse-result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description API key scope: photos:parse-result (keys only) */
+        put: operations["PhotosController_setParseResult"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/meters/{meterId}/readings": {
         parameters: {
             query?: never;
@@ -1189,6 +1206,11 @@ export interface components {
             /** @description New meter with its INITIAL reading */
             installed: components["schemas"]["MeterResponseDto"];
         };
+        /**
+         * @description The worker's parse job: PENDING until it ends; null = never queued (older photos)
+         * @enum {string}
+         */
+        PhotoParseStatus: "PENDING" | "PARSED" | "NOT_MATCHED" | "FAILED";
         PhotoUploadResultDto: {
             /** Format: uuid */
             id: string;
@@ -1214,6 +1236,10 @@ export interface components {
             uploadedById: string;
             /** Format: date-time */
             createdAt: string;
+            /** @description The worker's parse job: PENDING until it ends; null = never queued (older photos) */
+            parseStatus: components["schemas"]["PhotoParseStatus"] | null;
+            /** @description Why nothing was matched, or the error (worker text, for the owner) */
+            parseNote: string | null;
             /** @example /api/photos/3f1c…/file */
             fileUrl: string;
             /** @example /api/photos/3f1c…/thumbnail */
@@ -1246,6 +1272,10 @@ export interface components {
             uploadedById: string;
             /** Format: date-time */
             createdAt: string;
+            /** @description The worker's parse job: PENDING until it ends; null = never queued (older photos) */
+            parseStatus: components["schemas"]["PhotoParseStatus"] | null;
+            /** @description Why nothing was matched, or the error (worker text, for the owner) */
+            parseNote: string | null;
             /** @example /api/photos/3f1c…/file */
             fileUrl: string;
             /** @example /api/photos/3f1c…/thumbnail */
@@ -1292,12 +1322,23 @@ export interface components {
             uploadedById: string;
             /** Format: date-time */
             createdAt: string;
+            /** @description The worker's parse job: PENDING until it ends; null = never queued (older photos) */
+            parseStatus: components["schemas"]["PhotoParseStatus"] | null;
+            /** @description Why nothing was matched, or the error (worker text, for the owner) */
+            parseNote: string | null;
             /** @example /api/photos/3f1c…/file */
             fileUrl: string;
             /** @example /api/photos/3f1c…/thumbnail */
             thumbnailUrl: string;
             /** @description All readings with a value from this photo, incl. cancelled */
             readings: components["schemas"]["PhotoReadingResponseDto"][];
+        };
+        /** @enum {string} */
+        PhotoParseResult: "PARSED" | "NOT_MATCHED" | "FAILED";
+        SetParseResultDto: {
+            status: components["schemas"]["PhotoParseResult"];
+            /** @description Why nothing was matched, or the error */
+            note?: string;
         };
         /** @enum {string} */
         ReadingSource: "MANUAL" | "PHOTO";
@@ -3384,6 +3425,56 @@ export interface operations {
                 content?: never;
             };
             /** @description API key without photos:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Photo not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PhotosController_setParseResult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetParseResultDto"];
+            };
+        };
+        responses: {
+            /** @description parseStatus and parseNote set */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an API key, or a key without photos:parse-result */
             403: {
                 headers: {
                     [name: string]: unknown;

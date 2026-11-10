@@ -10,6 +10,7 @@ import type { Photo } from '@/lib/api/queries/photos';
 import { formatInstantDate } from '@/lib/format';
 import { ApiImage } from './api-image';
 import { PHOTO_IN_USE_REASON } from './constants/messages';
+import { PARSE_STATUS_BADGES } from './constants/parse-statuses';
 import { DeletePhotoDialog } from './delete-photo-dialog';
 
 // Thumbnail → the review screen; delete only while the photo isn't used (canDelete comes from the API).
@@ -17,6 +18,8 @@ export function PhotoCard({ photo }: { photo: Photo }) {
   const [confirming, setConfirming] = useState(false);
   const date = formatInstantDate(photo.createdAt);
   const reasonId = `photo-${photo.id}-reason`;
+  // One badge: the parse state while it matters, else "used".
+  const parseBadge = photo.parseStatus && PARSE_STATUS_BADGES[photo.parseStatus];
 
   // aria-disabled instead of disabled: a tap still explains why (a title tooltip never shows on a phone).
   function handleDelete() {
@@ -35,10 +38,19 @@ export function PhotoCard({ photo }: { photo: Photo }) {
           alt={`Фото від ${date}`}
           className="size-full object-cover"
         />
-        {!photo.canDelete && (
-          <Badge variant="secondary" className="absolute top-2 left-2">
-            Використано
+        {parseBadge ? (
+          <Badge
+            variant={photo.parseStatus === 'PENDING' ? 'secondary' : 'destructive'}
+            className="absolute top-2 left-2 bg-background/90"
+          >
+            {parseBadge}
           </Badge>
+        ) : (
+          !photo.canDelete && (
+            <Badge variant="secondary" className="absolute top-2 left-2">
+              Використано
+            </Badge>
+          )
         )}
       </Link>
       <div className="flex items-center justify-between gap-1 pl-3">

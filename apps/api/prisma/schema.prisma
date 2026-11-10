@@ -264,25 +264,40 @@ model Reading {
 }
 
 // A meter photo as uploaded: the original object is stored byte-for-byte and never changed.
+// The worker's parse job for a photo: PENDING (queued / running / retrying) → PARSED (drafts created),
+// NOT_MATCHED (nothing could be matched to a meter) or FAILED (gave up).
+enum PhotoParseStatus {
+  PENDING
+  PARSED
+  NOT_MATCHED
+  FAILED
+
+  @@map("photo_parse_status")
+}
+
 model Photo {
-  id               String         @id @default(uuid()) @db.Uuid
-  apartmentId      String         @db.Uuid
-  apartment        Apartment      @relation(fields: [apartmentId], references: [id], onDelete: Restrict)
+  id               String            @id @default(uuid()) @db.Uuid
+  apartmentId      String            @db.Uuid
+  apartment        Apartment         @relation(fields: [apartmentId], references: [id], onDelete: Restrict)
   // photos/YYYY/MM/<id>.<ext> — never derived from the original filename.
-  storageKey       String         @unique
+  storageKey       String            @unique
   // thumbnails/YYYY/MM/<id>.webp
-  thumbnailKey     String         @unique
+  thumbnailKey     String            @unique
   // Detected from the file content, not from the client's header.
   mimeType         String
   size             Int
   // Lowercase hex; dedup key.
-  sha256           String         @unique
+  sha256           String            @unique
   width            Int
   height           Int
   originalFilename String?
-  uploadedById     String         @db.Uuid
-  uploadedBy       User           @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
-  createdAt        DateTime       @default(now())
+  uploadedById     String            @db.Uuid
+  uploadedBy       User              @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  createdAt        DateTime          @default(now())
+  // Set by the API on upload (PENDING) and by the worker when its job ends; null = never queued (older photos).
+  parseStatus      PhotoParseStatus?
+  // Why nothing was matched, or the job's error (the worker's text).
+  parseNote        String?
   readingValues    ReadingValue[]
 
   @@index([apartmentId, createdAt])

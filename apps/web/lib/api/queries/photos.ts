@@ -7,6 +7,12 @@ export type Photo = components['schemas']['PhotoListItemResponseDto'];
 export type PhotoUploadResult = components['schemas']['PhotoUploadResultDto'];
 export type PhotoDetail = components['schemas']['PhotoDetailResponseDto'];
 export type PhotoReading = components['schemas']['PhotoReadingResponseDto'];
+export type PhotoParseStatus = components['schemas']['PhotoParseStatus'];
+
+// Refetch every 5 s while the worker is parsing one of the photos (PENDING), then stop.
+const PARSE_POLL_MS = 5000;
+const pollWhilePending = (photos: ReadonlyArray<{ parseStatus: PhotoParseStatus | null }>) =>
+  photos.some((p) => p.parseStatus === 'PENDING') ? PARSE_POLL_MS : false;
 
 export const photoKeys = {
   all: ['photos'] as const,
@@ -30,7 +36,10 @@ function photoListOptions(apartmentId: string, unassigned: boolean) {
 }
 
 export function useApartmentPhotos(apartmentId: string, unassigned: boolean) {
-  return useQuery(photoListOptions(apartmentId, unassigned));
+  return useQuery({
+    ...photoListOptions(apartmentId, unassigned),
+    refetchInterval: (query) => pollWhilePending(query.state.data ?? []),
+  });
 }
 
 // For "Наступне фото": an up-to-date unassigned list on demand (staleTime 0 → refetched if the cache is stale,
@@ -46,6 +55,7 @@ export function usePhoto(id: string, { enabled = true }: { enabled?: boolean } =
     queryFn: async (): Promise<PhotoDetail> =>
       unwrap(await api.GET('/photos/{id}', { params: { path: { id } } })),
     enabled,
+    refetchInterval: (query) => pollWhilePending(query.state.data ? [query.state.data] : []),
   });
 }
 

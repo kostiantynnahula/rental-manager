@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import type { Photo } from '../../generated/prisma/client.js';
+import { PhotoParseStatus } from '../../generated/prisma/enums.js';
 
 // Storage keys stay internal: clients fetch the bytes through the API (auth + cache headers).
 export class PhotoResponseDto {
@@ -33,6 +34,22 @@ export class PhotoResponseDto {
   @ApiProperty()
   createdAt: Date;
 
+  @ApiProperty({
+    enum: PhotoParseStatus,
+    enumName: 'PhotoParseStatus',
+    nullable: true,
+    description:
+      "The worker's parse job: PENDING until it ends; null = never queued (older photos)",
+  })
+  parseStatus: PhotoParseStatus | null;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'Why nothing was matched, or the error (worker text, for the owner)',
+  })
+  parseNote: string | null;
+
   @ApiProperty({ example: '/api/photos/3f1c…/file' })
   fileUrl: string;
 
@@ -51,6 +68,8 @@ export class PhotoResponseDto {
       originalFilename: p.originalFilename,
       uploadedById: p.uploadedById,
       createdAt: p.createdAt,
+      parseStatus: p.parseStatus,
+      parseNote: p.parseNote,
       fileUrl: `/api/photos/${p.id}/file`,
       thumbnailUrl: `/api/photos/${p.id}/thumbnail`,
     };

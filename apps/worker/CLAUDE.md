@@ -14,7 +14,7 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
   Extraction: `ANTHROPIC_API_KEY?` (the worker starts without it; extracting then throws), `EXTRACTION_PROVIDER`
   (`anthropic`), `EXTRACTION_MODEL` (default `claude-sonnet-5-5`; `claude-opus-5-5` if accuracy falls short),
   `EXTRACTION_EFFORT` (`low`…`max`, default `medium`).
-- Key: `pnpm --filter api apikey:create --service worker --name "<label>" --scopes photos:read,meters:read,readings:create-draft`
+- Key: `pnpm --filter api apikey:create --service worker --name "<label>" --scopes photos:read,meters:read,readings:create-draft,photos:parse-result`
   (scopes are fixed at creation — re-create the key when a new one is needed)
   → put the printed key into `API_KEY`. Missing scope → the job fails with a 403 hint, no retry.
 
@@ -41,6 +41,10 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
   `lastReading`; none → log, done) → `GET /photos/{id}/file` → `PhotoExtractorService.extract` → `matchReadings` →
   one `POST /meters/{meterId}/draft-values` per matched zone (the API picks the draft: 201 new / 200 added or retry
   no-op). `readingDate` = upload day in Kyiv (`createdAt`), `period` = its month. Ends with one summary log line.
+- Result (`ParseResultReporter` → `PUT /photos/{id}/parse-result`, shown in the web): `PARSED` if ≥ 1 value was
+  posted, else `NOT_MATCHED` with the reasons (the summary lines / photo issues); `FAILED` with the error from the
+  processor's `failed` handler after the last attempt. Best effort: a failed report is only logged (never retries the
+  job — that would repeat the paid model call).
 - Matching (`helpers/match-readings.ts`, pure) — worst case "not recognized", never "wrong meter": a recognized serial
   (≥ 4 digits) decides alone (equal, or prefix/suffix with ≥ 6 digits: cut off / leading year; no match → skip, no
   fallback); no serial → utility + zone must fit exactly one meter. Also skipped: zone not on the meter, value not a
