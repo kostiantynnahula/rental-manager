@@ -33,8 +33,11 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
 ## Job flow (`src/photos/`)
 
 - `ParsePhotoProcessor` (`@Processor(PHOTO_QUEUE)`, concurrency 1) dispatches on `job.name`; unknown → fails, no retry.
+  Keep concurrency 1: the API merges values into drafts without locking (`POST /meters/{meterId}/draft-values`).
 - `ParsePhotoService.run(photoId)`: `GET /photos/{id}` (apartmentId, linked readings) → `GET /photos/{id}/file`
   (bytes) → `GET /apartments/{apartmentId}/meters`; for now it logs one summary (no LLM, no readings yet).
+- Proposed values (later): one `POST /meters/{meterId}/draft-values` per zone read from the photo — the API decides
+  which draft it goes into (201 new / 200 added or retry no-op / 409 zone already filled from another photo).
 - Errors (`src/api/helpers/api-error.ts`): 404/400 and 401/403 → `UnrecoverableError` (retrying can't help; 401/403
   hint at the key/scopes); other statuses and network errors → plain `Error`, retried by BullMQ. Failures are
   logged by the processor's `failed` handler.

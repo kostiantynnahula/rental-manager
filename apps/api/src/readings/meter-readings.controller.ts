@@ -1,7 +1,6 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
-  ApiBearerAuth,
   ApiConflictResponse,
   ApiCookieAuth,
   ApiCreatedResponse,
@@ -14,7 +13,6 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { AuthUser } from '../auth/interfaces/auth-user.interface.js';
-import { Scopes } from '../auth/scopes.decorator.js';
 import { CreateReadingDto } from './dto/create-reading.dto.js';
 import { ListMeterReadingsQueryDto } from './dto/list-meter-readings-query.dto.js';
 import { ReadingResponseDto } from './dto/reading-response.dto.js';
@@ -47,14 +45,11 @@ export class MeterReadingsController {
   }
 
   @Post()
-  // The worker proposes values from photos with an API key (DRAFT only).
-  @Scopes('readings:create-draft')
-  @ApiBearerAuth()
+  // Closed to API keys (no @Scopes): the worker uses POST /meters/:meterId/draft-values.
   @ApiOperation({
     description:
-      'A DRAFT may hold a subset of the meter zones; confirm=true needs all of them. ' +
-      'API key scope: readings:create-draft. With a key: photoId on every value required, confirm not allowed, ' +
-      'always DRAFT + PHOTO; a second non-cancelled reading of the meter from the same photo → 409 with readingId',
+      'A DRAFT may hold a subset of the meter zones; confirm=true needs all of them. Not for API keys: ' +
+      'they add values with POST /meters/{meterId}/draft-values',
   })
   @ApiCreatedResponse({
     type: ReadingResponseDto,
@@ -63,21 +58,15 @@ export class MeterReadingsController {
   @ApiBadRequestResponse({
     description:
       'Unknown/duplicate zones; photo not found or of another apartment; with confirm: zones missing, ' +
-      'date outside window/in future, value out of order; API key with a value without photoId',
+      'date outside window/in future, value out of order',
   })
-  @ApiForbiddenResponse({
-    description: 'API key without readings:create-draft, or API key with confirm=true',
-  })
-  @ApiConflictResponse({
-    description:
-      'Meter removed; with confirm: period already confirmed; ' +
-      'API key: reading from this photo exists (body has readingId)',
-  })
+  @ApiForbiddenResponse({ description: 'API key (closed to keys)' })
+  @ApiConflictResponse({ description: 'Meter removed; with confirm: period already confirmed' })
   async create(
     @Param('meterId', ParseUUIDPipe) meterId: string,
     @Body() dto: CreateReadingDto,
     @CurrentUser() user: AuthUser,
   ): Promise<ReadingResponseDto> {
-    return ReadingResponseDto.from(await this.readings.create(meterId, dto, user));
+    return ReadingResponseDto.from(await this.readings.create(meterId, dto, user.id));
   }
 }
