@@ -1,4 +1,10 @@
-import { periodEnd } from '../../common/helpers/period.js';
+import {
+  consumptionLimit,
+  consumptionWarnings,
+  fromThousandths,
+  toThousandths,
+} from '@rental/shared';
+import { monthsBetween, periodEnd } from '../../common/helpers/period.js';
 import { Prisma } from '../../generated/prisma/client.js';
 import { TariffKind, UtilityType, Zone } from '../../generated/prisma/enums.js';
 import { priceForPeriod } from '../../tariffs/helpers/price-for-period.js';
@@ -164,6 +170,48 @@ function missingReadings(
     }));
 }
 
+// Consumption off the shared limits (or zero electricity while a lease covers the period), once per billed meter +
+// zone — the same rows as the bill (meterShare). months = from the earliest previous reading behind those rows.
+function unusualConsumption(
+  tariffs: Tariff[],
+  activeMeters: StatementMeter[],
+  input: StatementInput,
+  hasLease: boolean,
+): StatementWarning[] {
+  const billed = activeMeters.filter((m) => tariffs.some((t) => t.utilities.includes(m.utility)));
+  return billed.flatMap((meter) =>
+    STATEMENT_ZONE_ORDER.flatMap((zone) => {
+      const share = meterShare(meter, zone, input.consumption);
+      if (!share) return [];
+      const previous = input.consumption
+        .filter((r) => r.meterId === meter.id && r.zone === zone && r.consumption !== null)
+        .flatMap((r) => r.previousPeriod ?? [])
+        .reduce<Date | null>((min, p) => (min === null || p < min ? p : min), null);
+      const months = Math.max(1, previous ? monthsBetween(previous, input.period) : 1);
+      // toFixed never uses exponent notation; the round trip drops trailing zeros ("340.000" → "340").
+      const consumption = fromThousandths(toThousandths(share.consumption.toFixed()));
+      const reasons = consumptionWarnings({
+        utility: meter.utility,
+        zone,
+        consumption,
+        months,
+        hasLease,
+      });
+      return reasons.map((reason) => ({
+        code: 'UNUSUAL_CONSUMPTION' as const,
+        meterId: meter.id,
+        utility: meter.utility,
+        label: meter.label,
+        zone,
+        consumption,
+        limit: consumptionLimit(meter.utility, zone) ?? undefined,
+        months,
+        reason,
+      }));
+    }),
+  );
+}
+
 // The monthly calculation as a pure function: no database, nothing written. Lines: rent, then metered by utility
 // and zone, then fixed by name.
 export function calculateStatement(input: StatementInput): StatementPreview {
@@ -191,6 +239,7 @@ export function calculateStatement(input: StatementInput): StatementPreview {
     ...fixed.flatMap((t) => fixedLine(t, period, warnings) ?? []),
   ];
   warnings.push(...missingReadings(metered, activeMeters, input));
+  warnings.push(...unusualConsumption(metered, activeMeters, input, leases.length > 0));
   return {
     lines,
     total: lines.reduce((acc, l) => acc + l.amount, 0),

@@ -16,6 +16,11 @@ in the period; the service only loads data. Imports nothing from Prisma but `Pri
 - `MISSING_READING` (once per meter) only without a single view row in the period. A meter installed in the period
   has its INITIAL row (consumption NULL): no warning, contributes 0. Unbilled consumption isn't lost: the next
   REGULAR reading counts from the last confirmed one, at the next period's price.
+- `UNUSUAL_CONSUMPTION` (meterId, utility, label, zone, consumption, limit, months, reason): once per billed meter +
+  zone (not per tariff), on the same rows as the bill (`meterShare`), via the shared `consumptionWarnings`
+  (`@rental/shared`, limits there): `ABOVE_LIMIT` (> limit × months) or `ZERO_CONSUMPTION` (electricity = 0 and a lease
+  overlaps the period). `months` = from the earliest `previousPeriod` of those rows (view column, migration
+  `reading_consumption_previous_period`), at least 1. A plain warning: issuing needs `acknowledgeWarnings`.
 - `amount` = quantity × unitPrice (UAH) × 100, half-up, `Int` kopiyky; `total` = sum of amounts. A meter without an
   attached tariff isn't billed and isn't warned about.
 - **Issued statements are snapshots** (migration `add_statements`): lines keep the name, utilities, prices and

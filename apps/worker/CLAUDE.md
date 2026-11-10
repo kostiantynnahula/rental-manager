@@ -5,7 +5,9 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
 ## Commands (from repo root)
 
 - dev: `pnpm dev:worker` (also part of `pnpm dev`) · build: `pnpm --filter worker build` · lint: `pnpm --filter worker lint`
-- API types: `pnpm gen:api` (root) regenerates `src/api/schema.d.ts` from `apps/api/openapi.json` (committed).
+- API types: `pnpm gen:api` (root) regenerates `src/api/schema.d.ts` from `apps/api/openapi.json` (committed) via
+  `scripts/gen-api.mjs`: only the operations open to API keys (`bearer` security) and the schemas they reference.
+  A new endpoint for the worker needs `@Scopes(...)` + `@ApiBearerAuth()` in the API first, or it won't be generated.
 
 ## Setup
 

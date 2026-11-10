@@ -10,7 +10,7 @@
     "start": "node dist/main",
     "lint": "eslint .",
     "test": "vitest run --passWithNoTests",
-    "gen:api": "openapi-typescript ../api/openapi.json -o src/api/schema.d.ts",
+    "gen:api": "node scripts/gen-api.mjs",
     "extract:samples": "nest build && node dist/scripts/extract-samples.js"
   },
   "dependencies": {
