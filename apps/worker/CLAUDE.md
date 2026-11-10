@@ -37,10 +37,21 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
 
 - `ParsePhotoProcessor` (`@Processor(PHOTO_QUEUE)`, concurrency 1) dispatches on `job.name`; unknown → fails, no retry.
   Keep concurrency 1: the API merges values into drafts without locking (`POST /meters/{meterId}/draft-values`).
-- `ParsePhotoService.run(photoId)`: `GET /photos/{id}` (apartmentId, linked readings) → `GET /photos/{id}/file`
-  (bytes) → `GET /apartments/{apartmentId}/meters`; for now it logs one summary (no LLM, no readings yet).
-- Proposed values (later): one `POST /meters/{meterId}/draft-values` per zone read from the photo — the API decides
-  which draft it goes into (201 new / 200 added or retry no-op / 409 zone already filled from another photo).
+- `ParsePhotoService.run(photoId)`: `GET /photos/{id}` → `GET /apartments/{apartmentId}/meters` (installed only, with
+  `lastReading`; none → log, done) → `GET /photos/{id}/file` → `PhotoExtractorService.extract` → `matchReadings` →
+  one `POST /meters/{meterId}/draft-values` per matched zone (the API picks the draft: 201 new / 200 added or retry
+  no-op). `readingDate` = upload day in Kyiv (`createdAt`), `period` = its month. Ends with one summary log line.
+- Matching (`helpers/match-readings.ts`, pure) — worst case "not recognized", never "wrong meter": a recognized serial
+  (≥ 4 digits) decides alone (equal, or prefix/suffix with ≥ 6 digits: cut off / leading year; no match → skip, no
+  fallback); no serial → utility + zone must fit exactly one meter. Also skipped: zone not on the meter, value not a
+  meter number, the same meter + zone twice in one photo. The model's `meterId` decides nothing (a disagreement is
+  logged). Skips are only logged.
+- Plausibility (`plausibility-warnings.ts`, BigInt thousandths, never floats) vs `lastReading`: lower value, or more
+  than `MONTHLY_LIMITS` × months → warning. Warnings + the model's confidence/issues (when not high) go into the
+  draft's `note` (`draft-note.ts`, Ukrainian — shown on the review screen); they never block the draft.
+- Expected refusals of `draft-values` are logged, not failures: 409 with `readingId` (zone already filled from another
+  photo), 409 "Meter is removed", 400. No `ANTHROPIC_API_KEY` → `UnrecoverableError` (`ExtractionNotConfiguredError`).
+  A retry repeats the paid model call; the posts themselves are idempotent per photo + zone.
 - Errors (`src/api/helpers/api-error.ts`): 404/400 and 401/403 → `UnrecoverableError` (retrying can't help; 401/403
   hint at the key/scopes); other statuses and network errors → plain `Error`, retried by BullMQ. Failures are
   logged by the processor's `failed` handler.
@@ -49,8 +60,7 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
 
 - `PhotoExtractorService.extract({ image, meters })` → `Extraction` (`readings[]`: `meterId | null`, `serialNumber`,
   `utility`, `zone`, `value` as shown, `confidence` high/medium/low, `issues[]`; plus `photoIssues[]`). One LangChain
-  vision call (`@langchain/anthropic`), only proposes — nothing is saved. Not wired into the job yet (next: post each
-  zone to `draft-values`).
+  vision call (`@langchain/anthropic`), only proposes — nothing is saved here (the job posts the matched values).
 - Structured output via `withStructuredOutput(schema, { method: 'jsonSchema' })` (native `output_config.format`).
   **Never `functionCalling`**: it forces `tool_choice`, which current Claude models reject with a 400. No `thinking` /
   `temperature`: current models think adaptively, `outputConfig.effort` sets the depth.
