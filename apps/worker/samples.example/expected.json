@@ -1,0 +1,4 @@
+[
+  { "file": "electricity-night.jpg", "serialNumber": "12345678", "zone": "NIGHT", "value": "23.0" },
+  { "file": "cold-water.jpg", "serialNumber": "00000001", "zone": "TOTAL", "value": "19.70" }
+]

@@ -1,0 +1,16 @@
+[
+  {
+    "id": "electricity",
+    "utility": "ELECTRICITY",
+    "zoneScheme": "DAY_NIGHT",
+    "serialNumber": "12345678",
+    "label": null
+  },
+  {
+    "id": "cold-water",
+    "utility": "COLD_WATER",
+    "zoneScheme": "SINGLE",
+    "serialNumber": "00000001",
+    "label": "bathroom"
+  }
+]

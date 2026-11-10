@@ -13,6 +13,18 @@ import {
   validateSync,
 } from 'class-validator';
 
+export enum ExtractionProvider {
+  Anthropic = 'anthropic',
+}
+
+export enum ExtractionEffort {
+  Low = 'low',
+  Medium = 'medium',
+  High = 'high',
+  XHigh = 'xhigh',
+  Max = 'max',
+}
+
 export enum NodeEnv {
   Development = 'development',
   Test = 'test',
@@ -45,6 +57,22 @@ export class Env {
   @IsOptional()
   @IsString()
   REDIS_PASSWORD?: string;
+
+  // Photo extraction (src/extraction/). Optional: the worker starts without a key; extracting then fails clearly.
+  // Never log it. The message must not echo the value.
+  @IsOptional()
+  @Matches(/^sk-ant-/, { message: 'ANTHROPIC_API_KEY must be an Anthropic API key (sk-ant-…)' })
+  ANTHROPIC_API_KEY?: string;
+
+  @IsEnum(ExtractionProvider)
+  EXTRACTION_PROVIDER: ExtractionProvider = ExtractionProvider.Anthropic;
+
+  @IsString()
+  @MinLength(1)
+  EXTRACTION_MODEL: string = 'claude-sonnet-5-5';
+
+  @IsEnum(ExtractionEffort)
+  EXTRACTION_EFFORT: ExtractionEffort = ExtractionEffort.Medium;
 }
 
 // Used by ConfigModule: fails fast at startup with all invalid vars listed (names and rules, never values).

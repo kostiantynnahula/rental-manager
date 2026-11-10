@@ -25,3 +25,6 @@ coverage/
 *.log
 *.pem
 .vercel
+
+# Real meter photos for the extraction script (apps/worker/samples.example/ shows the format)
+apps/worker/samples/
