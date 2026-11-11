@@ -18,14 +18,19 @@ export class PhotoJobsService {
   constructor(@InjectQueue(PHOTO_QUEUE) private readonly queue: Queue<ParsePhotoJobData>) {}
 
   // Never throws: a queue outage must not fail the upload (the photo can still be read by hand).
-  async enqueueParse(photoId: string): Promise<void> {
+  // reparse: the photo was parsed before (e.g. an apartment was assigned) — its upload job keeps jobId = photoId for
+  // 7 days and BullMQ would silently ignore the same id, so a re-parse gets its own (no ":" — BullMQ forbids it).
+  async enqueueParse(
+    photoId: string,
+    { reparse = false }: { reparse?: boolean } = {},
+  ): Promise<void> {
     try {
       const added = this.queue.add(
         PARSE_PHOTO_JOB,
         { photoId },
         {
-          // BullMQ ignores a job whose id already exists: one job per photo.
-          jobId: photoId,
+          // BullMQ ignores a job whose id already exists: one upload job per photo.
+          jobId: reparse ? `${photoId}-${Date.now()}` : photoId,
           attempts: 5,
           backoff: { type: 'exponential', delay: 10_000 },
           removeOnComplete: { age: 7 * DAY_SECONDS },
