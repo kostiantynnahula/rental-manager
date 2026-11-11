@@ -46,9 +46,16 @@ export class DraftValuesService {
     const { id, created } = await this.prisma.$transaction(async (tx) => {
       const meter = await this.meters.findOrThrow(meterId, tx);
       if (meter.removedAt) throw new ConflictException('Meter is removed');
+      // Same rule as GET /meters?active=true: an archived apartment takes no new drafts, and an inbox photo
+      // must not land in it (it would vanish from the inbox into the archive).
+      const apartment = await tx.apartment.findUniqueOrThrow({
+        where: { id: meter.apartmentId },
+        select: { isActive: true },
+      });
+      if (!apartment.isActive) throw new ConflictException('Apartment is archived');
       const invalid = zonesInvalid(meter.zoneScheme, [dto]);
       if (invalid) throw new BadRequestException(invalid);
-      // An inbox photo gets the meter's apartment here (same transaction); another apartment → 409.
+      // An inbox photo gets the meter's apartment here (same transaction); another apartment → 400.
       await this.photos.claimForApartment(dto.photoId, meter.apartmentId, tx);
 
       const draft = await tx.reading.findFirst({

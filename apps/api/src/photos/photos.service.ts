@@ -135,20 +135,12 @@ export class PhotosService {
   // For readings: the photo is part of the request body, so a bad reference is a 400.
   async findForApartmentOrThrow(id: string, apartmentId: string): Promise<Photo> {
     const photo = await this.prisma.photo.findUnique({ where: { id } });
-    if (!photo) throw new BadRequestException('photoId: photo not found');
-    if (photo.apartmentId === null) {
-      throw new BadRequestException(
-        'photoId: the photo is in the inbox — assign an apartment first',
-      );
-    }
-    if (photo.apartmentId !== apartmentId) {
-      throw new BadRequestException('photoId: the photo belongs to another apartment');
-    }
+    this.assertOfApartment(photo, apartmentId);
     return photo;
   }
 
   // For the worker's draft values: the photo must be of the meter's apartment. An inbox photo gets that apartment
-  // here, inside the caller's transaction (rolled back if the draft fails). Another apartment → 409.
+  // here, inside the caller's transaction (rolled back if the draft fails). Other errors as findForApartmentOrThrow.
   async claimForApartment(
     id: string,
     apartmentId: string,
@@ -161,9 +153,23 @@ export class PhotosService {
     });
     if (count > 0) return;
     const photo = await tx.photo.findUnique({ where: { id }, select: { apartmentId: true } });
+    this.assertOfApartment(photo, apartmentId);
+  }
+
+  // One place for the photo-reference rule of both reading paths, so they answer the same (400: a bad reference
+  // in the request body).
+  private assertOfApartment<T extends Pick<Photo, 'apartmentId'>>(
+    photo: T | null,
+    apartmentId: string,
+  ): asserts photo is T {
     if (!photo) throw new BadRequestException('photoId: photo not found');
+    if (photo.apartmentId === null) {
+      throw new BadRequestException(
+        'photoId: the photo is in the inbox — assign an apartment first',
+      );
+    }
     if (photo.apartmentId !== apartmentId) {
-      throw new ConflictException('photoId: the photo belongs to another apartment');
+      throw new BadRequestException('photoId: the photo belongs to another apartment');
     }
   }
 

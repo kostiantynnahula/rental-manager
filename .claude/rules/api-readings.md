@@ -24,7 +24,8 @@ confirm (or create with `confirm: true`); CONFIRMED → only cancel (`reason` ap
   user's open DRAFT REGULAR of the meter + period (never a human's) gets the zone (keeps its `readingDate`, `note`
   appended) → 200; none → new DRAFT → 201. Decision in the pure `helpers/draft-value-action.ts`: same zone from the
   same photo → 200 no change (job retry); same zone from another photo → 409 with `readingId`, nothing overwritten.
-  Zone not in the scheme / photo not found → 400; photo of another apartment → 409. An **inbox photo**
+  Zone not in the scheme / photo not found or of another apartment → 400 (same check as human readings,
+  `PhotosService.assertOfApartment`); meter removed or apartment archived → 409. An **inbox photo**
   (`apartmentId` null) gets the meter's apartment in the same transaction (`PhotosService.claimForApartment`,
   conditional update — rolled back if the draft fails). Human readings still require the photo's apartment
   (`findForApartmentOrThrow`: inbox → 400). **No locking**: relies on the worker's concurrency 1 —

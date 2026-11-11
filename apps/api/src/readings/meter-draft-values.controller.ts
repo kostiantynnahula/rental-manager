@@ -43,12 +43,12 @@ export class MeterDraftValuesController {
     description: 'Zone added to the open draft, or already there from this photo (no change)',
   })
   @ApiBadRequestResponse({
-    description: "Zone not in the meter's scheme; photo not found",
+    description: "Zone not in the meter's scheme; photo not found or of another apartment",
   })
   @ApiForbiddenResponse({ description: 'Not an API key, or a key without readings:create-draft' })
   @ApiConflictResponse({
     description:
-      'Meter removed; photo of another apartment; zone already filled from another photo (body has readingId)',
+      'Meter removed; apartment archived; zone already filled from another photo (body has readingId)',
   })
   async add(
     @Param('meterId', ParseUUIDPipe) meterId: string,

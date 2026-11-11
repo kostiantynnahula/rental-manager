@@ -639,7 +639,7 @@ export interface operations {
                     "application/json": components["schemas"]["ReadingResponseDto"];
                 };
             };
-            /** @description Zone not in the meter's scheme; photo not found */
+            /** @description Zone not in the meter's scheme; photo not found or of another apartment */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -666,7 +666,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Meter removed; photo of another apartment; zone already filled from another photo (body has readingId) */
+            /** @description Meter removed; apartment archived; zone already filled from another photo (body has readingId) */
             409: {
                 headers: {
                     [name: string]: unknown;

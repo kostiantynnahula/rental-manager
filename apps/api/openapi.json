@@ -2092,7 +2092,7 @@
             }
           },
           "400": {
-            "description": "Zone not in the meter's scheme; photo not found"
+            "description": "Zone not in the meter's scheme; photo not found or of another apartment"
           },
           "401": {
             "description": ""
@@ -2104,7 +2104,7 @@
             "description": "Meter not found"
           },
           "409": {
-            "description": "Meter removed; photo of another apartment; zone already filled from another photo (body has readingId)"
+            "description": "Meter removed; apartment archived; zone already filled from another photo (body has readingId)"
           }
         },
         "security": [
