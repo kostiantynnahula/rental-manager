@@ -19,10 +19,15 @@ paths:
 - **Inbox** (`apartmentId = null`): a photo uploaded without an apartment (`POST /photos`, e.g. by the bot); same
   validation, dedup, thumbnail and parse job as `POST /apartments/:id/photos`. Listed by `GET /photos?inbox=true`
   (`inbox` required — the only filter for now; newest first, `PhotoListItemResponseDto`). It leaves the inbox when
-  the first draft value from it is saved: `draft-values` sets the meter's apartment (see `api-readings.md`).
+  the first draft value from it is saved: `draft-values` sets the meter's apartment (see `api-readings.md`), or by hand.
+- **Assign an apartment** (`PATCH /photos/:id { apartmentId }`, `assignApartment`): only while the photo backs **no
+  reading value at all** (cancelled ones included — they still point at the photo) → else 409; in practice an inbox
+  photo or an unused one. Unknown/archived apartment → 400 (body reference), photo missing → 404. One conditional
+  `updateMany`; sets `parseStatus = PENDING`, clears `parseNote` and enqueues a **re-parse** (normal mode: the
+  apartment's meters). The same apartment again = a re-parse.
 - **Dedup by sha256** (unique): same file in the same place (same apartment, or both inbox) → existing record with
   `duplicate: true`, nothing stored; an inbox upload of a file that already has an apartment → also `duplicate: true`;
-  an apartment upload of a file in another apartment or in the inbox → 409 (`findDuplicate`).
+  an apartment upload of a file in another apartment or in the inbox → 409 (`findDuplicate`; sort it with PATCH instead).
 - Consistency: upload = objects first, then the row (insert fails → delete the objects); delete = row first (tx), then
   objects (a failure only leaves a logged orphan object, never a row pointing at nothing).
 - Limits (`PHOTO_MAX_FILES`, `PHOTO_MAX_FILE_SIZE_MB`) go through `MulterModule.registerAsync` (in-memory). Too many
@@ -41,7 +46,8 @@ paths:
 - File endpoints stream through the API (auth required), `Cache-Control: private, max-age=86400`.
 - **Parse job**: a newly stored photo gets one BullMQ job `parse-photo` (`{ photoId }`) on queue `photos`
   (`PhotoJobsService.enqueueParse`, `src/queue/`; names and payload type from `@rental/shared`).
-  `jobId = photoId` (never queued twice), 5 attempts, exponential backoff from 10 s; completed jobs kept 7 days,
+  `jobId = photoId` (an upload is never queued twice); a re-parse (`enqueueParse(id, { reparse: true })`) gets
+  `<photoId>-<timestamp>` — the upload job stays 7 days and BullMQ silently ignores an existing id. 5 attempts, exponential backoff from 10 s; completed jobs kept 7 days,
   failed ones kept. Duplicates (`duplicate: true`, also a lost parallel race) get no job.
 - Enqueue failure is logged and **never fails the upload**. BullMQ waits for the Redis connection without a limit,
   so `enqueueParse` gives up after 3 s (`ENQUEUE_TIMEOUT_MS`); the pending `add()` still lands if Redis comes back

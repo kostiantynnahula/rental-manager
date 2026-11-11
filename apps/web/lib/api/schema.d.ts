@@ -406,7 +406,8 @@ export interface paths {
         delete: operations["PhotosController_remove"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** @description Assign an apartment (e.g. to an inbox photo the worker could not match): parseStatus → PENDING and the photo is parsed again against that apartment's meters */
+        patch: operations["PhotosController_assignApartment"];
         trace?: never;
     };
     "/photos/{id}/file": {
@@ -1375,6 +1376,10 @@ export interface components {
             thumbnailUrl: string;
             /** @description All readings with a value from this photo, incl. cancelled */
             readings: components["schemas"]["PhotoReadingResponseDto"][];
+        };
+        AssignPhotoApartmentDto: {
+            /** Format: uuid */
+            apartmentId: string;
         };
         /** @enum {string} */
         PhotoParseResult: "PARSED" | "NOT_MATCHED" | "FAILED";
@@ -3569,6 +3574,58 @@ export interface operations {
                 content?: never;
             };
             /** @description Linked to a non-cancelled reading */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PhotosController_assignApartment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignPhotoApartmentDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhotoDetailResponseDto"];
+                };
+            };
+            /** @description Invalid body, apartment not found or archived */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Photo not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The photo backs reading values (cancelled ones included) */
             409: {
                 headers: {
                     [name: string]: unknown;

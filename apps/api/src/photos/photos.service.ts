@@ -113,6 +113,29 @@ export class PhotosService {
     });
   }
 
+  // A human picks the apartment (e.g. an inbox photo the worker couldn't match), then the photo is parsed again
+  // against that apartment's meters. Only while the photo backs no reading value at all — cancelled ones included:
+  // they keep pointing at the photo, and a photo's values must be of its apartment. An inbox photo has none
+  // (draft-values assigns it on the first one). The same apartment again = a re-parse.
+  async assignApartment(id: string, apartmentId: string): Promise<PhotoWithReadings> {
+    // A body reference: a bad one is a 400, not a 404.
+    const apartment = await this.prisma.apartment.findUnique({ where: { id: apartmentId } });
+    if (!apartment) throw new BadRequestException('apartmentId: apartment not found');
+    if (!apartment.isActive) throw new BadRequestException('Apartment is archived');
+    // Conditional, so a value linked meanwhile can't slip through between a check and the update.
+    const { count } = await this.prisma.photo.updateMany({
+      where: { id, readingValues: { none: {} } },
+      data: { apartmentId, parseStatus: PhotoParseStatus.PENDING, parseNote: null },
+    });
+    if (count === 0) {
+      const exists = await this.prisma.photo.count({ where: { id } });
+      if (!exists) throw new NotFoundException('Photo not found');
+      throw new ConflictException("Photo has reading values — it can't move to another apartment");
+    }
+    await this.photoJobs.enqueueParse(id, { reparse: true });
+    return this.findOrThrow(id);
+  }
+
   // The worker's verdict when its job ends (API keys only: a human never sets it).
   async setParseResult(id: string, dto: SetParseResultDto, user: AuthUser): Promise<void> {
     if (!user.apiKeyId) throw new ForbiddenException('Only API keys can set the parse result');

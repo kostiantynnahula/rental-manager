@@ -1731,6 +1731,63 @@
           "photos"
         ]
       },
+      "patch": {
+        "description": "Assign an apartment (e.g. to an inbox photo the worker could not match): parseStatus → PENDING and the photo is parsed again against that apartment's meters",
+        "operationId": "PhotosController_assignApartment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignPhotoApartmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoDetailResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, apartment not found or archived"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Photo not found"
+          },
+          "409": {
+            "description": "The photo backs reading values (cancelled ones included)"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "photos"
+        ]
+      },
       "delete": {
         "operationId": "PhotosController_remove",
         "parameters": [
@@ -5173,6 +5230,18 @@
           "fileUrl",
           "thumbnailUrl",
           "readings"
+        ]
+      },
+      "AssignPhotoApartmentDto": {
+        "type": "object",
+        "properties": {
+          "apartmentId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "apartmentId"
         ]
       },
       "PhotoParseResult": {
