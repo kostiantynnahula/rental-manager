@@ -147,6 +147,26 @@ export class PhotosService {
     return photo;
   }
 
+  // For the worker's draft values: the photo must be of the meter's apartment. An inbox photo gets that apartment
+  // here, inside the caller's transaction (rolled back if the draft fails). Another apartment → 409.
+  async claimForApartment(
+    id: string,
+    apartmentId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    // Conditional update: of two parallel claims only one sees apartmentId null.
+    const { count } = await tx.photo.updateMany({
+      where: { id, apartmentId: null },
+      data: { apartmentId },
+    });
+    if (count > 0) return;
+    const photo = await tx.photo.findUnique({ where: { id }, select: { apartmentId: true } });
+    if (!photo) throw new BadRequestException('photoId: photo not found');
+    if (photo.apartmentId !== apartmentId) {
+      throw new ConflictException('photoId: the photo belongs to another apartment');
+    }
+  }
+
   async openFile(id: string, variant: 'original' | 'thumbnail'): Promise<PhotoFile> {
     const photo = await this.findOrThrow(id);
     const isOriginal = variant === 'original';

@@ -48,7 +48,8 @@ export class DraftValuesService {
       if (meter.removedAt) throw new ConflictException('Meter is removed');
       const invalid = zonesInvalid(meter.zoneScheme, [dto]);
       if (invalid) throw new BadRequestException(invalid);
-      await this.photos.findForApartmentOrThrow(dto.photoId, meter.apartmentId);
+      // An inbox photo gets the meter's apartment here (same transaction); another apartment → 409.
+      await this.photos.claimForApartment(dto.photoId, meter.apartmentId, tx);
 
       const draft = await tx.reading.findFirst({
         where: {
