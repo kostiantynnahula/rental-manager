@@ -13,6 +13,12 @@ export const UTILITY_SETS = [
   { value: 'COLD_WATER', label: 'Холодна вода', utilities: ['COLD_WATER'] },
   { value: 'HOT_WATER', label: 'Гаряча вода', utilities: ['HOT_WATER'] },
   { value: 'GAS', label: 'Газ', utilities: ['GAS'] },
+  // Drainage: billed over all water used — cold + hot, or cold only when the apartment has no hot meter.
+  {
+    value: 'WATER',
+    label: 'Холодна + гаряча вода (водовідведення)',
+    utilities: ['COLD_WATER', 'HOT_WATER'],
+  },
 ] as const satisfies readonly UtilitySet[];
 
 export type UtilitySetValue = (typeof UTILITY_SETS)[number]['value'];
