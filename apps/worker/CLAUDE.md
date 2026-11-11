@@ -40,12 +40,14 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
 
 - `ParsePhotoProcessor` (`@Processor(PHOTO_QUEUE)`, concurrency 1) dispatches on `job.name`; unknown → fails, no retry.
   Keep concurrency 1: the API merges values into drafts without locking (`POST /meters/{meterId}/draft-values`).
-- `ParsePhotoService.run(photoId)`: `GET /photos/{id}` (inbox photo, `apartmentId: null` → `NOT_MATCHED`, done — until #57) → `GET /apartments/{apartmentId}/meters` (installed only, with
-  `lastReading`; none → log, done) → `GET /photos/{id}/file` → `PhotoExtractorService.extract` → `matchReadings` →
+- `ParsePhotoService.run(photoId)`: `GET /photos/{id}` → candidates: `GET /apartments/{apartmentId}/meters` (installed
+  only, with `lastReading`), or for an **inbox photo** (`apartmentId: null`) `GET /meters?active=true` (every active
+  meter of active apartments); none → `NOT_MATCHED`, done → `GET /photos/{id}/file` → `PhotoExtractorService.extract` → `matchReadings` →
   one `POST /meters/{meterId}/draft-values` per matched zone (the API picks the draft: 201 new / 200 added or retry
   no-op). `readingDate` = upload day in Kyiv (`createdAt`), `period` = its month. Ends with one summary log line.
 - Result (`ParseResultReporter` → `PUT /photos/{id}/parse-result`, shown in the web): `PARSED` if ≥ 1 value was
-  posted, else `NOT_MATCHED` with the reasons (the summary lines / photo issues); `FAILED` with the error from the
+  posted, else `NOT_MATCHED` with the reasons (the summary lines / photo issues; an inbox photo's note starts with a
+  Ukrainian line from `inbox-summary.ts`: serial not found / meters of different apartments); `FAILED` with the error from the
   processor's `failed` handler after the last attempt. Best effort: a failed report is only logged (never retries the
   job — that would repeat the paid model call).
 - Matching (`helpers/match-readings.ts`, pure) — worst case "not recognized", never "wrong meter": a recognized serial
@@ -53,6 +55,10 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
   fallback); no serial → utility + zone must fit exactly one meter. Also skipped: zone not on the meter, value not a
   meter number, the same meter + zone twice in one photo. The model's `meterId` decides nothing (a disagreement is
   logged). Skips are only logged.
+- **Inbox photos** (`serialOnly`): matched **by serial only** — no utility fallback (a guess could pick another
+  apartment's meter); all matched meters must be of one apartment (`one-apartment.ts`), else none is posted. The API
+  assigns the photo to the meter's apartment on the first accepted `draft-values` (rolled back if refused); a photo
+  with nothing posted stays in the inbox.
 - Plausibility (`plausibility-warnings.ts`, BigInt thousandths from `@rental/shared`, never floats) vs `lastReading`:
   a lower value → warning (local check); otherwise the consumption goes through the shared `consumptionWarnings`
   (limits per utility + zone, × months; `hasLease: false` — the worker can't see leases, so no zero check here). Warnings + the model's confidence/issues (when not high) go into the
@@ -77,9 +83,10 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
   leading zeros dropped (`00532.20` → `532.20`), serial → digits, value not a meter number / zone not on the meter →
   issue + `confidence: low`. Nothing is dropped.
 - Prompt rules (OBIS codes, drums, water colours, stickers, serial formats) live in `helpers/extraction-prompt.ts`;
-  candidates go in the user message (`describeCandidates`). The image is auto-oriented and fit into 1568 px
+  candidates go in the user message (`describeCandidates(meters, inbox)`; inbox: "the apartment is unknown — meterId
+  by serial only"). The image is auto-oriented and fit into 1568 px
   (`prepareImage`, sharp) — Claude's base64 limit is 5 MB, the API accepts 15 MB photos.
 - Never log the image, the prompt contents or `ANTHROPIC_API_KEY` (model, duration and counts only).
-- Manual check: `pnpm --filter worker extract:samples -- samples` (from the repo root: path relative to
-  `apps/worker`). The dir holds photos + `meters.json` + optional `expected.json` (format: `samples.example/`) and
+- Manual check: `pnpm --filter worker extract:samples -- samples [--inbox]` (from the repo root: path relative to
+  `apps/worker`; `--inbox` = the inbox prompt). The dir holds photos + `meters.json` + optional `expected.json` (format: `samples.example/`) and
   prints every reading plus ✓/✗ against the golden values. One paid model call per photo; `samples/` is gitignored.
