@@ -13,6 +13,21 @@ import { TariffPriceSheet } from './tariff-price-sheet';
 // Price history, newest first (API order). A price change is a new row; a row's menu only fixes mistakes.
 export function TariffPrices({ tariff }: { tariff: TariffDetail }) {
   const [adding, setAdding] = useState(false);
+  if (tariff.kind === 'MANUAL') {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Ціни</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Ціни немає: суму вводять у рахунку за кожен місяць (з рахунку від ОСББ чи
+            постачальника).
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
   const currentIds = new Set(tariff.currentPrices.map((p) => p.id));
   const thisMonth = todayDateOnly().slice(0, 7);
 

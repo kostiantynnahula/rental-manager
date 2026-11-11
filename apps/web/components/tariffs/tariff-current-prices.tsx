@@ -4,7 +4,11 @@ import { ZONE_LABELS } from '@/lib/utilities';
 import { priceUnit } from './helpers/price-unit';
 
 // Prices in effect this month, one line per zone: "4,32 грн/кВт·год", "Ніч: 2,16 грн/кВт·год".
+// A MANUAL tariff has no price: its amount is entered in each statement.
 export function TariffCurrentPrices({ tariff }: { tariff: Tariff }) {
+  if (tariff.kind === 'MANUAL') {
+    return <span className="text-muted-foreground">сума в рахунку</span>;
+  }
   if (tariff.currentPrices.length === 0) {
     return <span className="text-muted-foreground">—</span>;
   }

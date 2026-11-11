@@ -25,5 +25,9 @@ paths:
 - "Змінити ціну" on the tab: `apartmentCount > 1` (shared) first asks "Для всіх квартир (N)" (a new price of the
   shared tariff) or "Лише для цієї квартири" (`override`: a copy with own prices from a month; past months stay on
   the shared tariff). Attachment and tariff mutations invalidate both `apartmentTariffKeys.all` and tariff keys.
+- **MANUAL** ("Ручна сума"): no utilities, no prices — the amount is typed into each statement. Create hides the price
+  block (apartments are attached from the current month); editing can't switch a kind to or from MANUAL (the API says
+  400, the radio option is disabled). Cards / list show «сума в рахунку», the tariff page explains it instead of a
+  price history; the apartment tab has no «Змінити ціну» for it.
 - Server-side lists put the page-size select into the pagination row (`DataTable` `pageSize`/`pageSizeOptions`/
   `onPageSizeChange`), not into the filters.

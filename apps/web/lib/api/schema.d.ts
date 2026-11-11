@@ -691,9 +691,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["ApartmentStatementsController_preview"];
+        get?: never;
         put?: never;
-        post?: never;
+        post: operations["ApartmentStatementsController_preview"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1546,7 +1546,7 @@ export interface components {
             reason: string;
         };
         /** @enum {string} */
-        TariffKind: "METERED" | "FIXED";
+        TariffKind: "METERED" | "FIXED" | "MANUAL";
         TariffPriceResponseDto: {
             /** Format: uuid */
             id: string;
@@ -1662,12 +1662,12 @@ export interface components {
              */
             name: string;
             kind: components["schemas"]["TariffKind"];
-            /** @description Default []. METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED: empty */
+            /** @description Default []. METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED, MANUAL: empty */
             utilities?: components["schemas"]["UtilityType"][];
             notes?: string | null;
-            /** @description Initial price history; must include a TOTAL price from the earliest month */
+            /** @description Initial price history; must include a TOTAL price from the earliest month. MANUAL: empty (the amount is entered per statement) */
             prices: components["schemas"]["TariffPriceInputDto"][];
-            /** @description Active apartments to attach right away, from the earliest price month on */
+            /** @description Active apartments to attach right away, from the earliest price month on (MANUAL: from the current month) */
             apartmentIds?: string[];
         };
         UpdateTariffDto: {
@@ -1677,7 +1677,7 @@ export interface components {
              */
             name?: string;
             kind?: components["schemas"]["TariffKind"];
-            /** @description Default []. METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED: empty */
+            /** @description Default []. METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED, MANUAL: empty */
             utilities?: components["schemas"]["UtilityType"][];
             notes?: string | null;
         };
@@ -1757,8 +1757,24 @@ export interface components {
             /** @description Prices of the copy from effectiveFrom; must include TOTAL */
             prices: components["schemas"]["OverridePriceInputDto"][];
         };
+        StatementPreviewDto: {
+            /**
+             * @description YYYY-MM
+             * @example 2026-10
+             */
+            period: string;
+            /**
+             * @description Integer kopiyky per MANUAL tariff id, entered from the bill. Only active MANUAL tariffs of the apartment (else 400); a missing one → MISSING_MANUAL_AMOUNT
+             * @example {
+             *       "3f1c2b4e-8d7a-4c1e-9b2a-5e6f7a8b9c0d": 12300
+             *     }
+             */
+            manualAmounts?: {
+                [key: string]: number;
+            };
+        };
         /** @enum {string} */
-        StatementLineType: "RENT" | "FIXED" | "METERED";
+        StatementLineType: "RENT" | "FIXED" | "METERED" | "MANUAL";
         StatementLineMeterResponseDto: {
             /** Format: uuid */
             meterId: string;
@@ -1778,7 +1794,7 @@ export interface components {
             type: components["schemas"]["StatementLineType"];
             /**
              * Format: uuid
-             * @description METERED and FIXED
+             * @description All but RENT
              */
             tariffId?: string;
             /** @example Електроенергія */
@@ -1788,15 +1804,15 @@ export interface components {
             /** @description METERED only */
             utilities?: components["schemas"]["UtilityType"][];
             /**
-             * @description Decimal string with 3 decimals
+             * @description Decimal string with 3 decimals; absent for MANUAL (amount only)
              * @example 200.000
              */
-            quantity: string;
+            quantity?: string;
             /**
-             * @description UAH, decimal string with 4 decimals
+             * @description UAH, decimal string with 4 decimals; absent for MANUAL (amount only)
              * @example 4.3200
              */
-            unitPrice: string;
+            unitPrice?: string;
             /**
              * @description Integer kopiyky
              * @example 86400
@@ -1806,12 +1822,12 @@ export interface components {
             meters?: components["schemas"]["StatementLineMeterResponseDto"][];
         };
         /**
-         * @description MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details. UNUSUAL_CONSUMPTION: meterId, utility, label, zone, consumption, limit, months, reason
+         * @description MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details. UNUSUAL_CONSUMPTION: meterId, utility, label, zone, consumption, limit, months, reason. MISSING_MANUAL_AMOUNT: tariffId, tariffName
          * @enum {string}
          */
-        StatementWarningCode: "MISSING_READING" | "NO_PRICE" | "NO_METERS" | "MULTIPLE_LEASES" | "UNUSUAL_CONSUMPTION";
+        StatementWarningCode: "MISSING_READING" | "NO_PRICE" | "NO_METERS" | "MULTIPLE_LEASES" | "UNUSUAL_CONSUMPTION" | "MISSING_MANUAL_AMOUNT";
         StatementWarningResponseDto: {
-            /** @description MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details. UNUSUAL_CONSUMPTION: meterId, utility, label, zone, consumption, limit, months, reason */
+            /** @description MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details. UNUSUAL_CONSUMPTION: meterId, utility, label, zone, consumption, limit, months, reason. MISSING_MANUAL_AMOUNT: tariffId, tariffName */
             code: components["schemas"]["StatementWarningCode"];
             /** Format: uuid */
             meterId?: string;
@@ -1840,7 +1856,7 @@ export interface components {
              * @example 1586400
              */
             total: number;
-            /** @description Rent, then metered by utility and zone (DAY, NIGHT, TOTAL), then fixed by name */
+            /** @description Rent, then metered by utility and zone (DAY, NIGHT, TOTAL), then fixed by name, then manual by name */
             lines: components["schemas"]["StatementLineResponseDto"][];
             /** @description What the total is missing: skipped lines and meters without a reading */
             warnings: components["schemas"]["StatementWarningResponseDto"][];
@@ -1877,6 +1893,15 @@ export interface components {
              * @example 2026-10
              */
             period: string;
+            /**
+             * @description Integer kopiyky per MANUAL tariff id, entered from the bill. Only active MANUAL tariffs of the apartment (else 400); a missing one → MISSING_MANUAL_AMOUNT
+             * @example {
+             *       "3f1c2b4e-8d7a-4c1e-9b2a-5e6f7a8b9c0d": 12300
+             *     }
+             */
+            manualAmounts?: {
+                [key: string]: number;
+            };
             /**
              * @description Integer kopiyky: the preview total the user agreed to
              * @example 1586400
@@ -4058,7 +4083,7 @@ export interface operations {
                     "application/json": components["schemas"]["TariffDetailResponseDto"];
                 };
             };
-            /** @description Invalid body: utilities don't fit the kind, DAY/NIGHT price on a non-electricity tariff, duplicate prices, no TOTAL price from the earliest month */
+            /** @description Invalid body: utilities don't fit the kind, DAY/NIGHT price on a non-electricity tariff, duplicate prices, no TOTAL price from the earliest month, prices on a MANUAL tariff */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -4178,7 +4203,7 @@ export interface operations {
                     "application/json": components["schemas"]["TariffDetailResponseDto"];
                 };
             };
-            /** @description Invalid body, or new kind/utilities don't fit the prices */
+            /** @description Invalid body, new kind/utilities don't fit the prices, or a kind change to/from MANUAL */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -4299,7 +4324,7 @@ export interface operations {
                     "application/json": components["schemas"]["TariffPriceResponseDto"];
                 };
             };
-            /** @description Invalid body, DAY/NIGHT on a non-electricity tariff, or earlier than every TOTAL price */
+            /** @description Invalid body, a MANUAL tariff, DAY/NIGHT on a non-electricity tariff, or earlier than every TOTAL price */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -4632,7 +4657,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApartmentTariffResponseDto"];
                 };
             };
-            /** @description Invalid body, effectiveFrom outside the attachment, DAY/NIGHT on a non-electricity tariff, no TOTAL price */
+            /** @description Invalid body, a MANUAL tariff, effectiveFrom outside the attachment, DAY/NIGHT on a non-electricity tariff, no TOTAL price */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -4663,18 +4688,20 @@ export interface operations {
     };
     ApartmentStatementsController_preview: {
         parameters: {
-            query: {
-                period: string;
-            };
+            query?: never;
             header?: never;
             path: {
                 apartmentId: string;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatementPreviewDto"];
+            };
+        };
         responses: {
-            /** @description Calculated on the fly from confirmed readings; nothing is saved */
+            /** @description Calculated on the fly from confirmed readings and the manual amounts; nothing is saved */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -4683,7 +4710,7 @@ export interface operations {
                     "application/json": components["schemas"]["StatementPreviewResponseDto"];
                 };
             };
-            /** @description Missing or invalid period */
+            /** @description Invalid body, or a manual amount for a tariff that is not an active MANUAL tariff of the apartment */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -4775,7 +4802,7 @@ export interface operations {
                     "application/json": components["schemas"]["StatementResponseDto"];
                 };
             };
-            /** @description Invalid body */
+            /** @description Invalid body, or a manual amount for a tariff that is not an active MANUAL tariff of the apartment */
             400: {
                 headers: {
                     [name: string]: unknown;

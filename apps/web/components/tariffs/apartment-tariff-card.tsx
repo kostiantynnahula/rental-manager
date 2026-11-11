@@ -109,12 +109,15 @@ export function ApartmentTariffCard({ apartment, attachment }: ApartmentTariffCa
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64">
-          <MeterActionItem
-            icon={<PencilLine />}
-            label="Змінити ціну"
-            disabledReason={priceReason}
-            onSelect={() => setPanel('price')}
-          />
+          {/* MANUAL has no price: its amount is entered in each statement. */}
+          {tariff.kind !== 'MANUAL' && (
+            <MeterActionItem
+              icon={<PencilLine />}
+              label="Змінити ціну"
+              disabledReason={priceReason}
+              onSelect={() => setPanel('price')}
+            />
+          )}
           {attachment.isCurrent ? (
             <MeterActionItem
               icon={<PlugZap />}

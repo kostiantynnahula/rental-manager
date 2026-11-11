@@ -29,7 +29,12 @@ import {
   type TariffKind,
 } from '@/lib/api/queries/tariffs';
 import { ApartmentsMultiSelect } from './apartments-multi-select';
-import { IN_USE_REASON, TARIFF_KIND_HINTS, TARIFF_KIND_LABELS } from './constants/labels';
+import {
+  IN_USE_REASON,
+  MANUAL_KIND_LOCKED,
+  TARIFF_KIND_HINTS,
+  TARIFF_KIND_LABELS,
+} from './constants/labels';
 import {
   APARTMENT_IS_ARCHIVED,
   ATTACHED,
@@ -45,7 +50,7 @@ import { tariffFormDefaults } from './helpers/tariff-form-defaults';
 import { tariffFormSchema, type TariffFormValues } from './helpers/tariff-form-schema';
 import { PriceInput } from './price-input';
 
-const KINDS: TariffKind[] = ['METERED', 'FIXED'];
+const KINDS: TariffKind[] = ['METERED', 'FIXED', 'MANUAL'];
 
 const SERVER_FIELD_ERRORS: FieldErrorRule<TariffFormValues>[] = [
   {
@@ -92,6 +97,10 @@ export function TariffForm({ tariff, apartmentId }: TariffFormProps) {
   const schema = useMemo(() => tariffFormSchema(!tariff), [tariff]);
   // Attached to an apartment: statements bill by kind/utilities, so they're fixed (the API returns 409).
   const billingLocked = tariff?.inUse ?? false;
+  // Editing: the API never changes a kind to or from MANUAL (prices would appear or vanish).
+  const manualLocked = Boolean(tariff) && !billingLocked;
+  const isKindDisabled = (value: TariffKind) =>
+    manualLocked && tariff !== undefined && (value === 'MANUAL') !== (tariff.kind === 'MANUAL');
   const apartmentTab = !tariff && apartmentId ? `/apartments/${apartmentId}?tab=tariffs` : null;
 
   const form = useForm<TariffFormValues>({
@@ -178,15 +187,19 @@ export function TariffForm({ tariff, apartmentId }: TariffFormProps) {
                 value={field.value}
                 onValueChange={(value) => field.onChange(value as TariffKind)}
                 disabled={billingLocked}
-                className="grid grid-cols-2 gap-2"
+                className="grid grid-cols-1 gap-2 sm:grid-cols-3"
               >
                 {KINDS.map((value) => (
                   <label
                     key={value}
                     htmlFor={`tariff-kind-${value}`}
-                    className="flex min-h-11 items-center gap-3 rounded-lg border px-3 py-2 has-data-checked:border-primary"
+                    className="flex min-h-11 items-center gap-3 rounded-lg border px-3 py-2 has-data-checked:border-primary has-disabled:opacity-60"
                   >
-                    <RadioGroupItem id={`tariff-kind-${value}`} value={value} />
+                    <RadioGroupItem
+                      id={`tariff-kind-${value}`}
+                      value={value}
+                      disabled={isKindDisabled(value)}
+                    />
                     <span className="flex flex-col">
                       <span>{TARIFF_KIND_LABELS[value]}</span>
                       <span className="text-xs text-muted-foreground">
@@ -196,10 +209,12 @@ export function TariffForm({ tariff, apartmentId }: TariffFormProps) {
                   </label>
                 ))}
               </RadioGroup>
-              {billingLocked && (
+              {billingLocked ? (
                 <FieldDescription>
                   {IN_USE_REASON} — щоб змінити тип чи послугу, створіть новий тариф
                 </FieldDescription>
+              ) : (
+                manualLocked && <FieldDescription>{MANUAL_KIND_LOCKED}</FieldDescription>
               )}
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
             </Field>
@@ -237,7 +252,29 @@ export function TariffForm({ tariff, apartmentId }: TariffFormProps) {
           />
         )}
 
-        {!tariff && (
+        {!tariff && kind === 'MANUAL' && (
+          <Controller
+            name="apartmentIds"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor="tariff-apartments">Квартири</FieldLabel>
+                <ApartmentsMultiSelect
+                  id="tariff-apartments"
+                  value={field.value}
+                  onChange={field.onChange}
+                />
+                <FieldDescription>
+                  Ціни немає: суму вводять у рахунку за кожен місяць. Підключаться з поточного
+                  місяця, пізніше — на вкладці «Тарифи» квартири
+                </FieldDescription>
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
+        )}
+
+        {!tariff && kind !== 'MANUAL' && (
           <FieldSet>
             <FieldLegend>Початкова ціна</FieldLegend>
             <FieldDescription>

@@ -12,6 +12,7 @@ export const TARIFF_KIND_FILTERS: { value: TariffKind | ''; label: string }[] = 
   { value: '', label: 'Усі типи' },
   { value: 'METERED', label: 'За лічильником' },
   { value: 'FIXED', label: 'Фіксовані' },
+  { value: 'MANUAL', label: 'Ручні суми' },
 ];
 
 export const TARIFF_PAGE_SIZES = [10, 20, 50] as const satisfies readonly TariffPageSize[];
