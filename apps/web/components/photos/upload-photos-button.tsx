@@ -9,7 +9,8 @@ import { PHOTO_ACCEPT } from './constants/upload';
 import { uploadErrorMessage } from './helpers/upload-error-message';
 
 // A plain file input behind a button: on a phone it opens the gallery, several photos at once.
-export function UploadPhotosButton({ apartmentId }: { apartmentId: string }) {
+// apartmentId null = upload to «Вхідні» (no apartment yet).
+export function UploadPhotosButton({ apartmentId }: { apartmentId: string | null }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const upload = useUploadPhotos(apartmentId);
 

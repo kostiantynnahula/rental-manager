@@ -20,7 +20,9 @@ export function uploadErrorMessage(error: unknown): string {
     case 413:
       return `Файл завеликий — не більше ${PHOTO_MAX_FILE_SIZE_MB} МБ`;
     case 409:
-      return 'Це фото вже завантажене для іншої квартири';
+      return text.includes('inbox')
+        ? 'Це фото вже є у «Вхідних» — призначте квартиру там'
+        : 'Це фото вже завантажене для іншої квартири';
   }
   return apiErrorMessage(error);
 }

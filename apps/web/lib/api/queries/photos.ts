@@ -19,6 +19,8 @@ export const photoKeys = {
   lists: () => [...photoKeys.all, 'list'] as const,
   list: (apartmentId: string, unassigned: boolean) =>
     [...photoKeys.lists(), apartmentId, { unassigned }] as const,
+  // Under lists(): every list invalidation (upload, delete, readings) refreshes the inbox too.
+  inbox: () => [...photoKeys.lists(), 'inbox'] as const,
   details: () => [...photoKeys.all, 'detail'] as const,
   detail: (id: string) => [...photoKeys.details(), id] as const,
 };
@@ -49,6 +51,17 @@ export function useFetchUnassignedPhotos(apartmentId: string) {
   return () => queryClient.fetchQuery({ ...photoListOptions(apartmentId, true), staleTime: 0 });
 }
 
+// «Вхідні»: photos without an apartment (newest first); polls while one is PENDING. A photo the worker matched by
+// serial gets an apartment and leaves this list on the next poll.
+export function useInboxPhotos() {
+  return useQuery({
+    queryKey: photoKeys.inbox(),
+    queryFn: async (): Promise<Photo[]> =>
+      unwrap(await api.GET('/photos', { params: { query: { inbox: 'true' } } })),
+    refetchInterval: (query) => pollWhilePending(query.state.data ?? []),
+  });
+}
+
 export function usePhoto(id: string, { enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: photoKeys.detail(id),
@@ -59,24 +72,45 @@ export function usePhoto(id: string, { enabled = true }: { enabled?: boolean } =
   });
 }
 
-export function useUploadPhotos(apartmentId: string) {
+// apartmentId null = upload to the inbox (POST /photos).
+export function useUploadPhotos(apartmentId: string | null) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (files: File[]): Promise<PhotoUploadResult[]> =>
-      unwrap(
-        await api.POST('/apartments/{apartmentId}/photos', {
-          params: { path: { apartmentId } },
-          // The schema types binary parts as string; the serializer below sends the real Files as multipart.
-          body: { files: files as unknown as string[] },
-          // FormData → openapi-fetch leaves Content-Type to the browser (multipart boundary).
-          bodySerializer: () => {
-            const formData = new FormData();
-            for (const file of files) formData.append('files', file);
-            return formData;
-          },
-        }),
-      ),
+    mutationFn: async (files: File[]): Promise<PhotoUploadResult[]> => {
+      const multipart = {
+        // The schema types binary parts as string; the serializer below sends the real Files as multipart.
+        body: { files: files as unknown as string[] },
+        // FormData → openapi-fetch leaves Content-Type to the browser (multipart boundary).
+        bodySerializer: () => {
+          const formData = new FormData();
+          for (const file of files) formData.append('files', file);
+          return formData;
+        },
+      };
+      return unwrap(
+        apartmentId === null
+          ? await api.POST('/photos', multipart)
+          : await api.POST('/apartments/{apartmentId}/photos', {
+              params: { path: { apartmentId } },
+              ...multipart,
+            }),
+      );
+    },
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: photoKeys.lists() }),
+  });
+}
+
+// A human sorts a photo (e.g. an inbox photo the worker couldn't match) into an apartment; the API re-parses it.
+export function useAssignPhotoApartment(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (apartmentId: string): Promise<PhotoDetail> =>
+      unwrap(await api.PATCH('/photos/{id}', { params: { path: { id } }, body: { apartmentId } })),
+    onSuccess: (photo) => {
+      // The review screen checks photo.apartmentId: a cached inbox version (null) would show «Фото не знайдено».
+      queryClient.setQueryData(photoKeys.detail(id), photo);
+      void queryClient.invalidateQueries({ queryKey: photoKeys.lists() });
+    },
   });
 }
 
