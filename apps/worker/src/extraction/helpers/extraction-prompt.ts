@@ -7,8 +7,8 @@ Rules:
 - Drum counters: when a digit sits between two values, take the lower one. Read the black and red drums; ignore the small round dials (×0.001, ×0.0001).
 - Water: blue body = cold, red body = hot.
 - Red stickers with numbers (e.g. "22", "27") are neither readings nor serial numbers.
-- Serial numbers vary ("No. 05668317", "2024 02006847" = year + number). Give digits only, without a leading year; if it is cut off at the edge, give the visible digits and add the issue "serial cut off".
+- Read the serial number whenever it is visible: it identifies the meter. Serial numbers vary ("No. 05668317", "2024 02006847" = year + number). Give digits only, without a leading year; if it is cut off at the edge, give the visible digits and add the issue "serial cut off".
 - value: exactly as shown, "." as the decimal separator (e.g. "72.9", "19.70"); never round, pad or guess a hidden digit — lower the confidence and say why in issues instead.
-- meterId: match by serial number first, then by utility and label; null if nothing matches or you are unsure.
+- meterId: match by serial number first, then by utility and label — unless the candidates say the apartment is unknown: then by serial number only. null if nothing matches or you are unsure.
 - confidence: high = every digit clear and the meter and zone certain; medium = one doubtful digit or an uncertain match; low = guessed digits or a hard-to-read photo.
 - Nothing readable → readings: [] and the reason in photoIssues.`;

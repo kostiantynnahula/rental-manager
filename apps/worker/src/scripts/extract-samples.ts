@@ -1,5 +1,6 @@
 // Manual check of the photo extraction on local sample photos — no API or DB writes, but every photo is one paid
-// model call. Usage (from the repo root): pnpm --filter worker extract:samples -- <dir>
+// model call. Usage (from the repo root): pnpm --filter worker extract:samples -- <dir> [--inbox]
+// --inbox: read the photos as inbox photos (apartment unknown → the prompt asks to match by serial only).
 // <dir>: the photos (.jpg/.jpeg/.png/.webp), meters.json (ExtractionCandidate[]) and optional expected.json
 // (SampleExpectation[]); see apps/worker/samples.example/. Samples hold real meters — keep them out of git (samples/).
 import { readdir, readFile } from 'node:fs/promises';
@@ -46,8 +47,10 @@ function check(expected: SampleExpectation, readings: ExtractedReading[]): strin
 }
 
 async function main(): Promise<void> {
-  const dir = process.argv.slice(2).find((a) => a !== '--');
-  if (!dir) throw new Error('Usage: pnpm --filter worker extract:samples -- <dir>');
+  const args = process.argv.slice(2);
+  const inbox = args.includes('--inbox');
+  const dir = args.find((a) => !a.startsWith('--'));
+  if (!dir) throw new Error('Usage: pnpm --filter worker extract:samples -- <dir> [--inbox]');
   const meters = await readJson<ExtractionCandidate[]>(join(dir, 'meters.json'));
   const expected = await readJson<SampleExpectation[]>(join(dir, 'expected.json'), []);
   const files = (await readdir(dir))
@@ -65,7 +68,11 @@ async function main(): Promise<void> {
     for (const file of files) {
       console.log(`\n${file}`);
       try {
-        const result = await extractor.extract({ image: await readFile(join(dir, file)), meters });
+        const result = await extractor.extract({
+          image: await readFile(join(dir, file)),
+          meters,
+          inbox,
+        });
         result.readings.forEach((r) => console.log(formatReading(r, meters)));
         if (result.readings.length === 0) console.log('  (no readings)');
         if (result.photoIssues.length > 0) console.log(`  photo: ${result.photoIssues.join('; ')}`);

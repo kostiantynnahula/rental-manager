@@ -55,7 +55,7 @@ pnpm workspaces monorepo:
 - `apps/web` — Next.js
 - `apps/worker` — photo parsing (see `apps/worker/CLAUDE.md`). NestJS standalone consumer of BullMQ jobs (Redis)
   that the API enqueues on photo upload; authenticates to the API with an API key. Never touches the DB: it reads
-  photos, extracts the values (LangChain.js + Claude vision, `src/extraction/`), matches them to meters and saves
+  photos, extracts the values (LangChain.js + Claude vision, `src/extraction/`), matches them to meters (inbox photos: by serial across all active meters) and saves
   them as DRAFT readings over HTTP (`draft-values`).
 - The API is the only way to data and business rules: every other app (web, worker, later a Telegram bot and an
   MCP server) is an HTTP client of it. No second Prisma client or raw SQL outside `apps/api`.

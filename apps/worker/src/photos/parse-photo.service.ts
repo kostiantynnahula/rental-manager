@@ -7,8 +7,10 @@ import { ExtractionNotConfiguredError } from '../extraction/errors/extraction-no
 import { PhotoExtractorService } from '../extraction/photo-extractor.service.js';
 import { describeMeter } from './helpers/describe-meter.js';
 import { draftNote } from './helpers/draft-note.js';
+import { inboxSummary } from './helpers/inbox-summary.js';
 import { kyivDate } from './helpers/kyiv-date.js';
 import { matchReadings } from './helpers/match-readings.js';
+import { oneApartment } from './helpers/one-apartment.js';
 import { plausibilityWarnings } from './helpers/plausibility-warnings.js';
 import { ParseResultReporter } from './parse-result-reporter.service.js';
 
@@ -16,7 +18,8 @@ type Meter = components['schemas']['MeterResponseDto'];
 type DraftValue = components['schemas']['CreateDraftValueDto'];
 
 // One parse-photo job: photo + the apartment's installed meters → extraction → one draft value per matched zone
-// (POST /meters/{meterId}/draft-values; the API picks the draft). Unmatched readings create nothing — only a log
+// (POST /meters/{meterId}/draft-values; the API picks the draft). Inbox photo (no apartment): candidates = all
+// active meters, matched by serial only, all in one apartment; the API assigns the photo on the first draft value. Unmatched readings create nothing — only a log
 // line. Never logs the photo bytes, the prompt or the API key.
 // A retry is safe: the same photo + zone again is a no-op on the API side (but it repeats the paid model call).
 @Injectable()
@@ -38,24 +41,14 @@ export class ParsePhotoService {
     }
 
     const { apartmentId, mimeType, createdAt } = photo.data;
-    // Inbox photo (no apartment yet): nothing to match against until inbox mode (#57) or an apartment is assigned.
-    if (apartmentId === null) {
-      this.logger.warn(`photo ${photoId}: inbox photo (no apartment), not parsed`);
-      await this.results.report(photoId, 'NOT_MATCHED', 'inbox photo: no apartment');
-      return;
-    }
+    const inbox = apartmentId === null;
+    const where = inbox ? 'inbox' : `apartment ${apartmentId}`;
 
-    const meters = await this.api.GET('/apartments/{apartmentId}/meters', {
-      params: { path: { apartmentId }, query: {} },
-    });
-    if (!meters.data) {
-      throw apiError(`GET /apartments/${apartmentId}/meters`, meters.response, meters.error);
-    }
-    if (meters.data.length === 0) {
-      this.logger.warn(
-        `photo ${photoId} (apartment ${apartmentId}): no installed meters, nothing to read`,
-      );
-      await this.results.report(photoId, 'NOT_MATCHED', 'no installed meters');
+    const meters = await this.candidates(apartmentId);
+    if (meters.length === 0) {
+      const why = inbox ? 'no active meters' : 'no installed meters';
+      this.logger.warn(`photo ${photoId} (${where}): ${why}, nothing to read`);
+      await this.results.report(photoId, 'NOT_MATCHED', why);
       return;
     }
 
@@ -66,12 +59,12 @@ export class ParsePhotoService {
     if (!file.data) throw apiError(`GET /photos/${photoId}/file`, file.response, file.error);
 
     this.logger.log(
-      `photo ${photoId} (apartment ${apartmentId}): ${file.data.byteLength} bytes ${mimeType}; ` +
-        `${meters.data.length} meters:` +
-        meters.data.map((m) => `\n  - ${describeMeter(m)}`).join(''),
+      `photo ${photoId} (${where}): ${file.data.byteLength} bytes ${mimeType}; ` +
+        `${meters.length} meters:` +
+        meters.map((m) => `\n  - ${describeMeter(m)}`).join(''),
     );
 
-    const extraction = await this.extract(Buffer.from(file.data), meters.data);
+    const extraction = await this.extract(Buffer.from(file.data), meters, inbox);
     if (extraction.photoIssues.length > 0) {
       this.logger.warn(`photo ${photoId}: ${extraction.photoIssues.join('; ')}`);
     }
@@ -82,7 +75,9 @@ export class ParsePhotoService {
 
     const lines: string[] = [];
     let posted = 0;
-    for (const match of matchReadings(extraction.readings, meters.data)) {
+    const matched = matchReadings(extraction.readings, meters, { serialOnly: inbox });
+    const matches = inbox ? oneApartment(matched) : matched;
+    for (const match of matches) {
       const r = match.reading;
       const what = `${r.utility} ${r.zone}=${r.value} (${r.confidence})`;
       if (!match.meter) {
@@ -114,7 +109,8 @@ export class ParsePhotoService {
     // Not matched: the same lines as the log (why each reading was skipped / refused), or why the photo is unreadable.
     if (posted > 0) await this.results.report(photoId, 'PARSED');
     else {
-      const why = [...extraction.photoIssues, ...lines];
+      const summary = inbox ? inboxSummary(matches) : null;
+      const why = [...(summary ? [summary] : []), ...extraction.photoIssues, ...lines];
       await this.results.report(
         photoId,
         'NOT_MATCHED',
@@ -123,9 +119,23 @@ export class ParsePhotoService {
     }
   }
 
-  private async extract(image: Buffer, meters: Meter[]) {
+  // The apartment's installed meters, or every active meter (of active apartments) for an inbox photo.
+  private async candidates(apartmentId: string | null): Promise<Meter[]> {
+    if (apartmentId === null) {
+      const res = await this.api.GET('/meters', { params: { query: { active: 'true' } } });
+      if (!res.data) throw apiError('GET /meters?active=true', res.response, res.error);
+      return res.data;
+    }
+    const res = await this.api.GET('/apartments/{apartmentId}/meters', {
+      params: { path: { apartmentId }, query: {} },
+    });
+    if (!res.data) throw apiError(`GET /apartments/${apartmentId}/meters`, res.response, res.error);
+    return res.data;
+  }
+
+  private async extract(image: Buffer, meters: Meter[], inbox: boolean) {
     try {
-      return await this.extractor.extract({ image, meters });
+      return await this.extractor.extract({ image, meters, inbox });
     } catch (e) {
       // Config problems won't fix themselves — and every retry would download the photo again.
       if (e instanceof ExtractionNotConfiguredError) throw new UnrecoverableError(e.message);
