@@ -278,6 +278,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/meters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description API key scope: meters:read */
+        get: operations["MetersController_listActive"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/meters/{id}": {
         parameters: {
             query?: never;
@@ -469,7 +486,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description API key scope: readings:create-draft (keys only). Adds the zone to the key user's open DRAFT of the meter and period (never a human draft), or creates one. An existing draft keeps its readingDate; note is appended. Same zone from the same photo → 200, no change (job retry). */
+        /** @description API key scope: readings:create-draft (keys only). Adds the zone to the key user's open DRAFT of the meter and period (never a human draft), or creates one. An existing draft keeps its readingDate; note is appended. Same zone from the same photo → 200, no change (job retry). An inbox photo (no apartment) gets the meter's apartment. */
         post: operations["MeterDraftValuesController_add"];
         delete?: never;
         options?: never;
@@ -2970,6 +2987,56 @@ export interface operations {
             };
         };
     };
+    MetersController_listActive: {
+        parameters: {
+            query: {
+                /** @description true = installed, not removed meters of active (not archived) apartments */
+                active: "true";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Active meters of active apartments, each with its last confirmed values */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeterResponseDto"][];
+                };
+            };
+            /** @description active=true missing */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without meters:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Meter not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     MetersController_get: {
         parameters: {
             query?: never;
@@ -3781,7 +3848,7 @@ export interface operations {
                     "application/json": components["schemas"]["ReadingResponseDto"];
                 };
             };
-            /** @description Zone not in the meter's scheme; photo not found or of another apartment */
+            /** @description Zone not in the meter's scheme; photo not found */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3808,7 +3875,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Meter removed; zone already filled from another photo (body has readingId) */
+            /** @description Meter removed; photo of another apartment; zone already filled from another photo (body has readingId) */
             409: {
                 headers: {
                     [name: string]: unknown;

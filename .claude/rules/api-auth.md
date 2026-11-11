@@ -30,7 +30,8 @@ paths:
   - Humans ignore `@Scopes`; `@Public()` routes are open to keys too.
   - `req.user = { id, apiKeyId }` for keys (`apiKeyId` absent for humans). `lastUsedAt` is updated at most once a minute.
   - Service routes also get `@ApiBearerAuth()` and `@ApiOperation({ description: 'API key scope: …' })`. Scope → routes:
-    `photos:read` → `GET /photos/:id`, `/file`, `/thumbnail`; `meters:read` → `GET /apartments/:apartmentId/meters`;
+    `photos:read` → `GET /photos/:id`, `/file`, `/thumbnail`; `meters:read` → `GET /apartments/:apartmentId/meters`, `GET /meters?active=true` (all active meters of
+    active apartments — for inbox photos);
     `readings:create-draft` → `POST /meters/:meterId/draft-values` (see `api-readings.md`);
     `photos:parse-result` → `PUT /photos/:id/parse-result` (see `api-photos.md`).
   - Never log the `Authorization` header or a key — only its prefix.
