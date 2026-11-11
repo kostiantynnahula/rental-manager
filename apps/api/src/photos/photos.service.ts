@@ -136,6 +136,11 @@ export class PhotosService {
   async findForApartmentOrThrow(id: string, apartmentId: string): Promise<Photo> {
     const photo = await this.prisma.photo.findUnique({ where: { id } });
     if (!photo) throw new BadRequestException('photoId: photo not found');
+    if (photo.apartmentId === null) {
+      throw new BadRequestException(
+        'photoId: the photo is in the inbox — assign an apartment first',
+      );
+    }
     if (photo.apartmentId !== apartmentId) {
       throw new BadRequestException('photoId: the photo belongs to another apartment');
     }
