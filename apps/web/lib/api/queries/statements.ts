@@ -39,13 +39,15 @@ async function fetchStatements(
 
 // staleTime 0: readings or tariffs may have changed elsewhere, so coming back to the page always refreshes it.
 // No keepPreviousData: the previous month's total must never be on screen, ready to be issued, for a new month.
+// A POST (the body will carry manualAmounts, #50), but it writes nothing: still a query.
 export function useStatementPreview(apartmentId: string, period: string) {
   return useQuery({
     queryKey: statementKeys.preview(apartmentId, period),
     queryFn: async (): Promise<StatementPreview> =>
       unwrap(
-        await api.GET('/apartments/{apartmentId}/statements/preview', {
-          params: { path: { apartmentId }, query: { period } },
+        await api.POST('/apartments/{apartmentId}/statements/preview', {
+          params: { path: { apartmentId } },
+          body: { period },
         }),
       ),
     staleTime: 0,

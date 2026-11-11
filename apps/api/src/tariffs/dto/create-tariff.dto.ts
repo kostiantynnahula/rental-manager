@@ -2,7 +2,6 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
-  ArrayMinSize,
   ArrayUnique,
   IsArray,
   IsEnum,
@@ -34,7 +33,7 @@ export class CreateTariffDto {
     enumName: 'UtilityType',
     isArray: true,
     description:
-      'Default []. METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED: empty',
+      'Default []. METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED, MANUAL: empty',
   })
   @IsOptional()
   @IsArray()
@@ -51,10 +50,10 @@ export class CreateTariffDto {
 
   @ApiProperty({
     type: [TariffPriceInputDto],
-    description: 'Initial price history; must include a TOTAL price from the earliest month',
+    description:
+      'Initial price history; must include a TOTAL price from the earliest month. MANUAL: empty (the amount is entered per statement)',
   })
   @IsArray()
-  @ArrayMinSize(1)
   @ArrayMaxSize(50)
   @ValidateNested({ each: true })
   @Type(() => TariffPriceInputDto)
@@ -63,7 +62,8 @@ export class CreateTariffDto {
   @ApiPropertyOptional({
     type: [String],
     format: 'uuid',
-    description: 'Active apartments to attach right away, from the earliest price month on',
+    description:
+      'Active apartments to attach right away, from the earliest price month on (MANUAL: from the current month)',
   })
   @IsOptional()
   @IsArray()

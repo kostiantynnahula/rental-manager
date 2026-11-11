@@ -13,6 +13,8 @@ paths:
 - The preview and "already issued?" (`useIssuedStatement`, the list with `?period=`) have `staleTime: 0`: entering a
   reading or changing a tariff elsewhere shows up on return (window focus or in-app navigation) without cross-feature
   invalidation. The preview has no `keepPreviousData`: another month's total must never be issuable.
+- The preview is a `POST .../statements/preview { period }` (writes nothing; a POST because #50 adds the
+  `manualAmounts` map) — still a `useQuery`.
 - Issuing sends `expectedTotal`; the API is the judge. 409 with `preview` in the body = total changed, 409 without =
   already issued (`isStatementTotalChanged`). Mutations invalidate in `onSettled`, so failures refresh the screen too.
 - Saved statements are snapshots: never recompute them on the client. Correcting = cancel + "Виставити заново".

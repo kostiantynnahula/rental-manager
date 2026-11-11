@@ -27,7 +27,7 @@ const CONSTRAINT_MESSAGES: Record<string, string> = {
   photos_sha256_hex: 'sha256 must be 64 lowercase hex characters',
   photos_dimensions_positive: 'Photo width and height must be positive',
   tariffs_utilities_match_kind:
-    'A METERED tariff needs at least one utility; a FIXED tariff must have none',
+    'A METERED tariff needs at least one utility; FIXED and MANUAL tariffs must have none',
   tariff_prices_effective_first_of_month: 'effectiveFrom must be the first day of a month',
   tariff_prices_non_negative: 'Price must not be negative',
   tariff_prices_tariffId_effectiveFrom_zone_key:
@@ -41,7 +41,8 @@ const CONSTRAINT_MESSAGES: Record<string, string> = {
     'A statement for this period is already issued — cancel it first',
   statements_cancel_consistency: 'A cancelled statement must record who cancelled it and when',
   statements_total_non_negative: 'Statement total must not be negative',
-  statement_lines_tariff_by_type: 'Only a rent line has no tariff',
+  statement_lines_tariff_by_type:
+    'Only a rent line has no tariff; only a manual line has no quantity and unit price',
   statement_lines_non_negative: 'Statement line values must not be negative',
 };
 

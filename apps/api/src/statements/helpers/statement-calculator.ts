@@ -207,14 +207,46 @@ function unusualConsumption(
   );
 }
 
+// A MANUAL tariff bills the amount entered from the bill; without one → no line + a warning (a human decides).
+function manualLine(
+  tariff: Tariff,
+  manualAmounts: Record<string, number>,
+  warnings: StatementWarning[],
+): StatementLine | undefined {
+  const amount = manualAmounts[tariff.id];
+  if (amount === undefined) {
+    warnings.push({ code: 'MISSING_MANUAL_AMOUNT', tariffId: tariff.id, tariffName: tariff.name });
+    return undefined;
+  }
+  return { type: 'MANUAL', tariffId: tariff.id, name: tariff.name, amount };
+}
+
+// The tariffs attached to the apartment for the period.
+function activeTariffs(attachments: StatementAttachment[], period: Date): Tariff[] {
+  return attachments
+    .filter((a) => a.activeFrom <= period && (a.activeTo === null || a.activeTo >= period))
+    .map((a) => a.tariff);
+}
+
+// A manual amount must belong to an active MANUAL tariff of the apartment; the service answers 400.
+export function manualAmountsProblem(input: StatementInput): string | undefined {
+  const manual = new Set(
+    activeTariffs(input.attachments, input.period)
+      .filter((t) => t.kind === TariffKind.MANUAL)
+      .map((t) => t.id),
+  );
+  const unknown = Object.keys(input.manualAmounts ?? {}).filter((id) => !manual.has(id));
+  return unknown.length > 0
+    ? `Manual amounts for tariffs that are not active MANUAL tariffs of the apartment: ${unknown.join(', ')}`
+    : undefined;
+}
+
 // The monthly calculation as a pure function: no database, nothing written. Lines: rent, then metered by utility
-// and zone, then fixed by name.
+// and zone, then fixed by name, then manual by name.
 export function calculateStatement(input: StatementInput): StatementPreview {
   const { period } = input;
   const warnings: StatementWarning[] = [];
-  const tariffs = input.attachments
-    .filter((a) => a.activeFrom <= period && (a.activeTo === null || a.activeTo >= period))
-    .map((a) => a.tariff);
+  const tariffs = activeTariffs(input.attachments, period);
   const activeMeters = input.meters.filter(
     (m) => m.installedAt <= periodEnd(period) && (m.removedAt === null || m.removedAt >= period),
   );
@@ -225,11 +257,13 @@ export function calculateStatement(input: StatementInput): StatementPreview {
       (a, b) => firstUtilityIndex(a.utilities) - firstUtilityIndex(b.utilities) || byName(a, b),
     );
   const fixed = tariffs.filter((t) => t.kind === TariffKind.FIXED).sort(byName);
+  const manual = tariffs.filter((t) => t.kind === TariffKind.MANUAL).sort(byName);
 
   const lines = [
     ...rentLines(leases, warnings),
     ...metered.flatMap((t) => meteredLines(t, activeMeters, input, warnings)),
     ...fixed.flatMap((t) => fixedLine(t, period, warnings) ?? []),
+    ...manual.flatMap((t) => manualLine(t, input.manualAmounts ?? {}, warnings) ?? []),
   ];
   warnings.push(...missingReadings(metered, activeMeters, input));
   warnings.push(...unusualConsumption(metered, activeMeters, input, leases.length > 0));

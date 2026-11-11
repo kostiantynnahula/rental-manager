@@ -24,7 +24,7 @@ export function StatementLineRow({ line }: { line: StatementLine }) {
               <span className="font-normal text-muted-foreground"> · {ZONE_LABELS[line.zone]}</span>
             )}
           </p>
-          {line.type === 'METERED' && (
+          {line.type === 'METERED' && line.quantity && line.unitPrice && (
             <p className="text-sm text-muted-foreground tabular-nums">
               {formatMeterValueCompact(line.quantity)} {unit} × {formatPrice(line.unitPrice)} грн
             </p>

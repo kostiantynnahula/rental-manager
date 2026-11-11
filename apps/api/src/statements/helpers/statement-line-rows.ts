@@ -22,8 +22,9 @@ export function statementLineRows(
       name: line.name,
       utilities: line.utilities ?? [],
       zone: line.zone,
-      quantity: line.quantity,
-      unitPrice: line.unitPrice,
+      // MANUAL: amount only (CHECK statement_lines_tariff_by_type).
+      quantity: line.quantity ?? null,
+      unitPrice: line.unitPrice ?? null,
       amount: line.amount,
       details: details as unknown as Prisma.InputJsonArray | undefined,
     };

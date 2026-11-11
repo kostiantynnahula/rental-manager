@@ -6,6 +6,7 @@ export const STATEMENT_WARNING_CODES = [
   'NO_METERS',
   'MULTIPLE_LEASES',
   'UNUSUAL_CONSUMPTION',
+  'MISSING_MANUAL_AMOUNT',
 ] as const;
 export type StatementWarningCode = (typeof STATEMENT_WARNING_CODES)[number];
 

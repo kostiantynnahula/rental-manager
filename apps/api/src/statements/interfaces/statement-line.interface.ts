@@ -8,9 +8,10 @@ export interface StatementLine {
   name: string;
   zone?: Zone;
   utilities?: UtilityType[];
-  quantity: Prisma.Decimal;
-  // UAH.
-  unitPrice: Prisma.Decimal;
+  // Absent only for MANUAL (amount only).
+  quantity?: Prisma.Decimal;
+  // UAH. Absent only for MANUAL.
+  unitPrice?: Prisma.Decimal;
   // Integer kopiyky.
   amount: number;
   meters?: StatementLineMeter[];

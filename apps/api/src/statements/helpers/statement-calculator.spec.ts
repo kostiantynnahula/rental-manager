@@ -80,7 +80,7 @@ describe('calculateStatement', () => {
     );
     expect(result.lines).toHaveLength(1);
     expect(result.lines[0]).toMatchObject({ type: 'FIXED', name: 'Ліфт', amount: 12050 });
-    expect(result.lines[0].quantity.toFixed(3)).toBe('1.000');
+    expect(result.lines[0].quantity?.toFixed(3)).toBe('1.000');
     expect(result.total).toBe(12050);
     expect(result.warnings).toEqual([]);
   });
@@ -155,7 +155,7 @@ describe('calculateStatement', () => {
       }),
     );
     expect(result.lines).toHaveLength(1);
-    expect(result.lines[0].quantity.toFixed(3)).toBe('5.000');
+    expect(result.lines[0].quantity?.toFixed(3)).toBe('5.000');
     expect(result.lines[0].amount).toBe(5250);
     expect(result.lines[0].meters?.map((m) => m.consumption.toFixed(3))).toEqual([
       '3.000',
@@ -178,7 +178,7 @@ describe('calculateStatement', () => {
         ],
       }),
     );
-    expect(result.lines[0].quantity.toFixed(3)).toBe('15.000');
+    expect(result.lines[0].quantity?.toFixed(3)).toBe('15.000');
     expect(result.total).toBe(3000);
     expect(result.warnings).toEqual([]);
   });
@@ -268,7 +268,7 @@ describe('calculateStatement', () => {
     );
     expect(result.lines).toHaveLength(1);
     expect(result.lines[0]).toMatchObject({ type: 'RENT', amount: 150000 });
-    expect(result.lines[0].unitPrice.toFixed(4)).toBe('1500.0000');
+    expect(result.lines[0].unitPrice?.toFixed(4)).toBe('1500.0000');
     expect(result.warnings).toEqual([]);
   });
 

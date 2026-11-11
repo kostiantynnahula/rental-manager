@@ -5,10 +5,11 @@ import type { TariffPriceRow } from '../interfaces/tariff-price-row.interface.js
 // Pure tariff rules: each returns a problem message (undefined = fine); the service throws.
 
 // One METERED tariff bills one unit: kWh (ELECTRICITY), m³ of gas (GAS) or m³ of water
-// (COLD_WATER and/or HOT_WATER, e.g. drainage). FIXED bills a month, no utilities.
+// (COLD_WATER and/or HOT_WATER, e.g. drainage). FIXED bills a month and MANUAL an amount entered per statement:
+// no utilities.
 export function utilitiesProblem(kind: TariffKind, utilities: UtilityType[]): string | undefined {
-  if (kind === TariffKind.FIXED) {
-    return utilities.length ? 'A FIXED tariff must have no utilities' : undefined;
+  if (kind !== TariffKind.METERED) {
+    return utilities.length ? `A ${kind} tariff must have no utilities` : undefined;
   }
   if (!utilities.length) return 'A METERED tariff needs at least one utility';
   const single = utilities.find((u) => u === UtilityType.ELECTRICITY || u === UtilityType.GAS);
@@ -16,6 +17,11 @@ export function utilitiesProblem(kind: TariffKind, utilities: UtilityType[]): st
     return `${single} can't be combined with other utilities (different units)`;
   }
   return undefined;
+}
+
+// MANUAL has no price: its amount is entered when the statement is calculated.
+export function manualPricesProblem(kind: TariffKind, priceCount: number): string | undefined {
+  return kind === TariffKind.MANUAL && priceCount > 0 ? 'A MANUAL tariff has no prices' : undefined;
 }
 
 // DAY/NIGHT prices only make sense for two-zone electricity meters.

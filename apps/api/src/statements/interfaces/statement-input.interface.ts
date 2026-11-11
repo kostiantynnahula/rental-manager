@@ -12,4 +12,6 @@ export interface StatementInput {
   meters: StatementMeter[];
   leases: StatementLease[];
   consumption: StatementConsumptionRow[];
+  // Integer kopiyky per MANUAL tariff id, entered from the bill; absent = none entered.
+  manualAmounts?: Record<string, number>;
 }

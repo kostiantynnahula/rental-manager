@@ -64,7 +64,7 @@ export class TariffsController {
   @ApiCreatedResponse({ type: TariffDetailResponseDto })
   @ApiBadRequestResponse({
     description:
-      "Invalid body: utilities don't fit the kind, DAY/NIGHT price on a non-electricity tariff, duplicate prices, no TOTAL price from the earliest month",
+      "Invalid body: utilities don't fit the kind, DAY/NIGHT price on a non-electricity tariff, duplicate prices, no TOTAL price from the earliest month, prices on a MANUAL tariff",
   })
   @ApiConflictResponse({ description: 'Name already exists' })
   async create(@Body() dto: CreateTariffDto): Promise<TariffDetailResponseDto> {
@@ -75,7 +75,8 @@ export class TariffsController {
   @Patch(':id')
   @ApiOkResponse({ type: TariffDetailResponseDto })
   @ApiBadRequestResponse({
-    description: "Invalid body, or new kind/utilities don't fit the prices",
+    description:
+      "Invalid body, new kind/utilities don't fit the prices, or a kind change to/from MANUAL",
   })
   @ApiNotFoundResponse({ description: 'Tariff not found' })
   @ApiConflictResponse({
@@ -123,7 +124,7 @@ export class TariffsController {
   })
   @ApiBadRequestResponse({
     description:
-      'Invalid body, DAY/NIGHT on a non-electricity tariff, or earlier than every TOTAL price',
+      'Invalid body, a MANUAL tariff, DAY/NIGHT on a non-electricity tariff, or earlier than every TOTAL price',
   })
   @ApiNotFoundResponse({ description: 'Tariff not found' })
   @ApiConflictResponse({

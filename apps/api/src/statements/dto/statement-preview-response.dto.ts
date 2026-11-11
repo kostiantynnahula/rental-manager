@@ -13,7 +13,8 @@ export class StatementPreviewResponseDto {
 
   @ApiProperty({
     type: [StatementLineResponseDto],
-    description: 'Rent, then metered by utility and zone (DAY, NIGHT, TOTAL), then fixed by name',
+    description:
+      'Rent, then metered by utility and zone (DAY, NIGHT, TOTAL), then fixed by name, then manual by name',
   })
   lines: StatementLineResponseDto[];
 

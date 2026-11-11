@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
@@ -17,8 +27,8 @@ import { IssueStatementDto } from './dto/issue-statement.dto.js';
 import { ListStatementsQueryDto } from './dto/list-statements-query.dto.js';
 import { StatementHasWarningsResponseDto } from './dto/statement-has-warnings-response.dto.js';
 import { StatementPageResponseDto } from './dto/statement-page-response.dto.js';
-import { StatementPreviewQueryDto } from './dto/statement-preview-query.dto.js';
 import { StatementPreviewResponseDto } from './dto/statement-preview-response.dto.js';
+import { StatementPreviewDto } from './dto/statement-preview.dto.js';
 import { StatementResponseDto } from './dto/statement-response.dto.js';
 import { StatementTotalChangedResponseDto } from './dto/statement-total-changed-response.dto.js';
 import { StatementsService } from './statements.service.js';
@@ -30,20 +40,26 @@ import { StatementsService } from './statements.service.js';
 export class ApartmentStatementsController {
   constructor(private readonly statements: StatementsService) {}
 
-  @Get('preview')
+  // POST only because manualAmounts is a map; nothing is saved.
+  @Post('preview')
+  @HttpCode(HttpStatus.OK)
   @ApiOkResponse({
     type: StatementPreviewResponseDto,
-    description: 'Calculated on the fly from confirmed readings; nothing is saved',
+    description:
+      'Calculated on the fly from confirmed readings and the manual amounts; nothing is saved',
   })
-  @ApiBadRequestResponse({ description: 'Missing or invalid period' })
+  @ApiBadRequestResponse({
+    description:
+      'Invalid body, or a manual amount for a tariff that is not an active MANUAL tariff of the apartment',
+  })
   @ApiNotFoundResponse({ description: 'Apartment not found' })
   async preview(
     @Param('apartmentId', ParseUUIDPipe) apartmentId: string,
-    @Query() query: StatementPreviewQueryDto,
+    @Body() dto: StatementPreviewDto,
   ): Promise<StatementPreviewResponseDto> {
-    const period = parsePeriod(query.period);
+    const period = parsePeriod(dto.period);
     return StatementPreviewResponseDto.from(
-      await this.statements.preview(apartmentId, period),
+      await this.statements.preview(apartmentId, period, dto.manualAmounts ?? {}),
       period,
     );
   }
@@ -71,7 +87,10 @@ export class ApartmentStatementsController {
 
   @Post()
   @ApiCreatedResponse({ type: StatementResponseDto })
-  @ApiBadRequestResponse({ description: 'Invalid body' })
+  @ApiBadRequestResponse({
+    description:
+      'Invalid body, or a manual amount for a tariff that is not an active MANUAL tariff of the apartment',
+  })
   @ApiNotFoundResponse({ description: 'Apartment not found' })
   @ApiConflictResponse({
     type: StatementTotalChangedResponseDto,
@@ -90,6 +109,7 @@ export class ApartmentStatementsController {
       await this.statements.issue(
         apartmentId,
         parsePeriod(dto.period),
+        dto.manualAmounts ?? {},
         dto.expectedTotal,
         dto.acknowledgeWarnings ?? false,
         user.id,

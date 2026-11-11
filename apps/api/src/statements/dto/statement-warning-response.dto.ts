@@ -9,7 +9,7 @@ export class StatementWarningResponseDto {
     enum: STATEMENT_WARNING_CODES,
     enumName: 'StatementWarningCode',
     description:
-      'MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details. UNUSUAL_CONSUMPTION: meterId, utility, label, zone, consumption, limit, months, reason',
+      'MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details. UNUSUAL_CONSUMPTION: meterId, utility, label, zone, consumption, limit, months, reason. MISSING_MANUAL_AMOUNT: tariffId, tariffName',
   })
   code: StatementWarningCode;
 

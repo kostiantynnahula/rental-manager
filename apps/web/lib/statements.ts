@@ -31,6 +31,8 @@ export function statementWarningMessage(warning: StatementWarning): string {
       return 'У цьому місяці кілька договорів: оренду не включено';
     case 'UNUSUAL_CONSUMPTION':
       return unusualConsumptionMessage(warning);
+    case 'MISSING_MANUAL_AMOUNT':
+      return `Не введено суму для ${tariff}: рядок не включено`;
   }
 }
 
