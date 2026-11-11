@@ -47,6 +47,21 @@ export class MetersService {
     });
   }
 
+  // Every active meter across apartments: not removed, apartment not archived (installedAt is never in the future).
+  // The worker matches inbox photos against these by serial.
+  async listActive(): Promise<MeterWithLastReading[]> {
+    return this.prisma.meter.findMany({
+      where: { removedAt: null, apartment: { isActive: true } },
+      include: lastConfirmedReadingInclude,
+      orderBy: [
+        { apartmentId: 'asc' },
+        { utility: 'asc' },
+        { label: 'asc' },
+        { installedAt: 'desc' },
+      ],
+    });
+  }
+
   // Adds canDelete / canEditInitialValues for responses: one grouped query for any number of meters.
   async withFlags(meters: MeterWithLastReading[]): Promise<MeterWithFlags[]> {
     if (meters.length === 0) return [];

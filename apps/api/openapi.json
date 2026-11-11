@@ -1086,6 +1086,65 @@
         ]
       }
     },
+    "/meters": {
+      "get": {
+        "description": "API key scope: meters:read",
+        "operationId": "MetersController_listActive",
+        "parameters": [
+          {
+            "name": "active",
+            "required": true,
+            "in": "query",
+            "description": "true = installed, not removed meters of active (not archived) apartments",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active meters of active apartments, each with its last confirmed values",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MeterResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "active=true missing"
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": "API key without meters:read"
+          },
+          "404": {
+            "description": "Meter not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "meters"
+        ]
+      }
+    },
     "/meters/{id}": {
       "get": {
         "operationId": "MetersController_get",
@@ -1989,7 +2048,7 @@
     },
     "/meters/{meterId}/draft-values": {
       "post": {
-        "description": "API key scope: readings:create-draft (keys only). Adds the zone to the key user's open DRAFT of the meter and period (never a human draft), or creates one. An existing draft keeps its readingDate; note is appended. Same zone from the same photo → 200, no change (job retry).",
+        "description": "API key scope: readings:create-draft (keys only). Adds the zone to the key user's open DRAFT of the meter and period (never a human draft), or creates one. An existing draft keeps its readingDate; note is appended. Same zone from the same photo → 200, no change (job retry). An inbox photo (no apartment) gets the meter's apartment.",
         "operationId": "MeterDraftValuesController_add",
         "parameters": [
           {
@@ -2045,7 +2104,7 @@
             "description": "Meter not found"
           },
           "409": {
-            "description": "Meter removed; zone already filled from another photo (body has readingId)"
+            "description": "Meter removed; apartment archived; zone already filled from another photo (body has readingId)"
           }
         },
         "security": [

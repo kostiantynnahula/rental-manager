@@ -10,20 +10,26 @@ import {
   Patch,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCookieAuth,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { AuthUser } from '../auth/interfaces/auth-user.interface.js';
+import { Scopes } from '../auth/scopes.decorator.js';
 import { InitialValuesDto } from './dto/initial-values.dto.js';
+import { ListActiveMetersQueryDto } from './dto/list-active-meters-query.dto.js';
 import { MeterResponseDto } from './dto/meter-response.dto.js';
 import { RemoveMeterDto } from './dto/remove-meter.dto.js';
 import { ReplaceMeterResponseDto } from './dto/replace-meter-response.dto.js';
@@ -38,6 +44,22 @@ import { MetersService } from './meters.service.js';
 @Controller('meters')
 export class MetersController {
   constructor(private readonly meters: MetersService) {}
+
+  @Get()
+  // The worker matches inbox photos (no apartment yet) against every active meter by serial.
+  @Scopes('meters:read')
+  @ApiBearerAuth()
+  @ApiOperation({ description: 'API key scope: meters:read' })
+  @ApiForbiddenResponse({ description: 'API key without meters:read' })
+  @ApiBadRequestResponse({ description: 'active=true missing' })
+  @ApiOkResponse({
+    type: [MeterResponseDto],
+    description: 'Active meters of active apartments, each with its last confirmed values',
+  })
+  async listActive(@Query() _query: ListActiveMetersQueryDto): Promise<MeterResponseDto[]> {
+    const meters = await this.meters.listActive();
+    return (await this.meters.withFlags(meters)).map((m) => MeterResponseDto.from(m));
+  }
 
   @Get(':id')
   @ApiOkResponse({ type: MeterResponseDto })

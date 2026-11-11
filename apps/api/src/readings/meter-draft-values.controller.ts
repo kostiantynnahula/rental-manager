@@ -34,7 +34,8 @@ export class MeterDraftValuesController {
     description:
       "API key scope: readings:create-draft (keys only). Adds the zone to the key user's open DRAFT of the meter " +
       'and period (never a human draft), or creates one. An existing draft keeps its readingDate; note is appended. ' +
-      'Same zone from the same photo → 200, no change (job retry).',
+      'Same zone from the same photo → 200, no change (job retry). ' +
+      "An inbox photo (no apartment) gets the meter's apartment.",
   })
   @ApiCreatedResponse({ type: ReadingResponseDto, description: 'New DRAFT with this zone' })
   @ApiOkResponse({
@@ -46,7 +47,8 @@ export class MeterDraftValuesController {
   })
   @ApiForbiddenResponse({ description: 'Not an API key, or a key without readings:create-draft' })
   @ApiConflictResponse({
-    description: 'Meter removed; zone already filled from another photo (body has readingId)',
+    description:
+      'Meter removed; apartment archived; zone already filled from another photo (body has readingId)',
   })
   async add(
     @Param('meterId', ParseUUIDPipe) meterId: string,

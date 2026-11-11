@@ -135,6 +135,33 @@ export class PhotosService {
   // For readings: the photo is part of the request body, so a bad reference is a 400.
   async findForApartmentOrThrow(id: string, apartmentId: string): Promise<Photo> {
     const photo = await this.prisma.photo.findUnique({ where: { id } });
+    this.assertOfApartment(photo, apartmentId);
+    return photo;
+  }
+
+  // For the worker's draft values: the photo must be of the meter's apartment. An inbox photo gets that apartment
+  // here, inside the caller's transaction (rolled back if the draft fails). Other errors as findForApartmentOrThrow.
+  async claimForApartment(
+    id: string,
+    apartmentId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    // Conditional update: of two parallel claims only one sees apartmentId null.
+    const { count } = await tx.photo.updateMany({
+      where: { id, apartmentId: null },
+      data: { apartmentId },
+    });
+    if (count > 0) return;
+    const photo = await tx.photo.findUnique({ where: { id }, select: { apartmentId: true } });
+    this.assertOfApartment(photo, apartmentId);
+  }
+
+  // One place for the photo-reference rule of both reading paths, so they answer the same (400: a bad reference
+  // in the request body).
+  private assertOfApartment<T extends Pick<Photo, 'apartmentId'>>(
+    photo: T | null,
+    apartmentId: string,
+  ): asserts photo is T {
     if (!photo) throw new BadRequestException('photoId: photo not found');
     if (photo.apartmentId === null) {
       throw new BadRequestException(
@@ -144,7 +171,6 @@ export class PhotosService {
     if (photo.apartmentId !== apartmentId) {
       throw new BadRequestException('photoId: the photo belongs to another apartment');
     }
-    return photo;
   }
 
   async openFile(id: string, variant: 'original' | 'thumbnail'): Promise<PhotoFile> {
