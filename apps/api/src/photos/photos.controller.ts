@@ -8,6 +8,7 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Put,
   Query,
@@ -31,6 +32,7 @@ import {
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { AuthUser } from '../auth/interfaces/auth-user.interface.js';
 import { Scopes } from '../auth/scopes.decorator.js';
+import { AssignPhotoApartmentDto } from './dto/assign-photo-apartment.dto.js';
 import { ListPhotosQueryDto } from './dto/list-photos-query.dto.js';
 import { PhotoDetailResponseDto } from './dto/photo-detail-response.dto.js';
 import { PhotoListItemResponseDto } from './dto/photo-list-item-response.dto.js';
@@ -113,6 +115,25 @@ export class PhotosController {
   @ApiOkResponse({ description: 'WebP, max 400px' })
   async thumbnail(@Param('id', ParseUUIDPipe) id: string): Promise<StreamableFile> {
     return toStreamableFile(await this.photos.openFile(id, 'thumbnail'));
+  }
+
+  @Patch(':id')
+  @ApiNotFoundResponse({ description: 'Photo not found' })
+  @ApiOperation({
+    description:
+      'Assign an apartment (e.g. to an inbox photo the worker could not match): parseStatus → PENDING and the ' +
+      "photo is parsed again against that apartment's meters",
+  })
+  @ApiOkResponse({ type: PhotoDetailResponseDto })
+  @ApiBadRequestResponse({ description: 'Invalid body, apartment not found or archived' })
+  @ApiConflictResponse({ description: 'The photo backs reading values (cancelled ones included)' })
+  async assignApartment(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AssignPhotoApartmentDto,
+  ): Promise<PhotoDetailResponseDto> {
+    return PhotoDetailResponseDto.fromDetail(
+      await this.photos.assignApartment(id, dto.apartmentId),
+    );
   }
 
   @Put(':id/parse-result')
