@@ -278,8 +278,9 @@ enum PhotoParseStatus {
 
 model Photo {
   id               String            @id @default(uuid()) @db.Uuid
-  apartmentId      String            @db.Uuid
-  apartment        Apartment         @relation(fields: [apartmentId], references: [id], onDelete: Restrict)
+  // null = inbox: uploaded without an apartment (e.g. by the bot), not sorted yet.
+  apartmentId      String?           @db.Uuid
+  apartment        Apartment?        @relation(fields: [apartmentId], references: [id], onDelete: Restrict)
   // photos/YYYY/MM/<id>.<ext> — never derived from the original filename.
   storageKey       String            @unique
   // thumbnails/YYYY/MM/<id>.webp

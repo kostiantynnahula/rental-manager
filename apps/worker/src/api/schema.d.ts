@@ -197,8 +197,11 @@ export interface components {
         PhotoDetailResponseDto: {
             /** Format: uuid */
             id: string;
-            /** Format: uuid */
-            apartmentId: string;
+            /**
+             * Format: uuid
+             * @description null = inbox
+             */
+            apartmentId: string | null;
             /**
              * @description Detected from the file content
              * @example image/jpeg

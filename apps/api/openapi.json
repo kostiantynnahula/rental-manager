@@ -1444,7 +1444,7 @@
             "description": "Apartment not found"
           },
           "409": {
-            "description": "The same photo was uploaded for another apartment"
+            "description": "The same photo was uploaded for another apartment or is in the inbox"
           },
           "413": {
             "description": "A file is over the size limit"
@@ -1504,6 +1504,114 @@
           },
           "404": {
             "description": "Apartment not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "photos"
+        ]
+      }
+    },
+    "/photos": {
+      "post": {
+        "description": "Upload to the inbox (no apartment yet)",
+        "operationId": "PhotosController_upload",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "files"
+                ],
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "In the order sent; duplicate = already uploaded (existing record returned)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PhotoUploadResultDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No files, too many files, unsupported type (JPEG/PNG/WebP only)"
+          },
+          "401": {
+            "description": ""
+          },
+          "413": {
+            "description": "A file is over the size limit"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "photos"
+        ]
+      },
+      "get": {
+        "operationId": "PhotosController_list",
+        "parameters": [
+          {
+            "name": "inbox",
+            "required": true,
+            "in": "query",
+            "description": "true = photos without an apartment (inbox)",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PhotoListItemResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "inbox=true missing"
+          },
+          "401": {
+            "description": ""
           }
         },
         "security": [
@@ -4687,7 +4795,9 @@
           },
           "apartmentId": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "nullable": true,
+            "description": "null = inbox"
           },
           "mimeType": {
             "type": "string",
@@ -4776,7 +4886,9 @@
           },
           "apartmentId": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "nullable": true,
+            "description": "null = inbox"
           },
           "mimeType": {
             "type": "string",
@@ -4919,7 +5031,9 @@
           },
           "apartmentId": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "nullable": true,
+            "description": "null = inbox"
           },
           "mimeType": {
             "type": "string",
