@@ -7,7 +7,8 @@ import { statementMeterName } from '@/lib/statements';
 import { formatPrice } from '@/lib/tariff-prices';
 import { UTILITY_UNITS, ZONE_LABELS } from '@/lib/utilities';
 
-// One bill line. Only METERED lines show the calculation and their meters: rent and fixed fees are just an amount.
+// One bill line. Only METERED lines show the calculation and their meters: rent and fixed fees are just an amount,
+// a MANUAL line is an amount typed in from the bill.
 export function StatementLineRow({ line }: { line: StatementLine }) {
   // All utilities of one tariff share a unit (drainage = cold + hot water, both m³).
   const unit = line.utilities?.[0] ? UTILITY_UNITS[line.utilities[0]] : undefined;
@@ -24,6 +25,9 @@ export function StatementLineRow({ line }: { line: StatementLine }) {
               <span className="font-normal text-muted-foreground"> · {ZONE_LABELS[line.zone]}</span>
             )}
           </p>
+          {line.type === 'MANUAL' && (
+            <p className="text-sm text-muted-foreground">введено вручну</p>
+          )}
           {line.type === 'METERED' && line.quantity && line.unitPrice && (
             <p className="text-sm text-muted-foreground tabular-nums">
               {formatMeterValueCompact(line.quantity)} {unit} × {formatPrice(line.unitPrice)} грн

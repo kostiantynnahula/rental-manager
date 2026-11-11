@@ -10,6 +10,7 @@ import { ApiError } from '@/lib/api/errors';
 import {
   useIssuedStatement,
   useIssueStatement,
+  type ManualAmounts,
   type StatementPreview,
 } from '@/lib/api/queries/statements';
 import { isStatementTotalChanged } from '@/lib/statements';
@@ -18,10 +19,23 @@ interface IssueStatementPanelProps {
   apartmentId: string;
   period: string;
   preview: StatementPreview;
+  // The amounts `preview` was calculated with: sent again, so the API recomputes the same total.
+  manualAmounts: ManualAmounts;
+  // Amounts typed but the preview for them isn't back yet: its total would be stale.
+  recalculating: boolean;
+  // A manual amount field holds something that isn't an amount.
+  amountsInvalid: boolean;
 }
 
 // The parent keys this by month + warnings: new warnings reset the acknowledgement.
-export function IssueStatementPanel({ apartmentId, period, preview }: IssueStatementPanelProps) {
+export function IssueStatementPanel({
+  apartmentId,
+  period,
+  preview,
+  manualAmounts,
+  recalculating,
+  amountsInvalid,
+}: IssueStatementPanelProps) {
   const router = useRouter();
   const issue = useIssueStatement();
   const issued = useIssuedStatement(apartmentId, period);
@@ -37,6 +51,8 @@ export function IssueStatementPanel({ apartmentId, period, preview }: IssueState
   const busy = issue.isPending || issue.isSuccess;
   const disabled =
     busy ||
+    recalculating ||
+    amountsInvalid ||
     nothingToBill ||
     issued.isPending ||
     Boolean(issued.data) ||
@@ -48,6 +64,7 @@ export function IssueStatementPanel({ apartmentId, period, preview }: IssueState
         apartmentId,
         body: {
           period,
+          ...(Object.keys(manualAmounts).length > 0 && { manualAmounts }),
           expectedTotal: preview.total,
           acknowledgeWarnings: hasWarnings ? true : undefined,
         },
@@ -91,9 +108,14 @@ export function IssueStatementPanel({ apartmentId, period, preview }: IssueState
           Розумію, рядки з попередженнями не включено
         </label>
       )}
+      {amountsInvalid && (
+        <p className="text-sm text-destructive">Виправте суму вище, щоб виставити рахунок.</p>
+      )}
       {nothingToBill && (
         <p className="text-sm text-muted-foreground">
-          Немає що виставляти: за цей місяць немає оренди, показань і платежів.
+          {preview.warnings.some((w) => w.code === 'MISSING_MANUAL_AMOUNT')
+            ? 'Немає що виставляти: введіть суму вище.'
+            : 'Немає що виставляти: за цей місяць немає оренди, показань і платежів.'}
         </p>
       )}
       <Button
@@ -102,7 +124,7 @@ export function IssueStatementPanel({ apartmentId, period, preview }: IssueState
         disabled={disabled}
         onClick={() => void submit()}
       >
-        {busy ? 'Виставлення…' : 'Виставити'}
+        {busy ? 'Виставлення…' : recalculating ? 'Перераховуємо…' : 'Виставити'}
       </Button>
     </div>
   );

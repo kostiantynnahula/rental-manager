@@ -5,9 +5,20 @@ import { isZoned } from './is-zoned';
 import { toTariffUtilities } from './to-tariff-utilities';
 
 // Values already passed tariffFormSchema(true), so the prices are valid. The night price is sent only for
-// electricity; DAY falls back to TOTAL in the API, so it isn't asked for.
+// electricity; DAY falls back to TOTAL in the API, so it isn't asked for. MANUAL has no prices.
 export function toCreateTariffInput(v: TariffFormValues): CreateTariffInput {
   const utilities = toTariffUtilities(v.kind, v.utilitySet);
+  const apartmentIds = v.apartmentIds.length > 0 ? { apartmentIds: v.apartmentIds } : {};
+  if (v.kind === 'MANUAL') {
+    return {
+      name: v.name,
+      kind: v.kind,
+      utilities,
+      ...(v.notes && { notes: v.notes }),
+      prices: [],
+      ...apartmentIds,
+    };
+  }
   const prices: TariffPriceInput[] = [
     { effectiveFrom: v.effectiveFrom, zone: 'TOTAL', price: normalizePrice(v.price) ?? v.price },
   ];
@@ -21,6 +32,6 @@ export function toCreateTariffInput(v: TariffFormValues): CreateTariffInput {
     utilities,
     ...(v.notes && { notes: v.notes }),
     prices,
-    ...(v.apartmentIds.length > 0 && { apartmentIds: v.apartmentIds }),
+    ...apartmentIds,
   };
 }

@@ -11,6 +11,8 @@ export type StatementLine = components['schemas']['StatementLineResponseDto'];
 export type StatementWarning = components['schemas']['StatementWarningResponseDto'];
 export type StatementStatus = components['schemas']['StatementStatus'];
 export type IssueStatementInput = components['schemas']['IssueStatementDto'];
+// Integer kopiyky per MANUAL tariff id.
+export type ManualAmounts = Record<string, number>;
 export type StatementListQuery = NonNullable<
   operations['ApartmentStatementsController_list']['parameters']['query']
 >;
@@ -21,8 +23,11 @@ export const statementKeys = {
   lists: (apartmentId: string) => [...statementKeys.all, 'list', apartmentId] as const,
   list: (apartmentId: string, query: StatementListQuery) =>
     [...statementKeys.lists(apartmentId), query] as const,
+  // Prefix of every preview of the month, whatever the manual amounts (what mutations invalidate).
   preview: (apartmentId: string, period: string) =>
     [...statementKeys.all, 'preview', apartmentId, period] as const,
+  previewWith: (apartmentId: string, period: string, manualAmounts: ManualAmounts) =>
+    [...statementKeys.preview(apartmentId, period), manualAmounts] as const,
   detail: (id: string) => [...statementKeys.all, 'detail', id] as const,
 };
 
@@ -38,18 +43,27 @@ async function fetchStatements(
 }
 
 // staleTime 0: readings or tariffs may have changed elsewhere, so coming back to the page always refreshes it.
-// No keepPreviousData: the previous month's total must never be on screen, ready to be issued, for a new month.
-// A POST (the body will carry manualAmounts, #50), but it writes nothing: still a query.
-export function useStatementPreview(apartmentId: string, period: string) {
+// The previous data is kept only while the manual amounts change within the same apartment + month (no skeleton
+// flash while typing); another month's total must never be on screen, ready to be issued.
+// A POST (manualAmounts is a map), but it writes nothing: still a query.
+export function useStatementPreview(
+  apartmentId: string,
+  period: string,
+  manualAmounts: ManualAmounts,
+) {
   return useQuery({
-    queryKey: statementKeys.preview(apartmentId, period),
+    queryKey: statementKeys.previewWith(apartmentId, period, manualAmounts),
     queryFn: async (): Promise<StatementPreview> =>
       unwrap(
         await api.POST('/apartments/{apartmentId}/statements/preview', {
           params: { path: { apartmentId } },
-          body: { period },
+          body: { period, manualAmounts },
         }),
       ),
+    placeholderData: (previous, previousQuery) =>
+      previousQuery?.queryKey[2] === apartmentId && previousQuery.queryKey[3] === period
+        ? previous
+        : undefined,
     staleTime: 0,
   });
 }

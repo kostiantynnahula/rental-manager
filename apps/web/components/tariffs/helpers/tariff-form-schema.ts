@@ -19,14 +19,15 @@ export function tariffFormSchema(withPrices: boolean) {
       price: z.string(),
       // Optional, electricity only.
       nightPrice: z.string(),
-      // Create only: attached from the first price month on.
+      // Create only: attached from the first price month on (MANUAL: from the current month).
       apartmentIds: z.array(z.string()),
     })
     .superRefine((v, ctx) => {
       if (v.kind === 'METERED' && !UTILITY_SETS.some((s) => s.value === v.utilitySet)) {
         ctx.addIssue({ code: 'custom', path: ['utilitySet'], message: 'Оберіть послугу' });
       }
-      if (!withPrices) return;
+      // MANUAL has no price: the amount is entered in each statement.
+      if (!withPrices || v.kind === 'MANUAL') return;
       if (!isPeriod(v.effectiveFrom)) {
         ctx.addIssue({ code: 'custom', path: ['effectiveFrom'], message: 'Вкажіть місяць' });
       }

@@ -20,8 +20,17 @@ export function TariffOverview({ tariff }: { tariff: TariffDetail }) {
               <dd>{tariffUtilitiesLabel(tariff.utilities)}</dd>
             </>
           )}
-          <dt className="text-muted-foreground">Одиниця</dt>
-          <dd>{priceUnit(tariff)}</dd>
+          {tariff.kind === 'MANUAL' ? (
+            <>
+              <dt className="text-muted-foreground">Сума</dt>
+              <dd>Вводиться в рахунку за кожен місяць</dd>
+            </>
+          ) : (
+            <>
+              <dt className="text-muted-foreground">Одиниця</dt>
+              <dd>{priceUnit(tariff)}</dd>
+            </>
+          )}
           {tariff.notes && (
             <>
               <dt className="text-muted-foreground">Нотатки</dt>
