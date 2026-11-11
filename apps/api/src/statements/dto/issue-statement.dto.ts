@@ -1,13 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsBoolean, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { PG_INT_MAX } from '../../common/constants/pg-limits.js';
-import { IsPeriod } from '../../common/validators/is-period.decorator.js';
+import { StatementPreviewDto } from './statement-preview.dto.js';
 
-export class IssueStatementDto {
-  @ApiProperty({ example: '2026-10', description: 'YYYY-MM' })
-  @IsPeriod()
-  period: string;
-
+// The preview's input (period, manualAmounts) + what the user agreed to.
+export class IssueStatementDto extends StatementPreviewDto {
   @ApiProperty({
     example: 1586400,
     description: 'Integer kopiyky: the preview total the user agreed to',

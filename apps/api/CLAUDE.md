@@ -68,12 +68,12 @@ photos:read`, `apikey:list`, `apikey:revoke <prefix>`. `create` upserts `<servic
   history); never filter by period inside it.
 - **Tariffs** (migration `add_tariffs`): one catalog for meter tariffs and fixed fees. `Tariff.kind` METERED
   (price per unit of the consumption of `utilities`, e.g. drainage = COLD_WATER + HOT_WATER) or FIXED (price per
-  month, `utilities` empty). District-specific prices = a separate tariff. `TariffPrice` = price history:
+  month, `utilities` empty) or MANUAL (no utilities, no prices: the amount is entered per statement). District-specific prices = a separate tariff. `TariffPrice` = price history:
   `effectiveFrom` (1st of month) + `zone` (default TOTAL) + `price` `Decimal(12,4)` UAH. Price for a period = the
   latest `effectiveFrom <= period` for the zone, falling back to TOTAL (a two-zone meter only needs a NIGHT price).
   `ApartmentTariff` = which tariffs an apartment is billed for, `activeFrom..activeTo` (1st days of months,
   `activeTo` = last billed month inclusive, null = ongoing). FIXED fees bill the full month (no proration).
-  - Raw-SQL constraints: `tariffs_utilities_match_kind` (METERED ⇒ ≥ 1 utility, FIXED ⇒ none; the list column is
+  - Raw-SQL constraints: `tariffs_utilities_match_kind` (METERED ⇒ ≥ 1 utility, FIXED/MANUAL ⇒ none; the list column is
     nullable, NULL = empty), `tariff_prices_effective_first_of_month`, `tariff_prices_non_negative`,
     `apartment_tariffs_active_{from,to}_first_of_month`, `apartment_tariffs_dates_check`,
     `apartment_tariffs_no_overlap` (GiST exclusion: one tariff per apartment per month).

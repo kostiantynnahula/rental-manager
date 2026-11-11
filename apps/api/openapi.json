@@ -2461,7 +2461,7 @@
             }
           },
           "400": {
-            "description": "Invalid body: utilities don't fit the kind, DAY/NIGHT price on a non-electricity tariff, duplicate prices, no TOTAL price from the earliest month"
+            "description": "Invalid body: utilities don't fit the kind, DAY/NIGHT price on a non-electricity tariff, duplicate prices, no TOTAL price from the earliest month, prices on a MANUAL tariff"
           },
           "401": {
             "description": ""
@@ -2554,7 +2554,7 @@
             }
           },
           "400": {
-            "description": "Invalid body, or new kind/utilities don't fit the prices"
+            "description": "Invalid body, new kind/utilities don't fit the prices, or a kind change to/from MANUAL"
           },
           "401": {
             "description": ""
@@ -2728,7 +2728,7 @@
             }
           },
           "400": {
-            "description": "Invalid body, DAY/NIGHT on a non-electricity tariff, or earlier than every TOTAL price"
+            "description": "Invalid body, a MANUAL tariff, DAY/NIGHT on a non-electricity tariff, or earlier than every TOTAL price"
           },
           "401": {
             "description": ""
@@ -3122,7 +3122,7 @@
             }
           },
           "400": {
-            "description": "Invalid body, effectiveFrom outside the attachment, DAY/NIGHT on a non-electricity tariff, no TOTAL price"
+            "description": "Invalid body, a MANUAL tariff, effectiveFrom outside the attachment, DAY/NIGHT on a non-electricity tariff, no TOTAL price"
           },
           "401": {
             "description": ""
@@ -3145,7 +3145,7 @@
       }
     },
     "/apartments/{apartmentId}/statements/preview": {
-      "get": {
+      "post": {
         "operationId": "ApartmentStatementsController_preview",
         "parameters": [
           {
@@ -3155,20 +3155,21 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "period",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "example": "2026-10",
-              "type": "string"
-            }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatementPreviewDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "Calculated on the fly from confirmed readings; nothing is saved",
+            "description": "Calculated on the fly from confirmed readings and the manual amounts; nothing is saved",
             "content": {
               "application/json": {
                 "schema": {
@@ -3178,7 +3179,7 @@
             }
           },
           "400": {
-            "description": "Missing or invalid period"
+            "description": "Invalid body, or a manual amount for a tariff that is not an active MANUAL tariff of the apartment"
           },
           "401": {
             "description": ""
@@ -3308,7 +3309,7 @@
             }
           },
           "400": {
-            "description": "Invalid body"
+            "description": "Invalid body, or a manual amount for a tariff that is not an active MANUAL tariff of the apartment"
           },
           "401": {
             "description": ""
@@ -5555,7 +5556,8 @@
         "type": "string",
         "enum": [
           "METERED",
-          "FIXED"
+          "FIXED",
+          "MANUAL"
         ]
       },
       "TariffPriceResponseDto": {
@@ -5864,7 +5866,7 @@
           },
           "utilities": {
             "type": "array",
-            "description": "Default []. METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED: empty",
+            "description": "Default []. METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED, MANUAL: empty",
             "items": {
               "$ref": "#/components/schemas/UtilityType"
             }
@@ -5874,14 +5876,14 @@
             "nullable": true
           },
           "prices": {
-            "description": "Initial price history; must include a TOTAL price from the earliest month",
+            "description": "Initial price history; must include a TOTAL price from the earliest month. MANUAL: empty (the amount is entered per statement)",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TariffPriceInputDto"
             }
           },
           "apartmentIds": {
-            "description": "Active apartments to attach right away, from the earliest price month on",
+            "description": "Active apartments to attach right away, from the earliest price month on (MANUAL: from the current month)",
             "type": "array",
             "items": {
               "type": "string",
@@ -5912,7 +5914,7 @@
           },
           "utilities": {
             "type": "array",
-            "description": "Default []. METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED: empty",
+            "description": "Default []. METERED: the billed utilities — ELECTRICITY or GAS alone, or COLD_WATER and/or HOT_WATER (e.g. drainage). FIXED, MANUAL: empty",
             "items": {
               "$ref": "#/components/schemas/UtilityType"
             }
@@ -6062,12 +6064,38 @@
           "prices"
         ]
       },
+      "StatementPreviewDto": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "example": "2026-10",
+            "description": "YYYY-MM"
+          },
+          "manualAmounts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "example": {
+              "3f1c2b4e-8d7a-4c1e-9b2a-5e6f7a8b9c0d": 12300
+            },
+            "description": "Integer kopiyky per MANUAL tariff id, entered from the bill. Only active MANUAL tariffs of the apartment (else 400); a missing one → MISSING_MANUAL_AMOUNT"
+          }
+        },
+        "required": [
+          "period"
+        ]
+      },
       "StatementLineType": {
         "type": "string",
         "enum": [
           "RENT",
           "FIXED",
-          "METERED"
+          "METERED",
+          "MANUAL"
         ]
       },
       "StatementLineMeterResponseDto": {
@@ -6129,7 +6157,7 @@
           "tariffId": {
             "type": "string",
             "format": "uuid",
-            "description": "METERED and FIXED"
+            "description": "All but RENT"
           },
           "name": {
             "type": "string",
@@ -6153,12 +6181,12 @@
           "quantity": {
             "type": "string",
             "example": "200.000",
-            "description": "Decimal string with 3 decimals"
+            "description": "Decimal string with 3 decimals; absent for MANUAL (amount only)"
           },
           "unitPrice": {
             "type": "string",
             "example": "4.3200",
-            "description": "UAH, decimal string with 4 decimals"
+            "description": "UAH, decimal string with 4 decimals; absent for MANUAL (amount only)"
           },
           "amount": {
             "type": "number",
@@ -6176,8 +6204,6 @@
         "required": [
           "type",
           "name",
-          "quantity",
-          "unitPrice",
           "amount"
         ]
       },
@@ -6188,15 +6214,16 @@
           "NO_PRICE",
           "NO_METERS",
           "MULTIPLE_LEASES",
-          "UNUSUAL_CONSUMPTION"
+          "UNUSUAL_CONSUMPTION",
+          "MISSING_MANUAL_AMOUNT"
         ],
-        "description": "MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details. UNUSUAL_CONSUMPTION: meterId, utility, label, zone, consumption, limit, months, reason"
+        "description": "MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details. UNUSUAL_CONSUMPTION: meterId, utility, label, zone, consumption, limit, months, reason. MISSING_MANUAL_AMOUNT: tariffId, tariffName"
       },
       "StatementWarningResponseDto": {
         "type": "object",
         "properties": {
           "code": {
-            "description": "MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details. UNUSUAL_CONSUMPTION: meterId, utility, label, zone, consumption, limit, months, reason",
+            "description": "MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details. UNUSUAL_CONSUMPTION: meterId, utility, label, zone, consumption, limit, months, reason. MISSING_MANUAL_AMOUNT: tariffId, tariffName",
             "allOf": [
               {
                 "$ref": "#/components/schemas/StatementWarningCode"
@@ -6270,7 +6297,7 @@
             "description": "Integer kopiyky: the sum of the line amounts"
           },
           "lines": {
-            "description": "Rent, then metered by utility and zone (DAY, NIGHT, TOTAL), then fixed by name",
+            "description": "Rent, then metered by utility and zone (DAY, NIGHT, TOTAL), then fixed by name, then manual by name",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/StatementLineResponseDto"
@@ -6374,6 +6401,18 @@
             "type": "string",
             "example": "2026-10",
             "description": "YYYY-MM"
+          },
+          "manualAmounts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "example": {
+              "3f1c2b4e-8d7a-4c1e-9b2a-5e6f7a8b9c0d": 12300
+            },
+            "description": "Integer kopiyky per MANUAL tariff id, entered from the bill. Only active MANUAL tariffs of the apartment (else 400); a missing one → MISSING_MANUAL_AMOUNT"
           },
           "expectedTotal": {
             "type": "number",

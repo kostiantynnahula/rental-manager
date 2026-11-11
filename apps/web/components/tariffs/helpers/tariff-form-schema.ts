@@ -11,8 +11,8 @@ export function tariffFormSchema(withPrices: boolean) {
   return z
     .object({
       name: z.string().trim().min(1, 'Вкажіть назву').max(100, 'Не більше 100 символів'),
-      kind: z.enum(['METERED', 'FIXED']),
-      // UTILITY_SETS value; '' for a fixed fee.
+      kind: z.enum(['METERED', 'FIXED', 'MANUAL']),
+      // UTILITY_SETS value; '' for a fixed fee or a manual amount.
       utilitySet: z.string(),
       notes: z.string().trim(),
       effectiveFrom: z.string(),

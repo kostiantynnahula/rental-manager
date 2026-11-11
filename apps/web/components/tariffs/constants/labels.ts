@@ -3,12 +3,14 @@ import type { TariffKind } from '@/lib/api/queries/tariffs';
 export const TARIFF_KIND_LABELS: Record<TariffKind, string> = {
   METERED: 'За лічильником',
   FIXED: 'Фіксований',
+  MANUAL: 'Ручна сума',
 };
 
 // Second line of the kind radio in the form.
 export const TARIFF_KIND_HINTS: Record<TariffKind, string> = {
   METERED: 'ціна × спожите',
   FIXED: 'сума щомісяця',
+  MANUAL: 'сума з рахунку щомісяця',
 };
 
 export const ARCHIVED_REASON = 'Тариф в архіві';

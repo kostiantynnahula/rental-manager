@@ -9,7 +9,7 @@ export class StatementLineResponseDto {
   @ApiProperty({ enum: StatementLineType, enumName: 'StatementLineType' })
   type: StatementLineType;
 
-  @ApiPropertyOptional({ format: 'uuid', description: 'METERED and FIXED' })
+  @ApiPropertyOptional({ format: 'uuid', description: 'All but RENT' })
   tariffId?: string;
 
   @ApiProperty({ example: 'Електроенергія' })
@@ -26,11 +26,17 @@ export class StatementLineResponseDto {
   })
   utilities?: UtilityType[];
 
-  @ApiProperty({ example: '200.000', description: 'Decimal string with 3 decimals' })
-  quantity: string;
+  @ApiPropertyOptional({
+    example: '200.000',
+    description: 'Decimal string with 3 decimals; absent for MANUAL (amount only)',
+  })
+  quantity?: string;
 
-  @ApiProperty({ example: '4.3200', description: 'UAH, decimal string with 4 decimals' })
-  unitPrice: string;
+  @ApiPropertyOptional({
+    example: '4.3200',
+    description: 'UAH, decimal string with 4 decimals; absent for MANUAL (amount only)',
+  })
+  unitPrice?: string;
 
   @ApiProperty({ example: 86400, description: 'Integer kopiyky' })
   amount: number;
@@ -48,8 +54,8 @@ export class StatementLineResponseDto {
       name: l.name,
       zone: l.zone,
       utilities: l.utilities,
-      quantity: l.quantity.toFixed(3),
-      unitPrice: l.unitPrice.toFixed(4),
+      quantity: l.quantity?.toFixed(3),
+      unitPrice: l.unitPrice?.toFixed(4),
       amount: l.amount,
       meters: l.meters?.map((m) => StatementLineMeterResponseDto.from(m)),
     };
@@ -63,8 +69,8 @@ export class StatementLineResponseDto {
       name: l.name,
       zone: l.zone ?? undefined,
       utilities: l.utilities.length > 0 ? l.utilities : undefined,
-      quantity: l.quantity.toFixed(3),
-      unitPrice: l.unitPrice.toFixed(4),
+      quantity: l.quantity?.toFixed(3),
+      unitPrice: l.unitPrice?.toFixed(4),
       amount: l.amount,
       meters: (l.details as unknown as StatementLineDetail[] | null)?.map((d) =>
         StatementLineMeterResponseDto.fromDetail(d),

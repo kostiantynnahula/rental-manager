@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { ApartmentsService } from '../apartments/apartments.service.js';
 import { addMonths, parsePeriod } from '../common/helpers/period.js';
+import { TariffKind } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { ApartmentTariffScope } from './constants/apartment-tariff-scopes.js';
 import { CreateApartmentTariffDto } from './dto/create-apartment-tariff.dto.js';
@@ -95,6 +96,9 @@ export class ApartmentTariffsService {
       throw new BadRequestException('effectiveFrom must be within the months of the attachment');
     }
     const source = attachment.tariff;
+    if (source.kind === TariffKind.MANUAL) {
+      throw new BadRequestException('A MANUAL tariff has no prices to override');
+    }
     const prices = dto.prices.map((p) =>
       tariffPriceData({ effectiveFrom: dto.effectiveFrom, zone: p.zone, price: p.price }),
     );

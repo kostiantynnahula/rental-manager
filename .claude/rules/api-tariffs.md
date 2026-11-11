@@ -20,6 +20,10 @@ decimals) and out (`toFixed(4)`), `effectiveFrom` is `"YYYY-MM"`.
 - Responses also carry `apartmentCount` (apartments attached **now**; > 1 = shared) and the detail `apartments`
   (all attachments). Include `tariffWithPricesInclude` loads prices **and** attachments, both picked in JS for a month.
   `POST /tariffs` takes optional `apartmentIds` (active apartments, attached from the earliest price month).
+- **MANUAL** (migrations `manual_tariff_kind` + `manual_tariff_checks`): no utilities, no prices — the amount is
+  entered per statement (e.g. a share of the building water bill). Prices on create (`manualPricesProblem`),
+  `POST .../prices` and `override` → 400; a kind change to/from MANUAL → 400 (create a new tariff). `apartmentIds` on
+  create attach it from the current month (no price month to start from). Attached like any other tariff.
 - **Attachments** (`ApartmentTariffsController`, `/apartments/:apartmentId/tariffs`): `GET ?scope=current|all`
   ("current" = not ended before this month, planned included — `isAttachmentCurrent` / `currentAttachmentWhere`, one
   rule), `POST { tariffId, activeFrom }` (active apartment + tariff), `PATCH { activeTo }` (end = last billed month,

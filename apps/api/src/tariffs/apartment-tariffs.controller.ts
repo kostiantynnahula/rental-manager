@@ -107,7 +107,7 @@ export class ApartmentTariffsController {
   })
   @ApiBadRequestResponse({
     description:
-      'Invalid body, effectiveFrom outside the attachment, DAY/NIGHT on a non-electricity tariff, no TOTAL price',
+      'Invalid body, a MANUAL tariff, effectiveFrom outside the attachment, DAY/NIGHT on a non-electricity tariff, no TOTAL price',
   })
   @ApiNotFoundResponse({ description: 'Apartment or tariff attachment not found' })
   @ApiConflictResponse({ description: 'Apartment is archived, or the name already exists' })

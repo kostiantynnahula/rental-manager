@@ -4,8 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { parsePeriod } from '../common/helpers/period.js';
+import { todayDateOnly } from '../common/helpers/date-only.js';
+import { parsePeriod, periodOfDate } from '../common/helpers/period.js';
 import { Prisma, type TariffPrice } from '../generated/prisma/client.js';
+import { TariffKind } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateTariffDto } from './dto/create-tariff.dto.js';
 import { ListTariffsQueryDto } from './dto/list-tariffs-query.dto.js';
@@ -16,6 +18,7 @@ import { tariffPriceData } from './helpers/tariff-price-data.js';
 import {
   disallowedZoneProblem,
   duplicatePriceProblem,
+  manualPricesProblem,
   totalCoverageProblem,
   utilitiesProblem,
 } from './helpers/tariff-rules.js';
@@ -57,23 +60,28 @@ export class TariffsService {
   }
 
   // Tariff + initial prices + attachments in one nested create (atomic). Attachments start with the earliest
-  // price month, so an attached tariff always has a price.
+  // price month, so an attached tariff always has a price; a MANUAL tariff (no prices) from the current month.
   async create(dto: CreateTariffDto): Promise<TariffWithPrices> {
     const utilities = dto.utilities ?? [];
     const prices = dto.prices.map((p) => tariffPriceData(p));
+    const manual = dto.kind === TariffKind.MANUAL;
     const problem =
       utilitiesProblem(dto.kind, utilities) ??
-      disallowedZoneProblem(
-        dto.kind,
-        utilities,
-        prices.map((p) => p.zone),
-      ) ??
-      duplicatePriceProblem(prices) ??
-      totalCoverageProblem(prices);
+      (manual
+        ? manualPricesProblem(dto.kind, prices.length)
+        : (disallowedZoneProblem(
+            dto.kind,
+            utilities,
+            prices.map((p) => p.zone),
+          ) ??
+          duplicatePriceProblem(prices) ??
+          totalCoverageProblem(prices)));
     if (problem) throw new BadRequestException(problem);
     const apartmentIds = dto.apartmentIds ?? [];
     await this.assertActiveApartments(apartmentIds);
-    const activeFrom = new Date(Math.min(...prices.map((p) => p.effectiveFrom.getTime())));
+    const activeFrom = manual
+      ? periodOfDate(todayDateOnly())
+      : new Date(Math.min(...prices.map((p) => p.effectiveFrom.getTime())));
     return this.prisma.tariff.create({
       data: {
         name: dto.name,
@@ -95,6 +103,12 @@ export class TariffsService {
       kind !== tariff.kind ||
       utilities.length !== tariff.utilities.length ||
       utilities.some((u) => !tariff.utilities.includes(u));
+    // MANUAL has no prices and the others need them: a kind change across it would leave the tariff invalid.
+    if ((kind === TariffKind.MANUAL) !== (tariff.kind === TariffKind.MANUAL)) {
+      throw new BadRequestException(
+        "A tariff can't change to or from MANUAL — create a new tariff instead",
+      );
+    }
     if (changesBilling) {
       // Statements will bill attached tariffs by kind/utilities: changing them would rewrite history.
       if (tariff.apartments.length > 0) {
@@ -142,6 +156,7 @@ export class TariffsService {
     const tariff = await this.findActiveOrThrow(id);
     const data = tariffPriceData(dto);
     const problem =
+      manualPricesProblem(tariff.kind, 1) ??
       disallowedZoneProblem(tariff.kind, tariff.utilities, [data.zone]) ??
       totalCoverageProblem([...tariff.prices, data]);
     if (problem) throw new BadRequestException(problem);
@@ -152,6 +167,7 @@ export class TariffsService {
   // Fixes a mistyped row. TODO: forbid once a statement uses this price.
   async updatePrice(id: string, priceId: string, dto: UpdateTariffPriceDto): Promise<TariffPrice> {
     const tariff = await this.findActiveOrThrow(id);
+    // A MANUAL tariff has no rows, so this is a 404 for it.
     const current = this.findPriceOrThrow(tariff, priceId);
     const next = {
       effectiveFrom: dto.effectiveFrom ? parsePeriod(dto.effectiveFrom) : current.effectiveFrom,

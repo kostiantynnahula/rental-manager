@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
@@ -12,7 +13,7 @@ import { StatementPreviewResponseDto } from './dto/statement-preview-response.dt
 import { StatementWarningResponseDto } from './dto/statement-warning-response.dto.js';
 import { StatementHasWarningsError } from './errors/statement-has-warnings.error.js';
 import { StatementTotalChangedError } from './errors/statement-total-changed.error.js';
-import { calculateStatement } from './helpers/statement-calculator.js';
+import { calculateStatement, manualAmountsProblem } from './helpers/statement-calculator.js';
 import { statementLineRows } from './helpers/statement-line-rows.js';
 import {
   statementWithDetailsInclude,
@@ -30,9 +31,13 @@ export class StatementsService {
   ) {}
 
   // Writes nothing.
-  async preview(apartmentId: string, period: Date): Promise<StatementPreview> {
+  async preview(
+    apartmentId: string,
+    period: Date,
+    manualAmounts: Record<string, number>,
+  ): Promise<StatementPreview> {
     await this.apartments.findOrThrow(apartmentId);
-    return this.calculate(this.prisma, apartmentId, period);
+    return this.calculate(this.prisma, apartmentId, period, manualAmounts);
   }
 
   // A period that's already issued gets its 409 from the partial unique index statements_one_issued_per_period (via
@@ -40,13 +45,14 @@ export class StatementsService {
   async issue(
     apartmentId: string,
     period: Date,
+    manualAmounts: Record<string, number>,
     expectedTotal: number,
     acknowledgeWarnings: boolean,
     userId: string,
   ): Promise<StatementWithDetails> {
     await this.apartments.findOrThrow(apartmentId);
     return this.prisma.$transaction(async (tx) => {
-      const preview = await this.calculate(tx, apartmentId, period);
+      const preview = await this.calculate(tx, apartmentId, period, manualAmounts);
       if (preview.total !== expectedTotal) {
         throw new StatementTotalChangedError(StatementPreviewResponseDto.from(preview, period));
       }
@@ -122,11 +128,13 @@ export class StatementsService {
     return statement;
   }
 
-  // Loads the apartment's data; every billing rule lives in calculateStatement.
+  // Loads the apartment's data; every billing rule lives in calculateStatement. An amount for a tariff that isn't an
+  // active MANUAL tariff of the apartment is a client error (400), before any 409/422 of issuing.
   private async calculate(
     db: Prisma.TransactionClient,
     apartmentId: string,
     period: Date,
+    manualAmounts: Record<string, number>,
   ): Promise<StatementPreview> {
     const [attachments, meters, leases] = await Promise.all([
       db.apartmentTariff.findMany({
@@ -145,6 +153,9 @@ export class StatementsService {
       JOIN "reading_values" v ON v."readingId" = rc."readingId" AND v."zone" = rc."zone"
       WHERE rc."meterId" = ANY(${meters.map((m) => m.id)}::uuid[])
         AND rc."period" = ${period}::date`;
-    return calculateStatement({ period, attachments, meters, leases, consumption });
+    const input = { period, attachments, meters, leases, consumption, manualAmounts };
+    const problem = manualAmountsProblem(input);
+    if (problem) throw new BadRequestException(problem);
+    return calculateStatement(input);
   }
 }

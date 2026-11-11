@@ -327,23 +327,26 @@ model ReadingValue {
   @@map("reading_values")
 }
 
-// METERED = price per unit of consumption; FIXED = price per month (no meter).
+// METERED = price per unit of consumption; FIXED = price per month (no meter); MANUAL = no price, the amount is
+// entered per statement (e.g. a share of the building water bill).
 enum TariffKind {
   METERED
   FIXED
+  MANUAL
 
   @@map("tariff_kind")
 }
 
 // A bill line from a shared catalog: meter tariffs and fixed fees alike. Prices depending on the
 // district get their own tariff (e.g. "Waste removal (Sykhiv)"). Archived via isActive.
-// Raw-SQL constraint in migration add_tariffs: tariffs_utilities_match_kind.
+// Raw-SQL constraint tariffs_utilities_match_kind (migration add_tariffs, MANUAL added in manual_tariff_checks).
+// A MANUAL tariff has no prices (checked by the service).
 model Tariff {
   id             String            @id @default(uuid()) @db.Uuid
   name           String            @unique
   kind           TariffKind
   // METERED: the utilities whose consumption is billed, ≥ 1 (e.g. drainage = COLD_WATER + HOT_WATER).
-  // FIXED: empty.
+  // FIXED, MANUAL: empty.
   utilities      UtilityType[]
   isActive       Boolean           @default(true)
   notes          String?
@@ -411,6 +414,7 @@ enum StatementLineType {
   RENT
   FIXED
   METERED
+  MANUAL
 
   @@map("statement_line_type")
 }
@@ -452,7 +456,8 @@ model Statement {
   @@map("statements")
 }
 
-// Raw-SQL constraints in migration add_statements: statement_lines_tariff_by_type, statement_lines_non_negative.
+// Raw-SQL constraints in migration add_statements: statement_lines_tariff_by_type (redefined in manual_tariff_checks),
+// statement_lines_non_negative.
 model StatementLine {
   id          String            @id @default(uuid()) @db.Uuid
   // Cascade: lines are part of their statement.
@@ -469,9 +474,10 @@ model StatementLine {
   // Snapshot; empty for RENT and FIXED.
   utilities   UtilityType[]
   zone        Zone?
-  quantity    Decimal           @db.Decimal(12, 3)
-  // UAH.
-  unitPrice   Decimal           @db.Decimal(12, 4)
+  // Null exactly for MANUAL (amount only).
+  quantity    Decimal?          @db.Decimal(12, 3)
+  // UAH. Null exactly for MANUAL.
+  unitPrice   Decimal?          @db.Decimal(12, 4)
   // Integer kopiyky.
   amount      Int
   // METERED: [{ meterId, utility, label, serialNumber, consumption }] as of issue time.

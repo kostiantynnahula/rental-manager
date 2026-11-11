@@ -5,8 +5,8 @@ paths:
 
 # Statements (API)
 
-**Statements** (`src/statements/`): `GET /apartments/:apartmentId/statements/preview?period=` calculates on the fly,
-writes nothing. Every billing rule is in the pure `helpers/statement-calculator.ts`
+**Statements** (`src/statements/`): `POST /apartments/:apartmentId/statements/preview { period, manualAmounts? }`
+(200; a POST only because `manualAmounts` is a map) calculates on the fly, writes nothing. Every billing rule is in the pure `helpers/statement-calculator.ts`
 (`calculateStatement`, tested): it gets all of the apartment's attachments, meters and leases and decides what's active
 in the period; the service only loads data. Imports nothing from Prisma but `Prisma.Decimal` and enums.
 
@@ -21,6 +21,12 @@ in the period; the service only loads data. Imports nothing from Prisma but `Pri
   (`@rental/shared`, limits there): `ABOVE_LIMIT` (> limit × months) or `ZERO_CONSUMPTION` (electricity = 0 and a lease
   overlaps the period). `months` = from the earliest `previousPeriod` of those rows (view column, migration
   `reading_consumption_previous_period`), at least 1. A plain warning: issuing needs `acknowledgeWarnings`.
+- MANUAL tariffs: `manualAmounts` = `{ [tariffId]: kopiyky }` (`@IsManualAmounts()`: uuid keys, Int 0..PG_INT_MAX,
+  ≤ 50 keys). An active MANUAL tariff with an amount → a MANUAL line (after FIXED, by name) with `amount` only — no
+  `quantity` / `unitPrice` (nullable columns, null exactly for MANUAL: CHECK `statement_lines_tariff_by_type`); without
+  one → no line + `MISSING_MANUAL_AMOUNT` (tariffId, tariffName), a plain warning. An amount for anything but an active
+  MANUAL tariff of the apartment → 400 (`manualAmountsProblem`, preview and issue). Issue takes the same
+  `manualAmounts`; `expectedTotal` includes them.
 - `amount` = quantity × unitPrice (UAH) × 100, half-up, `Int` kopiyky; `total` = sum of amounts. A meter without an
   attached tariff isn't billed and isn't warned about.
 - **Issued statements are snapshots** (migration `add_statements`): lines keep the name, utilities, prices and
@@ -28,7 +34,7 @@ in the period; the service only loads data. Imports nothing from Prisma but `Pri
   the fix is cancel + issue again. Line `details` and statement `warnings` are JSON.
 - Per-meter `photoIds` (photos of the values behind the consumption, via `reading_consumption` (`readingId`, `zone`) →
   `reading_values."photoId"`) are part of the snapshot. Older `details` have no field → the DTO maps it to `[]`.
-- `POST /apartments/:apartmentId/statements { period, expectedTotal, acknowledgeWarnings? }`, one transaction: recompute
+- `POST /apartments/:apartmentId/statements { period, manualAmounts?, expectedTotal, acknowledgeWarnings? }`, one transaction: recompute
   with the calculator; total differs → 409 with the fresh `preview`; unacknowledged warnings → 422 with `warnings`; insert.
   An already issued period isn't checked in code: the partial unique index answers 409, races included.
 - `GET /apartments/:apartmentId/statements?period&page&pageSize` (period desc, issuedAt desc, cancelled included, no

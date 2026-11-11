@@ -4,6 +4,7 @@ import type { StatementWarningCode } from '../constants/statement.js';
 
 // MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName.
 // UNUSUAL_CONSUMPTION: meterId, utility, label, zone, consumption, limit, months, reason.
+// MISSING_MANUAL_AMOUNT: tariffId, tariffName.
 export interface StatementWarning {
   code: StatementWarningCode;
   meterId?: string;
