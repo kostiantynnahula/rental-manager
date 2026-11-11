@@ -8,8 +8,11 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Post,
   Put,
+  Query,
   StreamableFile,
+  UploadedFiles,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -28,9 +31,13 @@ import {
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { AuthUser } from '../auth/interfaces/auth-user.interface.js';
 import { Scopes } from '../auth/scopes.decorator.js';
+import { ListPhotosQueryDto } from './dto/list-photos-query.dto.js';
 import { PhotoDetailResponseDto } from './dto/photo-detail-response.dto.js';
+import { PhotoListItemResponseDto } from './dto/photo-list-item-response.dto.js';
+import { PhotoUploadResultDto } from './dto/photo-upload-result.dto.js';
 import { SetParseResultDto } from './dto/set-parse-result.dto.js';
 import type { PhotoFile } from './interfaces/photo-file.interface.js';
+import { PhotoUpload } from './photo-upload.decorator.js';
 import { PhotosService } from './photos.service.js';
 
 // Files are immutable (a new upload gets a new id), so the browser may cache them for a day.
@@ -40,12 +47,34 @@ const FILE_CACHE_CONTROL = 'private, max-age=86400';
 @ApiTags('photos')
 @ApiCookieAuth()
 @ApiUnauthorizedResponse()
-@ApiNotFoundResponse({ description: 'Photo not found' })
 @Controller('photos')
 export class PhotosController {
   constructor(private readonly photos: PhotosService) {}
 
+  @Post()
+  @PhotoUpload()
+  @ApiOperation({ description: 'Upload to the inbox (no apartment yet)' })
+  @ApiBadRequestResponse({
+    description: 'No files, too many files, unsupported type (JPEG/PNG/WebP only)',
+  })
+  async upload(
+    @UploadedFiles() files: Express.Multer.File[] | undefined,
+    @CurrentUser() user: AuthUser,
+  ): Promise<PhotoUploadResultDto[]> {
+    const results = await this.photos.upload(null, files, user.id);
+    return results.map((r) => PhotoUploadResultDto.fromUpload(r));
+  }
+
+  @Get()
+  @ApiOkResponse({ type: [PhotoListItemResponseDto], description: 'Newest first' })
+  @ApiBadRequestResponse({ description: 'inbox=true missing' })
+  async list(@Query() _query: ListPhotosQueryDto): Promise<PhotoListItemResponseDto[]> {
+    const photos = await this.photos.listInbox();
+    return photos.map((p) => PhotoListItemResponseDto.fromListItem(p));
+  }
+
   @Get(':id')
+  @ApiNotFoundResponse({ description: 'Photo not found' })
   // The worker reads the metadata (apartmentId, linked readings) with an API key.
   @Scopes('photos:read')
   @ApiBearerAuth()
@@ -57,6 +86,7 @@ export class PhotosController {
   }
 
   @Get(':id/file')
+  @ApiNotFoundResponse({ description: 'Photo not found' })
   // The worker downloads photos with an API key.
   @Scopes('photos:read')
   @ApiBearerAuth()
@@ -71,6 +101,7 @@ export class PhotosController {
   }
 
   @Get(':id/thumbnail')
+  @ApiNotFoundResponse({ description: 'Photo not found' })
   // The worker downloads photos with an API key.
   @Scopes('photos:read')
   @ApiBearerAuth()
@@ -85,6 +116,7 @@ export class PhotosController {
   }
 
   @Put(':id/parse-result')
+  @ApiNotFoundResponse({ description: 'Photo not found' })
   // The worker reports how its parse job ended (API keys only).
   @Scopes('photos:parse-result')
   @ApiBearerAuth()
@@ -102,6 +134,7 @@ export class PhotosController {
   }
 
   @Delete(':id')
+  @ApiNotFoundResponse({ description: 'Photo not found' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiNoContentResponse({ description: 'Row and stored objects deleted' })
   @ApiConflictResponse({ description: 'Linked to a non-cancelled reading' })

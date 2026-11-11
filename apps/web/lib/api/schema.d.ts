@@ -358,6 +358,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PhotosController_list"];
+        put?: never;
+        /** @description Upload to the inbox (no apartment yet) */
+        post: operations["PhotosController_upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/photos/{id}": {
         parameters: {
             query?: never;
@@ -1214,8 +1231,11 @@ export interface components {
         PhotoUploadResultDto: {
             /** Format: uuid */
             id: string;
-            /** Format: uuid */
-            apartmentId: string;
+            /**
+             * Format: uuid
+             * @description null = inbox
+             */
+            apartmentId: string | null;
             /**
              * @description Detected from the file content
              * @example image/jpeg
@@ -1250,8 +1270,11 @@ export interface components {
         PhotoListItemResponseDto: {
             /** Format: uuid */
             id: string;
-            /** Format: uuid */
-            apartmentId: string;
+            /**
+             * Format: uuid
+             * @description null = inbox
+             */
+            apartmentId: string | null;
             /**
              * @description Detected from the file content
              * @example image/jpeg
@@ -1300,8 +1323,11 @@ export interface components {
         PhotoDetailResponseDto: {
             /** Format: uuid */
             id: string;
-            /** Format: uuid */
-            apartmentId: string;
+            /**
+             * Format: uuid
+             * @description null = inbox
+             */
+            apartmentId: string | null;
             /**
              * @description Detected from the file content
              * @example image/jpeg
@@ -3305,8 +3331,90 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description The same photo was uploaded for another apartment */
+            /** @description The same photo was uploaded for another apartment or is in the inbox */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A file is over the size limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PhotosController_list: {
+        parameters: {
+            query: {
+                /** @description true = photos without an apartment (inbox) */
+                inbox: "true";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhotoListItemResponseDto"][];
+                };
+            };
+            /** @description inbox=true missing */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PhotosController_upload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    files: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description In the order sent; duplicate = already uploaded (existing record returned) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhotoUploadResultDto"][];
+                };
+            };
+            /** @description No files, too many files, unsupported type (JPEG/PNG/WebP only) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

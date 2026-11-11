@@ -7,8 +7,8 @@ export class PhotoResponseDto {
   @ApiProperty({ format: 'uuid' })
   id: string;
 
-  @ApiProperty({ format: 'uuid' })
-  apartmentId: string;
+  @ApiProperty({ type: String, format: 'uuid', nullable: true, description: 'null = inbox' })
+  apartmentId: string | null;
 
   @ApiProperty({ example: 'image/jpeg', description: 'Detected from the file content' })
   mimeType: string;

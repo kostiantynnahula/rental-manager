@@ -16,8 +16,12 @@ paths:
   derived (sharp: EXIF orientation applied, max 400px, WebP). `width`/`height` are as displayed (after orientation).
 - Type comes from the content (magic bytes, `file-type`), never from the header or extension. Allowed: JPEG, PNG,
   WebP. **HEIC is rejected** (our prebuilt sharp has no HEVC decoder) — revisit if tenants send HEIC.
-- **Dedup by sha256** (unique): same file for the same apartment → existing record with `duplicate: true`, nothing
-  stored; for another apartment → 409.
+- **Inbox** (`apartmentId = null`): a photo uploaded without an apartment (`POST /photos`, e.g. by the bot); same
+  validation, dedup, thumbnail and parse job as `POST /apartments/:id/photos`. Listed by `GET /photos?inbox=true`
+  (`inbox` required — the only filter for now; newest first, `PhotoListItemResponseDto`).
+- **Dedup by sha256** (unique): same file in the same place (same apartment, or both inbox) → existing record with
+  `duplicate: true`, nothing stored; an inbox upload of a file that already has an apartment → also `duplicate: true`;
+  an apartment upload of a file in another apartment or in the inbox → 409 (`findDuplicate`).
 - Consistency: upload = objects first, then the row (insert fails → delete the objects); delete = row first (tx), then
   objects (a failure only leaves a logged orphan object, never a row pointing at nothing).
 - Limits (`PHOTO_MAX_FILES`, `PHOTO_MAX_FILE_SIZE_MB`) go through `MulterModule.registerAsync` (in-memory). Too many

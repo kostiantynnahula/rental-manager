@@ -32,6 +32,8 @@ consumption × tariff per utility + fixed fees.
     edited: a correction = cancel + new reading.
   - `source` (MANUAL or PHOTO) and the photo belong to each **value**: one photo shows one register, so a two-zone
     reading may come from two photos. A DRAFT may hold only some zones (filled zone by zone); confirming needs all.
+- **Photo** — a meter photo (the original is kept unchanged forever). Belongs to an Apartment, or is in the **inbox**
+  (`apartmentId` null: uploaded without an apartment, e.g. by the bot) until one is assigned.
 - **Meter replacement** — the old meter gets a FINAL reading and `removedAt`; the new one gets `installedAt` and
   an INITIAL reading. That month's consumption = (FINAL old − previous old) + (current new − INITIAL new).
 - **Tariff** — price per unit, versioned by effective date.

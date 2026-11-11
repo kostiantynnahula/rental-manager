@@ -38,6 +38,12 @@ export class ParsePhotoService {
     }
 
     const { apartmentId, mimeType, createdAt } = photo.data;
+    // Inbox photo (no apartment yet): nothing to match against until inbox mode (#57) or an apartment is assigned.
+    if (apartmentId === null) {
+      this.logger.warn(`photo ${photoId}: inbox photo (no apartment), not parsed`);
+      await this.results.report(photoId, 'NOT_MATCHED', 'inbox photo: no apartment');
+      return;
+    }
 
     const meters = await this.api.GET('/apartments/{apartmentId}/meters', {
       params: { path: { apartmentId }, query: {} },

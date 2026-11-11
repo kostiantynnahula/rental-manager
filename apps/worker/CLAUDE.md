@@ -40,7 +40,7 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
 
 - `ParsePhotoProcessor` (`@Processor(PHOTO_QUEUE)`, concurrency 1) dispatches on `job.name`; unknown → fails, no retry.
   Keep concurrency 1: the API merges values into drafts without locking (`POST /meters/{meterId}/draft-values`).
-- `ParsePhotoService.run(photoId)`: `GET /photos/{id}` → `GET /apartments/{apartmentId}/meters` (installed only, with
+- `ParsePhotoService.run(photoId)`: `GET /photos/{id}` (inbox photo, `apartmentId: null` → `NOT_MATCHED`, done — until #57) → `GET /apartments/{apartmentId}/meters` (installed only, with
   `lastReading`; none → log, done) → `GET /photos/{id}/file` → `PhotoExtractorService.extract` → `matchReadings` →
   one `POST /meters/{meterId}/draft-values` per matched zone (the API picks the draft: 201 new / 200 added or retry
   no-op). `readingDate` = upload day in Kyiv (`createdAt`), `period` = its month. Ends with one summary log line.

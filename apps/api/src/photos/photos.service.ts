@@ -52,13 +52,16 @@ export class PhotosService {
     private readonly photoJobs: PhotoJobsService,
   ) {}
 
+  // apartmentId null = inbox (no apartment yet).
   async upload(
-    apartmentId: string,
+    apartmentId: string | null,
     files: Express.Multer.File[] | undefined,
     userId: string,
   ): Promise<UploadedPhoto[]> {
-    const apartment = await this.apartments.findOrThrow(apartmentId);
-    if (!apartment.isActive) throw new BadRequestException('Apartment is archived');
+    if (apartmentId) {
+      const apartment = await this.apartments.findOrThrow(apartmentId);
+      if (!apartment.isActive) throw new BadRequestException('Apartment is archived');
+    }
     if (!files?.length) throw new BadRequestException('No files: send them in the "files" field');
 
     // Validate everything before storing anything, so a bad file rejects the whole request.
@@ -96,6 +99,15 @@ export class PhotosService {
     await this.apartments.findOrThrow(apartmentId);
     return this.prisma.photo.findMany({
       where: { apartmentId, ...(unassigned && unassignedPhoto) },
+      include: photoWithUsageInclude,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    });
+  }
+
+  // Inbox: photos without an apartment.
+  async listInbox(): Promise<PhotoWithUsage[]> {
+    return this.prisma.photo.findMany({
+      where: { apartmentId: null },
       include: photoWithUsageInclude,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     });
@@ -156,17 +168,22 @@ export class PhotosService {
     await this.deleteObjects(photo.storageKey, photo.thumbnailKey);
   }
 
-  private async findDuplicate(sha256: string, apartmentId: string): Promise<Photo | null> {
+  // Same place (same apartment, or both inbox) → the existing record. An inbox upload of a photo that already has
+  // an apartment is a duplicate too (it's already sorted). An apartment upload of a photo that is in the inbox or
+  // in another apartment → 409 (moving it out of the inbox is a separate action).
+  private async findDuplicate(sha256: string, apartmentId: string | null): Promise<Photo | null> {
     const existing = await this.prisma.photo.findUnique({ where: { sha256 } });
-    if (existing && existing.apartmentId !== apartmentId) {
-      throw new ConflictException('This photo was already uploaded for another apartment');
-    }
-    return existing;
+    if (!existing || apartmentId === null || existing.apartmentId === apartmentId) return existing;
+    throw new ConflictException(
+      existing.apartmentId === null
+        ? 'This photo is already in the inbox'
+        : 'This photo was already uploaded for another apartment',
+    );
   }
 
   // Objects first, then the row; if the insert fails, the objects are removed again.
   private async store(
-    apartmentId: string,
+    apartmentId: string | null,
     file: Express.Multer.File,
     type: ImageType,
     sha256: string,
