@@ -1,6 +1,7 @@
 ---
 paths:
   - 'apps/web/components/photos/**'
+  - 'apps/web/app/(app)/inbox/**'
 ---
 
 # Photos (Web)
@@ -30,6 +31,15 @@ paths:
 - 📷 elsewhere (history — one per distinct photo of the values, `HistoryPhotoLinks`; statement meters):
   `PhotoLinkButton({ photoId, label })` — loads the photo on tap and
   opens `PhotoFullscreen` (the same zoom dialog the review screen uses); 404 → "Фото видалено".
+- **«Вхідні»** (`/inbox`, nav item; `InboxPage` + `InboxPhotoCard`): photos without an apartment
+  (`useInboxPhotos` → `GET /photos?inbox=true`, key `photoKeys.inbox()` under `lists()`, polls every 5 s while one is
+  PENDING). Upload = `UploadPhotosButton apartmentId={null}` → `POST /photos`. A photo the worker matched by serial
+  gets an apartment and simply leaves the list on the next poll. Not PENDING → tap the thumbnail to zoom
+  (`PhotoFullscreen`), pick an active apartment (`NativeSelect`) → `useAssignPhotoApartment` (`PATCH /photos/:id`;
+  writes the response into `photoKeys.detail(id)` — the review screen checks `apartmentId`) → the usual review screen,
+  which shows the re-parse as PENDING. Errors: `helpers/assign-error-message.ts` (409 = used in readings). Delete as
+  on the tab (`canDelete`). Upload 409 "already in the inbox" (an apartment upload of an inbox photo) → «Це фото вже є
+  у «Вхідних»…».
 - Period/date rules shared with batch entry: `components/readings/helpers/reading-date-issue.ts`.
 - `useCreateReading` / `useUpdateReading` / `useConfirmReading` with a value that has a `photoId` also invalidate
   `photoKeys.all` (the photo leaves "unassigned").
