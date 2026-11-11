@@ -13,7 +13,7 @@ import { prepareImage } from './helpers/prepare-image.js';
 import type { ExtractionInput } from './interfaces/extraction-input.interface.js';
 import type { Extraction } from './interfaces/extraction.interface.js';
 
-// One vision call per photo: the photo + the apartment's meters in, a list of proposed readings out (never saved
+// One vision call per photo: the photo + the candidate meters (the apartment's, or all active ones for an inbox photo) in, a list of proposed readings out (never saved
 // here). Provider/model/effort come from env (EXTRACTION_*). Logs model, duration and counts — never the image,
 // the prompt contents or the API key.
 @Injectable()
@@ -22,7 +22,7 @@ export class PhotoExtractorService {
 
   constructor(private readonly config: ConfigService<Env, true>) {}
 
-  async extract({ image, meters }: ExtractionInput): Promise<Extraction> {
+  async extract({ image, meters, inbox }: ExtractionInput): Promise<Extraction> {
     const prepared = await prepareImage(image);
     // Native structured output (output_config.format). Not "functionCalling": it forces tool_choice, which current
     // Claude models (Opus 5.5, Sonnet 5.5) reject with a 400.
@@ -40,7 +40,7 @@ export class PhotoExtractorService {
         content: [
           // Image first, then the text about it.
           { type: 'image', data: prepared.data, mimeType: prepared.mimeType },
-          { type: 'text', text: describeCandidates(meters) },
+          { type: 'text', text: describeCandidates(meters, inbox) },
         ],
       }),
     ]);
