@@ -57,7 +57,9 @@ pnpm workspaces monorepo:
   that the API enqueues on photo upload; authenticates to the API with an API key. Never touches the DB: it reads
   photos, extracts the values (LangChain.js + Claude vision, `src/extraction/`), matches them to meters (inbox photos: by serial across all active meters) and saves
   them as DRAFT readings over HTTP (`draft-values`).
-- The API is the only way to data and business rules: every other app (web, worker, later a Telegram bot and an
+- `apps/bot` — Telegram bot (see `apps/bot/CLAUDE.md`). NestJS standalone + grammY, long polling, only answers
+  allowlisted Telegram users; an HTTP client of the API with its own API key.
+- The API is the only way to data and business rules: every other app (web, worker, the Telegram bot, later an
   MCP server) is an HTTP client of it. No second Prisma client or raw SQL outside `apps/api`.
 - `packages/shared` — code shared by api and web that isn't part of the API contract (e.g. phone
   normalization), and the BullMQ contract between api and worker (queue/job names, job payloads).
@@ -73,7 +75,7 @@ Node 24 (`.nvmrc`), pnpm via corepack. First run: `cp .env.example .env && pnpm 
 
 - infra: `pnpm infra:up` / `pnpm infra:down` / `pnpm infra:logs` (Postgres on :5433, MinIO :9000, console :9001,
   Redis :6379 — inspect jobs with `docker compose exec redis redis-cli KEYS 'bull:*'`)
-- dev: `pnpm dev` (shared + api + web + worker), or `pnpm dev:api` (:3001) / `pnpm dev:web` (:3000) / `pnpm dev:worker`
+- dev: `pnpm dev` (shared + api + web + worker + bot), or `pnpm dev:api` (:3001) / `pnpm dev:web` (:3000) / `pnpm dev:worker` / `pnpm dev:bot`
 - test: `pnpm test`
 - lint: `pnpm lint` · format: `pnpm format` / `pnpm format:check`
 - build: `pnpm build`
