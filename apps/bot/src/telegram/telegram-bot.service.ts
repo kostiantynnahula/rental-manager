@@ -10,6 +10,7 @@ import { Env } from '../config/env.validation.js';
 import { allowlist } from './helpers/allowlist.middleware.js';
 import { parseUserIds } from './helpers/parse-user-ids.js';
 import { COMMANDS, MESSAGES } from './messages.js';
+import { PhotoIntakeService } from './photo-intake.service.js';
 
 // Owns the grammY Bot: long polling from bootstrap to shutdown. Never log the token, the bot/api objects or
 // `ctx` (they carry the token); grammY keeps it out of its own error messages (`sensitiveLogs` is off).
@@ -18,13 +19,15 @@ export class TelegramBotService implements OnApplicationBootstrap, OnApplication
   private readonly logger = new Logger(TelegramBotService.name);
   private readonly bot: Bot;
 
-  constructor(config: ConfigService<Env, true>) {
+  constructor(config: ConfigService<Env, true>, intake: PhotoIntakeService) {
     this.bot = new Bot(config.get('TELEGRAM_BOT_TOKEN', { infer: true }));
     const allowed = parseUserIds(config.get('TELEGRAM_ALLOWED_USER_IDS', { infer: true }));
 
     this.bot.use(allowlist(allowed, this.logger));
     this.bot.command('start', (ctx) => ctx.reply(MESSAGES.start));
     this.bot.command('help', (ctx) => ctx.reply(MESSAGES.help));
+    // Photos and image files → the inbox (batched: one reply per album).
+    this.bot.on(['message:photo', 'message:document'], (ctx) => intake.add(ctx));
 
     // A failing handler: log it, tell the user, keep polling.
     this.bot.catch(async (err) => {
