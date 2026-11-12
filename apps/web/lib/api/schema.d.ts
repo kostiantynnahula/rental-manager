@@ -108,6 +108,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description API key scope: apartments:read */
         get: operations["ApartmentsController_list"];
         put?: never;
         post: operations["ApartmentsController_create"];
@@ -406,7 +407,7 @@ export interface paths {
         delete: operations["PhotosController_remove"];
         options?: never;
         head?: never;
-        /** @description Assign an apartment (e.g. to an inbox photo the worker could not match): parseStatus → PENDING and the photo is parsed again against that apartment's meters */
+        /** @description Assign an apartment (e.g. to an inbox photo the worker could not match): parseStatus → PENDING and the photo is parsed again against that apartment's meters. API key scope: photos:assign */
         patch: operations["PhotosController_assignApartment"];
         trace?: never;
     };
@@ -534,6 +535,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description API key scope: readings:read */
         get: operations["ReadingsController_get"];
         put?: never;
         post?: never;
@@ -552,6 +554,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description API key scope: readings:confirm (only for a human action, e.g. a bot button) */
         post: operations["ReadingsController_confirm"];
         delete?: never;
         options?: never;
@@ -568,6 +571,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description API key scope: readings:cancel (DRAFT only with a key) */
         post: operations["ReadingsController_cancel"];
         delete?: never;
         options?: never;
@@ -4251,7 +4255,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description INITIAL/FINAL reading, or already cancelled */
+            /** @description INITIAL/FINAL reading, already cancelled, or (API key) not a DRAFT */
             409: {
                 headers: {
                     [name: string]: unknown;

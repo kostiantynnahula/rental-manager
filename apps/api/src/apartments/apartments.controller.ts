@@ -12,14 +12,17 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCookieAuth,
   ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Scopes } from '../auth/scopes.decorator.js';
 import { ApartmentsService } from './apartments.service.js';
 import { ApartmentDetailResponseDto } from './dto/apartment-detail-response.dto.js';
 import { ApartmentResponseDto } from './dto/apartment-response.dto.js';
@@ -36,6 +39,10 @@ export class ApartmentsController {
   constructor(private readonly apartments: ApartmentsService) {}
 
   @Get()
+  // The Telegram bot: apartment names for its summaries and the "choose an apartment" buttons.
+  @Scopes('apartments:read')
+  @ApiBearerAuth()
+  @ApiOperation({ description: 'API key scope: apartments:read' })
   @ApiOkResponse({ type: [ApartmentDetailResponseDto], description: 'Each with its current lease' })
   async list(@Query() query: ListApartmentsQueryDto): Promise<ApartmentDetailResponseDto[]> {
     const apartments = await this.apartments.list(query.active);

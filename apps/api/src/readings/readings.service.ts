@@ -257,7 +257,12 @@ export class ReadingsService {
     return this.findOrThrow(id);
   }
 
-  async cancel(id: string, reason: string): Promise<ReadingWithConsumption> {
+  // draftOnly (API keys): a CONFIRMED reading can't be cancelled.
+  async cancel(
+    id: string,
+    reason: string,
+    { draftOnly = false }: { draftOnly?: boolean } = {},
+  ): Promise<ReadingWithConsumption> {
     const reading = await this.getOrThrow(this.prisma, id);
     if (reading.kind !== ReadingKind.REGULAR) {
       throw new ConflictException(
@@ -266,6 +271,9 @@ export class ReadingsService {
     }
     if (reading.status === ReadingStatus.CANCELLED) {
       throw new ConflictException('Reading is already cancelled');
+    }
+    if (draftOnly && reading.status !== ReadingStatus.DRAFT) {
+      throw new ConflictException('Only a DRAFT can be cancelled with an API key');
     }
     // Keep the original note; there are no cancelledAt/cancelledBy columns (yet).
     const line = `Cancelled: ${reason.trim()}`;

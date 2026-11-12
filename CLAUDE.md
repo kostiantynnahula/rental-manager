@@ -41,7 +41,8 @@ consumption × tariff per utility + fixed fees.
 
 ## Rules
 
-- Never use a parsed value until a human confirmed it. Always keep the photo.
+- Never use a parsed value until a human confirmed it. Always keep the photo. An API key confirms only on a human
+  action (the Telegram bot's button, tapped by an allowlisted user) — never the worker.
 - Readings only grow — reject/flag a value lower than the previous one.
 - Money: integer kopiyky (or Decimal), never floats. Currency UAH.
 - A statement uses the tariff valid for its period.

@@ -124,11 +124,14 @@ export class PhotosController {
   }
 
   @Patch(':id')
+  // The Telegram bot: the owner taps an apartment for a photo the worker couldn't match.
+  @Scopes('photos:assign')
+  @ApiBearerAuth()
   @ApiNotFoundResponse({ description: 'Photo not found' })
   @ApiOperation({
     description:
       'Assign an apartment (e.g. to an inbox photo the worker could not match): parseStatus → PENDING and the ' +
-      "photo is parsed again against that apartment's meters",
+      "photo is parsed again against that apartment's meters. API key scope: photos:assign",
   })
   @ApiOkResponse({ type: PhotoDetailResponseDto })
   @ApiBadRequestResponse({ description: 'Invalid body, apartment not found or archived' })

@@ -12,16 +12,19 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCookieAuth,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { AuthUser } from '../auth/interfaces/auth-user.interface.js';
+import { Scopes } from '../auth/scopes.decorator.js';
 import { CancelReadingDto } from './dto/cancel-reading.dto.js';
 import { ReadingResponseDto } from './dto/reading-response.dto.js';
 import { UpdateReadingDto } from './dto/update-reading.dto.js';
@@ -36,6 +39,9 @@ export class ReadingsController {
   constructor(private readonly readings: ReadingsService) {}
 
   @Get(':id')
+  @Scopes('readings:read')
+  @ApiBearerAuth()
+  @ApiOperation({ description: 'API key scope: readings:read' })
   @ApiOkResponse({ type: ReadingResponseDto })
   async get(@Param('id', ParseUUIDPipe) id: string): Promise<ReadingResponseDto> {
     return ReadingResponseDto.from(await this.readings.findOrThrow(id));
@@ -56,6 +62,12 @@ export class ReadingsController {
 
   @Post(':id/confirm')
   @HttpCode(HttpStatus.OK)
+  // A key confirms only on behalf of a human action (the Telegram bot's button, tapped by an allowlisted user).
+  @Scopes('readings:confirm')
+  @ApiBearerAuth()
+  @ApiOperation({
+    description: 'API key scope: readings:confirm (only for a human action, e.g. a bot button)',
+  })
   @ApiOkResponse({ type: ReadingResponseDto })
   @ApiBadRequestResponse({
     description:
@@ -71,13 +83,21 @@ export class ReadingsController {
 
   @Post(':id/cancel')
   @HttpCode(HttpStatus.OK)
+  @Scopes('readings:cancel')
+  @ApiBearerAuth()
+  @ApiOperation({ description: 'API key scope: readings:cancel (DRAFT only with a key)' })
   @ApiOkResponse({ type: ReadingResponseDto, description: 'Reason is appended to the note' })
-  @ApiConflictResponse({ description: 'INITIAL/FINAL reading, or already cancelled' })
+  @ApiConflictResponse({
+    description: 'INITIAL/FINAL reading, already cancelled, or (API key) not a DRAFT',
+  })
   async cancel(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CancelReadingDto,
+    @CurrentUser() user: AuthUser,
   ): Promise<ReadingResponseDto> {
-    return ReadingResponseDto.from(await this.readings.cancel(id, dto.reason));
+    // A key may only drop a draft: cancelling a CONFIRMED reading changes statements — a human does that in the web.
+    const draftOnly = user.apiKeyId !== undefined;
+    return ReadingResponseDto.from(await this.readings.cancel(id, dto.reason, { draftOnly }));
   }
 
   @Delete(':id')

@@ -4,6 +4,11 @@ export const API_KEY_SCOPES = [
   'readings:create-draft',
   'meters:read',
   'photos:parse-result',
+  'photos:assign',
+  'apartments:read',
+  'readings:read',
+  'readings:confirm',
+  'readings:cancel',
   'photos:upload',
 ] as const;
 
