@@ -12,6 +12,6 @@ export type ApiClient = Client<paths>;
 export function apiClientFromConfig(config: ConfigService<Env, true>): ApiClient {
   return createClient<paths>({
     baseUrl: config.get('API_BASE_URL', { infer: true }),
-    headers: { Authorization: `Bearer ${config.get('API_KEY', { infer: true })}` },
+    headers: { Authorization: `Bearer ${config.get('BOT_API_KEY', { infer: true })}` },
   });
 }

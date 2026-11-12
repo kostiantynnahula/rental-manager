@@ -30,8 +30,8 @@ export class Env {
   API_BASE_URL: string;
 
   // API key of the bot's service user (`pnpm --filter api apikey:create --service telegram-bot ...`). Never log it.
-  @Matches(/^rm_/, { message: 'API_KEY must be an API key (rm_…)' })
-  API_KEY: string;
+  @Matches(/^rm_/, { message: 'BOT_API_KEY must be an API key (rm_…)' })
+  BOT_API_KEY: string;
 }
 
 // Used by ConfigModule: fails fast at startup with all invalid vars listed (names and rules, never values).

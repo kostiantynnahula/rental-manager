@@ -4,7 +4,7 @@ import { validateEnv } from './env.validation.js';
 export const configModuleOptions: ConfigModuleOptions = {
   isGlobal: true,
   cache: true,
-  // cwd is apps/bot: a local .env wins over the shared root .env (the bot's own API_KEY goes there).
+  // cwd is apps/bot: an optional local .env wins over the shared root .env.
   envFilePath: ['.env', '../../.env'],
   validate: validateEnv,
 };

@@ -12,16 +12,16 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM �
 
 - Env (validated in `src/config/env.validation.ts`; names in the root `.env.example`): `TELEGRAM_BOT_TOKEN`
   (BotFather), `TELEGRAM_ALLOWED_USER_IDS` (comma-separated Telegram user ids), `API_BASE_URL` (with `/api`),
-  `API_KEY`. Files: `apps/bot/.env` wins over the root `.env` — put the bot's own `API_KEY` there (the root one is the
-  worker's).
+  `BOT_API_KEY` (the bot's own key; the worker's is `WORKER_API_KEY`). Root `.env`; an optional `apps/bot/.env` wins
+  over it.
 - Key: `pnpm --filter api apikey:create --service telegram-bot --name "<label>" --scopes <a,b>` (at least one scope;
-  fixed at creation — re-create the key and revoke the old one when the bot needs a new scope).
+  fixed at creation — re-create the key and revoke the old one when the bot needs a new scope) → `BOT_API_KEY`.
 
 ## Rules
 
 - **Talks to the API only** (HTTP, `API_CLIENT` = openapi-fetch typed by `src/api/schema.d.ts`). No DB, no MinIO,
   no Redis. Never hand-write API types.
-- **Never log the bot token** — it is part of every Bot API URL (`/bot<token>/<method>`) — nor `API_KEY`, the
+- **Never log the bot token** — it is part of every Bot API URL (`/bot<token>/<method>`) — nor `BOT_API_KEY`, the
   `Authorization` header, the `Bot` / `Api` objects or `ctx` (they carry the token). Log ids, names, messages.
   grammY keeps the token out of its error messages while `sensitiveLogs` is off (the default): keep it off.
 - **Long polling** (`bot.start()`), no webhook: Telegram allows **one** `getUpdates` consumer per token — a second
@@ -29,6 +29,8 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM �
   then logs it and exits. Use a separate BotFather bot for local dev once there is a deployed one.
 - **Allowlist first**: the first middleware drops every update whose sender isn't in `TELEGRAM_ALLOWED_USER_IDS`
   (or has no sender) — no reply at all, only the id is logged. Every handler goes after it.
+- Startup errors (`main.ts`) are logged as name + message only, then exit 1: a grammY `HttpError`'s cause holds the
+  Bot API URL with the token.
 - Errors: `bot.catch` logs the error's name + message, replies with a generic text and keeps polling.
 - Replies are Ukrainian plain text (`src/telegram/messages.ts`).
 
