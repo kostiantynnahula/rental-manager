@@ -1577,7 +1577,7 @@
     },
     "/photos": {
       "post": {
-        "description": "Upload to the inbox (no apartment yet)",
+        "description": "Upload to the inbox (no apartment yet). API key scope: photos:upload",
         "operationId": "PhotosController_upload",
         "parameters": [],
         "requestBody": {
@@ -1622,6 +1622,9 @@
           "401": {
             "description": ""
           },
+          "403": {
+            "description": "API key without photos:upload"
+          },
           "413": {
             "description": "A file is over the size limit"
           }
@@ -1629,6 +1632,9 @@
         "security": [
           {
             "cookie": []
+          },
+          {
+            "bearer": []
           }
         ],
         "summary": "",

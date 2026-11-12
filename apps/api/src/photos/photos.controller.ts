@@ -55,7 +55,13 @@ export class PhotosController {
 
   @Post()
   @PhotoUpload()
-  @ApiOperation({ description: 'Upload to the inbox (no apartment yet)' })
+  // The Telegram bot uploads forwarded photos with an API key.
+  @Scopes('photos:upload')
+  @ApiBearerAuth()
+  @ApiOperation({
+    description: 'Upload to the inbox (no apartment yet). API key scope: photos:upload',
+  })
+  @ApiForbiddenResponse({ description: 'API key without photos:upload' })
   @ApiBadRequestResponse({
     description: 'No files, too many files, unsupported type (JPEG/PNG/WebP only)',
   })

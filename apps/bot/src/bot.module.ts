@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ApiClientModule } from './api/api-client.module.js';
 import { configModuleOptions } from './config/config-module-options.js';
 import { TelegramModule } from './telegram/telegram.module.js';
 
-// Root: global config, the API client (used by the photo features, #62+) and the Telegram bot.
+// Root: global config and the Telegram bot (which imports the API client for the photo intake).
 @Module({
-  imports: [ConfigModule.forRoot(configModuleOptions), ApiClientModule, TelegramModule],
+  imports: [ConfigModule.forRoot(configModuleOptions), TelegramModule],
 })
 export class BotModule {}

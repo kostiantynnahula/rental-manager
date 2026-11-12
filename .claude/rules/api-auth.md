@@ -33,5 +33,6 @@ paths:
     `photos:read` → `GET /photos/:id`, `/file`, `/thumbnail`; `meters:read` → `GET /apartments/:apartmentId/meters`, `GET /meters?active=true` (all active meters of
     active apartments — for inbox photos);
     `readings:create-draft` → `POST /meters/:meterId/draft-values` (see `api-readings.md`);
-    `photos:parse-result` → `PUT /photos/:id/parse-result` (see `api-photos.md`).
+    `photos:parse-result` → `PUT /photos/:id/parse-result` (see `api-photos.md`);
+    `photos:upload` → `POST /photos` (inbox only — the Telegram bot; the apartment upload stays human-only).
   - Never log the `Authorization` header or a key — only its prefix.

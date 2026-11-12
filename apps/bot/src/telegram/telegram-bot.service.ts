@@ -10,6 +10,7 @@ import { Env } from '../config/env.validation.js';
 import { allowlist } from './helpers/allowlist.middleware.js';
 import { parseUserIds } from './helpers/parse-user-ids.js';
 import { COMMANDS, MESSAGES } from './messages.js';
+import { PhotoIntakeService } from './photo-intake.service.js';
 
 // Owns the grammY Bot: long polling from bootstrap to shutdown. Never log the token, the bot/api objects or
 // `ctx` (they carry the token); grammY keeps it out of its own error messages (`sensitiveLogs` is off).
@@ -17,14 +18,21 @@ import { COMMANDS, MESSAGES } from './messages.js';
 export class TelegramBotService implements OnApplicationBootstrap, OnApplicationShutdown {
   private readonly logger = new Logger(TelegramBotService.name);
   private readonly bot: Bot;
+  // bot.start(): resolves once polling has stopped and the last batch of updates was handled.
+  private polling?: Promise<void>;
 
-  constructor(config: ConfigService<Env, true>) {
+  constructor(
+    config: ConfigService<Env, true>,
+    private readonly intake: PhotoIntakeService,
+  ) {
     this.bot = new Bot(config.get('TELEGRAM_BOT_TOKEN', { infer: true }));
     const allowed = parseUserIds(config.get('TELEGRAM_ALLOWED_USER_IDS', { infer: true }));
 
     this.bot.use(allowlist(allowed, this.logger));
     this.bot.command('start', (ctx) => ctx.reply(MESSAGES.start));
     this.bot.command('help', (ctx) => ctx.reply(MESSAGES.help));
+    // Photos and image files → the inbox (batched: one reply per album).
+    this.bot.on(['message:photo', 'message:document'], (ctx) => this.intake.add(ctx));
 
     // A failing handler: log it, tell the user, keep polling.
     this.bot.catch(async (err) => {
@@ -45,18 +53,25 @@ export class TelegramBotService implements OnApplicationBootstrap, OnApplication
     await this.bot.init();
     await this.bot.api.setMyCommands(COMMANDS);
     // start() resolves only when polling stops, so it isn't awaited. It rejects e.g. on 409 (another process
-    // polls the same token): without polling the app is useless, so exit.
-    this.bot
+    // polls the same token): without polling the app is useless, so shut down — through SIGTERM, the same path as
+    // Ctrl+C (enableShutdownHooks → app.close() → onApplicationShutdown → drain()), so waiting replies still go out.
+    // The process then ends by the signal (exit code 143), not 0.
+    this.polling = this.bot
       .start({
         onStart: (me) => this.logger.log(`Polling as @${me.username}`),
       })
       .catch((error: unknown) => {
-        this.logger.error(`Polling stopped: ${(error as Error).message}`);
-        process.exit(1);
+        const { name, message } = error instanceof Error ? error : new Error(String(error));
+        this.logger.error(`Polling stopped: ${name}: ${message}`);
+        process.kill(process.pid, 'SIGTERM');
       });
   }
 
+  // Order matters: bot.stop() only aborts getUpdates, the current batch of updates is still being handled until
+  // start() resolves. Only then is nothing left to call intake.add(), and the buffered photos can be flushed.
   async onApplicationShutdown(): Promise<void> {
     if (this.bot.isRunning()) await this.bot.stop();
+    await this.polling;
+    await this.intake.drain();
   }
 }

@@ -4,6 +4,7 @@ export const API_KEY_SCOPES = [
   'readings:create-draft',
   'meters:read',
   'photos:parse-result',
+  'photos:upload',
 ] as const;
 
 export type ApiKeyScope = (typeof API_KEY_SCOPES)[number];
