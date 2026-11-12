@@ -34,5 +34,12 @@ paths:
     active apartments — for inbox photos);
     `readings:create-draft` → `POST /meters/:meterId/draft-values` (see `api-readings.md`);
     `photos:parse-result` → `PUT /photos/:id/parse-result` (see `api-photos.md`);
-    `photos:upload` → `POST /photos` (inbox only — the Telegram bot; the apartment upload stays human-only).
+    `photos:upload` → `POST /photos` (inbox only — the Telegram bot; the apartment upload stays human-only);
+    the Telegram bot's results: `photos:assign` → `PATCH /photos/:id`, `apartments:read` → `GET /apartments`,
+    `readings:read` → `GET /readings/:id`, `readings:confirm` → `POST /readings/:id/confirm`, `readings:cancel` →
+    `POST /readings/:id/cancel`.
+  - **Confirming with a key = on behalf of a human action only**: `readings:confirm` / `readings:cancel` go to a key
+    whose every call follows an allowlisted user's tap (the bot's buttons). The worker's key never gets them — a
+    parsed value is never used until a human confirmed it. With a key, cancel accepts only a **DRAFT** (409
+    otherwise): cancelling a CONFIRMED reading changes statements, a human does that in the web.
   - Never log the `Authorization` header or a key — only its prefix.

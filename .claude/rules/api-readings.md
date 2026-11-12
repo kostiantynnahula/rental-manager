@@ -6,7 +6,9 @@ paths:
 # Readings (API)
 
 **Readings** (`src/readings/`): REGULAR only (INITIAL/FINAL belong to the meter lifecycle). DRAFT → edit/delete →
-confirm (or create with `confirm: true`); CONFIRMED → only cancel (`reason` appended to `note`) and re-enter.
+confirm (or create with `confirm: true`); CONFIRMED → only cancel (`reason` appended to `note`) and re-enter. An API key (the Telegram bot, scopes
+`readings:confirm` / `readings:cancel`) confirms a DRAFT like a human, but cancels **only a DRAFT** (`draftOnly` → 409;
+see `api-auth.md`).
 
 - Confirm rules are **pure** in `helpers/confirm-rules.ts` (`checkConfirmRules`, `today` passed in, no DB) — add rules
   and tests there; the service only loads data in a transaction and maps violations (`conflict` → 409, else 400).
