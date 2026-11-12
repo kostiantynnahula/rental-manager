@@ -384,7 +384,7 @@ export interface paths {
         };
         get: operations["PhotosController_list"];
         put?: never;
-        /** @description Upload to the inbox (no apartment yet) */
+        /** @description Upload to the inbox (no apartment yet). API key scope: photos:upload */
         post: operations["PhotosController_upload"];
         delete?: never;
         options?: never;
@@ -3487,6 +3487,13 @@ export interface operations {
                 content?: never;
             };
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without photos:upload */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

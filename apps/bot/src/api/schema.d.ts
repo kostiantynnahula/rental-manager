@@ -39,6 +39,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Upload to the inbox (no apartment yet). API key scope: photos:upload */
+        post: operations["PhotosController_upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/photos/{id}": {
         parameters: {
             query?: never;
@@ -197,6 +214,45 @@ export interface components {
          * @enum {string}
          */
         PhotoParseStatus: "PENDING" | "PARSED" | "NOT_MATCHED" | "FAILED";
+        PhotoUploadResultDto: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: uuid
+             * @description null = inbox
+             */
+            apartmentId: string | null;
+            /**
+             * @description Detected from the file content
+             * @example image/jpeg
+             */
+            mimeType: string;
+            /** @description Bytes */
+            size: number;
+            /**
+             * @description SHA-256 of the original (hex)
+             * @example e3b0c442…
+             */
+            sha256: string;
+            /** @description As displayed (EXIF orientation applied) */
+            width: number;
+            height: number;
+            originalFilename: string | null;
+            /** Format: uuid */
+            uploadedById: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description The worker's parse job: PENDING until it ends; null = never queued (older photos) */
+            parseStatus: components["schemas"]["PhotoParseStatus"] | null;
+            /** @description Why nothing was matched, or the error (worker text, for the owner) */
+            parseNote: string | null;
+            /** @example /api/photos/3f1c…/file */
+            fileUrl: string;
+            /** @example /api/photos/3f1c…/thumbnail */
+            thumbnailUrl: string;
+            /** @description true = same file (by SHA-256) was already uploaded; existing record */
+            duplicate: boolean;
+        };
         /** @enum {string} */
         ReadingStatus: "DRAFT" | "CONFIRMED" | "CANCELLED";
         PhotoReadingResponseDto: {
@@ -428,6 +484,59 @@ export interface operations {
             };
             /** @description Meter not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PhotosController_upload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    files: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description In the order sent; duplicate = already uploaded (existing record returned) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhotoUploadResultDto"][];
+                };
+            };
+            /** @description No files, too many files, unsupported type (JPEG/PNG/WebP only) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without photos:upload */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A file is over the size limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
