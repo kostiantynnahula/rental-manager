@@ -38,7 +38,9 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM �
 
 - `onApplicationBootstrap`: `bot.init()` (getMe — a bad token fails startup), `setMyCommands` (`/start`, `/help`),
   then `bot.start()` **not awaited** (it resolves only when polling stops; a rejection → log + exit 1).
-- `onApplicationShutdown` (`enableShutdownHooks`, Ctrl+C / SIGTERM): `bot.stop()`.
+- `onApplicationShutdown` (`enableShutdownHooks`, Ctrl+C / SIGTERM), in this order: `bot.stop()` (only aborts
+  `getUpdates`) → await the `start()` promise (the current batch of updates is handled) → `intake.drain()`. Not a
+  hook of its own in `PhotoIntakeService`: Nest runs hooks concurrently, and a flush before polling ends can drop a photo.
 
 ## Photos (`src/telegram/photo-intake.service.ts`, `src/photos/`)
 
@@ -46,10 +48,12 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM �
   original quality). Any other document → «Надішліть фото лічильника». The API decides the real type by content.
 - **Batches**: an album is one update per photo (same `media_group_id`). `PhotoBatcher` buffers by
   `album:<media_group_id>`, else `chat:<chatId>`, and flushes after 1.5 s of silence. In memory (single process);
-  shutdown flushes and awaits what's buffered. The handler never awaits the batch (grammY runs updates one by one).
+  shutdown flushes and awaits what's buffered (`drain()`, after polling stopped). The handler never awaits the batch (grammY runs updates one by one).
 - Per photo, in order: `getFile` + download (`helpers/download-telegram-file.ts`), then **one `POST /photos` each**
   (inbox, scope `photos:upload`) so one rejected file doesn't fail the album. Over 20 MB (Bot API download limit) →
-  not downloaded. Outcomes: accepted / duplicate (sha256 — information, not an error) / unsupported (400) /
-  too-large (413 or > 20 MB) / failed → **one reply per batch** (`batchReply`, «Прийнято N фото, розпізнаю…»).
+  not downloaded. Outcomes: accepted / duplicate (sha256 — information, not an error) / unsupported (400 `files[i]: …`:
+  type / corrupt) / too-large (413 or > 20 MB) / unauthorized (401/403: key or scope — no "try again") / failed
+  (other statuses, network) → **one reply per batch** (`batchReply`, «Прийнято N фото, розпізнаю…»).
 - The file download URL contains the token: its errors are rethrown without URL or cause. The batch runs outside
-  the middleware (`bot.catch` doesn't see it) and has its own catch (log + `MESSAGES.error`).
+  the middleware (`bot.catch` doesn't see it) and has its own catch (log + `MESSAGES.error`). The summary reply is sent separately: if only it fails,
+  that is just logged (the photos are already in the inbox).

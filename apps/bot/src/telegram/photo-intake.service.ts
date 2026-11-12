@@ -1,4 +1,4 @@
-import { Injectable, Logger, type OnApplicationShutdown } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Api, Context } from 'grammy';
 import { Env } from '../config/env.validation.js';
@@ -24,7 +24,7 @@ interface QueuedPhoto {
 
 // Photos sent to the bot → the API inbox, one reply per batch (an album, or single photos in a row).
 @Injectable()
-export class PhotoIntakeService implements OnApplicationShutdown {
+export class PhotoIntakeService {
   private readonly logger = new Logger(PhotoIntakeService.name);
   private readonly token: string;
   private readonly inFlight = new Set<Promise<void>>();
@@ -55,8 +55,9 @@ export class PhotoIntakeService implements OnApplicationShutdown {
     this.batcher.add(key, { api: ctx.api, chatId: message.chat.id, photo });
   }
 
-  // Ctrl+C / SIGTERM: send what is still buffered and wait for it, so no photo is dropped.
-  async onApplicationShutdown(): Promise<void> {
+  // Shutdown (called by TelegramBotService after polling has stopped, so no add() can follow): send what is
+  // still buffered and wait for it, so no photo is dropped. Not a Nest hook: Nest runs hooks concurrently.
+  async drain(): Promise<void> {
     this.batcher.flushAll();
     await Promise.allSettled([...this.inFlight]);
   }
@@ -69,12 +70,11 @@ export class PhotoIntakeService implements OnApplicationShutdown {
   // Runs outside grammY's middleware, so bot.catch doesn't see its errors: handled here.
   private async processBatch(items: QueuedPhoto[]): Promise<void> {
     const { api, chatId } = items[0];
+    const outcomes: UploadOutcome[] = [];
     try {
-      const outcomes: UploadOutcome[] = [];
       // In order, one at a time: the inbox lists them as sent, and the API isn't hit with 10 uploads at once.
       for (const item of items) outcomes.push(await this.uploadOne(item));
       this.logger.log(`Chat ${chatId}: ${items.length} photo(s) → ${outcomes.join(', ')}`);
-      await api.sendMessage(chatId, batchReply(outcomes));
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       this.logger.error(`Photo batch for chat ${chatId} failed: ${err.name}: ${err.message}`);
@@ -83,6 +83,15 @@ export class PhotoIntakeService implements OnApplicationShutdown {
       } catch {
         // Telegram is unreachable: already logged.
       }
+      return;
+    }
+    // Separate from the error above: the photos are already in the inbox, so a failed summary only gets logged
+    // (telling the user to try again would make them resend the album).
+    try {
+      await api.sendMessage(chatId, batchReply(outcomes));
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`Batch reply to chat ${chatId} failed: ${err.name}: ${err.message}`);
     }
   }
 

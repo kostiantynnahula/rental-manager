@@ -18,8 +18,13 @@ import { PhotoIntakeService } from './photo-intake.service.js';
 export class TelegramBotService implements OnApplicationBootstrap, OnApplicationShutdown {
   private readonly logger = new Logger(TelegramBotService.name);
   private readonly bot: Bot;
+  // bot.start(): resolves once polling has stopped and the last batch of updates was handled.
+  private polling?: Promise<void>;
 
-  constructor(config: ConfigService<Env, true>, intake: PhotoIntakeService) {
+  constructor(
+    config: ConfigService<Env, true>,
+    private readonly intake: PhotoIntakeService,
+  ) {
     this.bot = new Bot(config.get('TELEGRAM_BOT_TOKEN', { infer: true }));
     const allowed = parseUserIds(config.get('TELEGRAM_ALLOWED_USER_IDS', { infer: true }));
 
@@ -27,7 +32,7 @@ export class TelegramBotService implements OnApplicationBootstrap, OnApplication
     this.bot.command('start', (ctx) => ctx.reply(MESSAGES.start));
     this.bot.command('help', (ctx) => ctx.reply(MESSAGES.help));
     // Photos and image files → the inbox (batched: one reply per album).
-    this.bot.on(['message:photo', 'message:document'], (ctx) => intake.add(ctx));
+    this.bot.on(['message:photo', 'message:document'], (ctx) => this.intake.add(ctx));
 
     // A failing handler: log it, tell the user, keep polling.
     this.bot.catch(async (err) => {
@@ -49,7 +54,7 @@ export class TelegramBotService implements OnApplicationBootstrap, OnApplication
     await this.bot.api.setMyCommands(COMMANDS);
     // start() resolves only when polling stops, so it isn't awaited. It rejects e.g. on 409 (another process
     // polls the same token): without polling the app is useless, so exit.
-    this.bot
+    this.polling = this.bot
       .start({
         onStart: (me) => this.logger.log(`Polling as @${me.username}`),
       })
@@ -59,7 +64,11 @@ export class TelegramBotService implements OnApplicationBootstrap, OnApplication
       });
   }
 
+  // Order matters: bot.stop() only aborts getUpdates, the current batch of updates is still being handled until
+  // start() resolves. Only then is nothing left to call intake.add(), and the buffered photos can be flushed.
   async onApplicationShutdown(): Promise<void> {
     if (this.bot.isRunning()) await this.bot.stop();
+    await this.polling;
+    await this.intake.drain();
   }
 }

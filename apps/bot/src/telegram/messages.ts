@@ -22,6 +22,10 @@ export function batchReply(outcomes: readonly UploadOutcome[]): string {
     [count('duplicate'), 'N фото вже були завантажені раніше.'],
     [count('unsupported'), 'N фото: формат не підтримується (лише JPEG, PNG, WebP).'],
     [count('too-large'), 'N фото завеликі.'],
+    [
+      count('unauthorized'),
+      'N фото не завантажено: бот не має доступу до API (перевірте BOT_API_KEY).',
+    ],
     [count('failed'), 'N фото не вдалося завантажити, спробуйте ще раз.'],
   ];
   return lines

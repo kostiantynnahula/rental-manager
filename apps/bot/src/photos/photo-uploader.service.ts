@@ -13,15 +13,29 @@ export class PhotoUploaderService {
   async upload(bytes: Buffer, filename: string): Promise<UploadOutcome> {
     const form = new FormData();
     form.append('files', new Blob([new Uint8Array(bytes)]), filename);
-    const { data, response } = await this.api.POST('/photos', {
+    const { data, error, response } = await this.api.POST('/photos', {
       // The typed body is a placeholder: the request body is the FormData above.
       body: { files: [] },
       bodySerializer: () => form,
     });
     if (data) return data[0]?.duplicate ? 'duplicate' : 'accepted';
-    if (response.status === 400) return 'unsupported';
+    // The OpenAPI document has no error schema (typed `never`): read the Nest error body as unknown.
+    const body: unknown = error;
+    const message =
+      typeof body === 'object' && body !== null && 'message' in body ? String(body.message) : '';
+    // Only the API's per-file errors (`files[i]: …` — type, corrupt image) are the user's file; any other 400 is ours.
+    if (response.status === 400 && message.startsWith('files[')) return 'unsupported';
     if (response.status === 413) return 'too-large';
-    this.logger.error(`Inbox upload failed: HTTP ${response.status}`);
+    if (response.status === 401 || response.status === 403) {
+      // A retry can't help: the key is wrong, revoked or lacks the scope.
+      this.logger.error(
+        `Inbox upload refused: HTTP ${response.status} — check BOT_API_KEY and its scope photos:upload`,
+      );
+      return 'unauthorized';
+    }
+    this.logger.error(
+      `Inbox upload failed: HTTP ${response.status}${message ? ` (${message})` : ''}`,
+    );
     return 'failed';
   }
 }
