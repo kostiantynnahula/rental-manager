@@ -14,7 +14,7 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM �
   (BotFather), `TELEGRAM_ALLOWED_USER_IDS` (comma-separated Telegram user ids), `API_BASE_URL` (with `/api`),
   `BOT_API_KEY` (the bot's own key; the worker's is `WORKER_API_KEY`). Root `.env`; an optional `apps/bot/.env` wins
   over it.
-- Key: `pnpm --filter api apikey:create --service telegram-bot --name "<label>" --scopes <a,b>` (at least one scope;
+- Key: `pnpm --filter api apikey:create --service telegram-bot --name "<label>" --scopes photos:upload` (at least one scope;
   fixed at creation — re-create the key and revoke the old one when the bot needs a new scope) → `BOT_API_KEY`.
 
 ## Rules
@@ -39,3 +39,17 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM �
 - `onApplicationBootstrap`: `bot.init()` (getMe — a bad token fails startup), `setMyCommands` (`/start`, `/help`),
   then `bot.start()` **not awaited** (it resolves only when polling stops; a rejection → log + exit 1).
 - `onApplicationShutdown` (`enableShutdownHooks`, Ctrl+C / SIGTERM): `bot.stop()`.
+
+## Photos (`src/telegram/photo-intake.service.ts`, `src/photos/`)
+
+- Accepted: `message:photo` (the largest size) and `message:document` with an `image/*` MIME (sent as a file =
+  original quality). Any other document → «Надішліть фото лічильника». The API decides the real type by content.
+- **Batches**: an album is one update per photo (same `media_group_id`). `PhotoBatcher` buffers by
+  `album:<media_group_id>`, else `chat:<chatId>`, and flushes after 1.5 s of silence. In memory (single process);
+  shutdown flushes and awaits what's buffered. The handler never awaits the batch (grammY runs updates one by one).
+- Per photo, in order: `getFile` + download (`helpers/download-telegram-file.ts`), then **one `POST /photos` each**
+  (inbox, scope `photos:upload`) so one rejected file doesn't fail the album. Over 20 MB (Bot API download limit) →
+  not downloaded. Outcomes: accepted / duplicate (sha256 — information, not an error) / unsupported (400) /
+  too-large (413 or > 20 MB) / failed → **one reply per batch** (`batchReply`, «Прийнято N фото, розпізнаю…»).
+- The file download URL contains the token: its errors are rethrown without URL or cause. The batch runs outside
+  the middleware (`bot.catch` doesn't see it) and has its own catch (log + `MESSAGES.error`).
