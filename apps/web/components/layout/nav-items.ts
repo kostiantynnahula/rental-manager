@@ -1,4 +1,4 @@
-import { Building2, Receipt, Users, type LucideIcon } from 'lucide-react';
+import { Building2, Inbox, Receipt, Users, type LucideIcon } from 'lucide-react';
 
 export interface NavItem {
   href: string;
@@ -15,6 +15,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     icon: Building2,
     alsoActiveOn: ['/apartments', '/leases', '/meters'],
   },
+  { href: '/inbox', label: 'Вхідні', icon: Inbox },
   { href: '/tenants', label: 'Мешканці', icon: Users },
   { href: '/tariffs', label: 'Тарифи', icon: Receipt },
 ];
