@@ -7,6 +7,9 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Bot } from 'grammy';
 import { Env } from '../config/env.validation.js';
+import { ParseWatcherService } from '../results/parse-watcher.service.js';
+import { ResultActionsService } from '../results/result-actions.service.js';
+import { RESULT_CALLBACK } from '../results/results-state.service.js';
 import { allowlist } from './helpers/allowlist.middleware.js';
 import { parseUserIds } from './helpers/parse-user-ids.js';
 import { COMMANDS, MESSAGES } from './messages.js';
@@ -24,6 +27,8 @@ export class TelegramBotService implements OnApplicationBootstrap, OnApplication
   constructor(
     config: ConfigService<Env, true>,
     private readonly intake: PhotoIntakeService,
+    private readonly watcher: ParseWatcherService,
+    actions: ResultActionsService,
   ) {
     this.bot = new Bot(config.get('TELEGRAM_BOT_TOKEN', { infer: true }));
     const allowed = parseUserIds(config.get('TELEGRAM_ALLOWED_USER_IDS', { infer: true }));
@@ -33,6 +38,9 @@ export class TelegramBotService implements OnApplicationBootstrap, OnApplication
     this.bot.command('help', (ctx) => ctx.reply(MESSAGES.help));
     // Photos and image files → the inbox (batched: one reply per album).
     this.bot.on(['message:photo', 'message:document'], (ctx) => this.intake.add(ctx));
+    // Result buttons (confirm / cancel / confirm all / assign an apartment) — after the allowlist, so only the owner's
+    // tap makes the bot's key confirm anything.
+    this.bot.callbackQuery(RESULT_CALLBACK, (ctx) => actions.handle(ctx));
 
     // A failing handler: log it, tell the user, keep polling.
     this.bot.catch(async (err) => {
@@ -73,5 +81,7 @@ export class TelegramBotService implements OnApplicationBootstrap, OnApplication
     if (this.bot.isRunning()) await this.bot.stop();
     await this.polling;
     await this.intake.drain();
+    // Last: drain() may still hand photos to the watcher (it then ignores them).
+    await this.watcher.stop();
   }
 }

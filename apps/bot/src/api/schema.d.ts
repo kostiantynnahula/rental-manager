@@ -5,1128 +5,1128 @@
 // Only the API-key (bearer) operations of apps/api/openapi.json: see scripts/gen-api.mjs.
 
 export interface paths {
-    "/apartments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description API key scope: apartments:read */
-        get: operations["ApartmentsController_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  '/apartments': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/apartments/{apartmentId}/meters": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description API key scope: meters:read */
-        get: operations["ApartmentMetersController_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** @description API key scope: apartments:read */
+    get: operations['ApartmentsController_list'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/apartments/{apartmentId}/meters': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/meters": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description API key scope: meters:read */
-        get: operations["MetersController_listActive"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** @description API key scope: meters:read */
+    get: operations['ApartmentMetersController_list'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/meters': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/photos": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description Upload to the inbox (no apartment yet). API key scope: photos:upload */
-        post: operations["PhotosController_upload"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** @description API key scope: meters:read */
+    get: operations['MetersController_listActive'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/photos': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/photos/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description API key scope: photos:read */
-        get: operations["PhotosController_findOne"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** @description Assign an apartment (e.g. to an inbox photo the worker could not match): parseStatus → PENDING and the photo is parsed again against that apartment's meters. API key scope: photos:assign */
-        patch: operations["PhotosController_assignApartment"];
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** @description Upload to the inbox (no apartment yet). API key scope: photos:upload */
+    post: operations['PhotosController_upload'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/photos/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/photos/{id}/file": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description API key scope: photos:read */
-        get: operations["PhotosController_file"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** @description API key scope: photos:read */
+    get: operations['PhotosController_findOne'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** @description Assign an apartment (e.g. to an inbox photo the worker could not match): parseStatus → PENDING and the photo is parsed again against that apartment's meters. API key scope: photos:assign */
+    patch: operations['PhotosController_assignApartment'];
+    trace?: never;
+  };
+  '/photos/{id}/file': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/photos/{id}/thumbnail": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description API key scope: photos:read */
-        get: operations["PhotosController_thumbnail"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** @description API key scope: photos:read */
+    get: operations['PhotosController_file'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/photos/{id}/thumbnail': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/photos/{id}/parse-result": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** @description API key scope: photos:parse-result (keys only) */
-        put: operations["PhotosController_setParseResult"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** @description API key scope: photos:read */
+    get: operations['PhotosController_thumbnail'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/photos/{id}/parse-result': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/meters/{meterId}/draft-values": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description API key scope: readings:create-draft (keys only). Adds the zone to the key user's open DRAFT of the meter and period (never a human draft), or creates one. An existing draft keeps its readingDate; note is appended. Same zone from the same photo → 200, no change (job retry). An inbox photo (no apartment) gets the meter's apartment. */
-        post: operations["MeterDraftValuesController_add"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    /** @description API key scope: photos:parse-result (keys only) */
+    put: operations['PhotosController_setParseResult'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/meters/{meterId}/draft-values': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/readings/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description API key scope: readings:read */
-        get: operations["ReadingsController_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** @description API key scope: readings:create-draft (keys only). Adds the zone to the key user's open DRAFT of the meter and period (never a human draft), or creates one. An existing draft keeps its readingDate; note is appended. Same zone from the same photo → 200, no change (job retry). An inbox photo (no apartment) gets the meter's apartment. */
+    post: operations['MeterDraftValuesController_add'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/readings/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/readings/{id}/confirm": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description API key scope: readings:confirm (only for a human action, e.g. a bot button) */
-        post: operations["ReadingsController_confirm"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** @description API key scope: readings:read */
+    get: operations['ReadingsController_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/readings/{id}/confirm': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/readings/{id}/cancel": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description API key scope: readings:cancel (DRAFT only with a key) */
-        post: operations["ReadingsController_cancel"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** @description API key scope: readings:confirm (only for a human action, e.g. a bot button) */
+    post: operations['ReadingsController_confirm'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/readings/{id}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    get?: never;
+    put?: never;
+    /** @description API key scope: readings:cancel (DRAFT only with a key) */
+    post: operations['ReadingsController_cancel'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        /** @enum {string} */
-        LeaseTenantRole: "PRIMARY" | "CONTACT";
-        LeaseTenantResponseDto: {
-            /** Format: uuid */
-            tenantId: string;
-            /** @example Ivan Petrenko */
-            fullName: string;
-            /** @example +380501112233 */
-            phone: string;
-            role: components["schemas"]["LeaseTenantRole"];
-        };
-        LeaseResponseDto: {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            apartmentId: string;
-            /**
-             * Format: date
-             * @example 2026-01-01
-             */
-            startDate: string;
-            /**
-             * Format: date
-             * @description Inclusive last day; null = open-ended
-             * @example null
-             */
-            endDate: string | null;
-            /**
-             * @description Integer kopiyky (UAH)
-             * @example 1500000
-             */
-            monthlyRent: number;
-            notes: string | null;
-            /** @description PRIMARY first */
-            tenants: components["schemas"]["LeaseTenantResponseDto"][];
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-        };
-        ApartmentDetailResponseDto: {
-            /** Format: uuid */
-            id: string;
-            /** @example Shevchenka 12/5 */
-            name: string;
-            /** @example Kyiv, Shevchenka St 12, apt 5 */
-            address: string;
-            notes: string | null;
-            /** @description false = archived */
-            isActive: boolean;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-            /** @description Lease covering today (Kyiv time), if any */
-            currentLease: components["schemas"]["LeaseResponseDto"] | null;
-        };
-        /** @enum {string} */
-        UtilityType: "ELECTRICITY" | "COLD_WATER" | "HOT_WATER" | "GAS";
-        /** @enum {string} */
-        ZoneScheme: "SINGLE" | "DAY_NIGHT";
-        /** @enum {string} */
-        ReadingKind: "REGULAR" | "INITIAL" | "FINAL";
-        /** @enum {string} */
-        Zone: "TOTAL" | "DAY" | "NIGHT";
-        ReadingValueResponseDto: {
-            zone: components["schemas"]["Zone"];
-            /**
-             * @description Decimal string with 3 decimals
-             * @example 1520.350
-             */
-            value: string;
-        };
-        ReadingSummaryResponseDto: {
-            /** Format: uuid */
-            id: string;
-            kind: components["schemas"]["ReadingKind"];
-            /**
-             * @description Month the reading is for (YYYY-MM)
-             * @example 2026-10
-             */
-            period: string;
-            /**
-             * Format: date
-             * @example 2026-10-28
-             */
-            readingDate: string;
-            values: components["schemas"]["ReadingValueResponseDto"][];
-        };
-        MeterResponseDto: {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            apartmentId: string;
-            utility: components["schemas"]["UtilityType"];
-            zoneScheme: components["schemas"]["ZoneScheme"];
-            /** @example kitchen */
-            label: string | null;
-            serialNumber: string | null;
-            /**
-             * Format: date
-             * @example 2026-01-15
-             */
-            installedAt: string;
-            /**
-             * Format: date
-             * @description null = installed
-             */
-            removedAt: string | null;
-            notes: string | null;
-            /** @description Latest CONFIRMED reading (FINAL for a removed meter) */
-            lastReading: components["schemas"]["ReadingSummaryResponseDto"] | null;
-            /** @description Computed by the server: DELETE would succeed (no REGULAR/FINAL readings) */
-            canDelete: boolean;
-            /** @description Computed by the server: PUT initial-values would succeed (installed, no non-cancelled REGULAR readings) */
-            canEditInitialValues: boolean;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-        };
-        /**
-         * @description The worker's parse job: PENDING until it ends; null = never queued (older photos)
-         * @enum {string}
-         */
-        PhotoParseStatus: "PENDING" | "PARSED" | "NOT_MATCHED" | "FAILED";
-        PhotoUploadResultDto: {
-            /** Format: uuid */
-            id: string;
-            /**
-             * Format: uuid
-             * @description null = inbox
-             */
-            apartmentId: string | null;
-            /**
-             * @description Detected from the file content
-             * @example image/jpeg
-             */
-            mimeType: string;
-            /** @description Bytes */
-            size: number;
-            /**
-             * @description SHA-256 of the original (hex)
-             * @example e3b0c442…
-             */
-            sha256: string;
-            /** @description As displayed (EXIF orientation applied) */
-            width: number;
-            height: number;
-            originalFilename: string | null;
-            /** Format: uuid */
-            uploadedById: string;
-            /** Format: date-time */
-            createdAt: string;
-            /** @description The worker's parse job: PENDING until it ends; null = never queued (older photos) */
-            parseStatus: components["schemas"]["PhotoParseStatus"] | null;
-            /** @description Why nothing was matched, or the error (worker text, for the owner) */
-            parseNote: string | null;
-            /** @example /api/photos/3f1c…/file */
-            fileUrl: string;
-            /** @example /api/photos/3f1c…/thumbnail */
-            thumbnailUrl: string;
-            /** @description true = same file (by SHA-256) was already uploaded; existing record */
-            duplicate: boolean;
-        };
-        /** @enum {string} */
-        ReadingStatus: "DRAFT" | "CONFIRMED" | "CANCELLED";
-        PhotoReadingResponseDto: {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            meterId: string;
-            kind: components["schemas"]["ReadingKind"];
-            status: components["schemas"]["ReadingStatus"];
-            /** @example 2026-10 */
-            period: string;
-            /** @description Zones whose values were read from this photo */
-            zones: components["schemas"]["Zone"][];
-        };
-        PhotoDetailResponseDto: {
-            /** Format: uuid */
-            id: string;
-            /**
-             * Format: uuid
-             * @description null = inbox
-             */
-            apartmentId: string | null;
-            /**
-             * @description Detected from the file content
-             * @example image/jpeg
-             */
-            mimeType: string;
-            /** @description Bytes */
-            size: number;
-            /**
-             * @description SHA-256 of the original (hex)
-             * @example e3b0c442…
-             */
-            sha256: string;
-            /** @description As displayed (EXIF orientation applied) */
-            width: number;
-            height: number;
-            originalFilename: string | null;
-            /** Format: uuid */
-            uploadedById: string;
-            /** Format: date-time */
-            createdAt: string;
-            /** @description The worker's parse job: PENDING until it ends; null = never queued (older photos) */
-            parseStatus: components["schemas"]["PhotoParseStatus"] | null;
-            /** @description Why nothing was matched, or the error (worker text, for the owner) */
-            parseNote: string | null;
-            /** @example /api/photos/3f1c…/file */
-            fileUrl: string;
-            /** @example /api/photos/3f1c…/thumbnail */
-            thumbnailUrl: string;
-            /** @description All readings with a value from this photo, incl. cancelled */
-            readings: components["schemas"]["PhotoReadingResponseDto"][];
-        };
-        AssignPhotoApartmentDto: {
-            /** Format: uuid */
-            apartmentId: string;
-        };
-        /** @enum {string} */
-        PhotoParseResult: "PARSED" | "NOT_MATCHED" | "FAILED";
-        SetParseResultDto: {
-            status: components["schemas"]["PhotoParseResult"];
-            /** @description Why nothing was matched, or the error */
-            note?: string;
-        };
-        /** @enum {string} */
-        ReadingSource: "MANUAL" | "PHOTO";
-        ReadingValueDetailResponseDto: {
-            zone: components["schemas"]["Zone"];
-            /**
-             * @description Decimal string with 3 decimals
-             * @example 1520.350
-             */
-            value: string;
-            source: components["schemas"]["ReadingSource"];
-            /**
-             * Format: uuid
-             * @description Photo the value was read from (source PHOTO)
-             */
-            photoId: string | null;
-        };
-        ReadingResponseDto: {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            meterId: string;
-            kind: components["schemas"]["ReadingKind"];
-            status: components["schemas"]["ReadingStatus"];
-            /**
-             * @description Month the reading is for (YYYY-MM)
-             * @example 2026-10
-             */
-            period: string;
-            /**
-             * Format: date
-             * @example 2026-10-28
-             */
-            readingDate: string;
-            note: string | null;
-            /** @description In zone order; a DRAFT may lack some of the meter zones */
-            values: components["schemas"]["ReadingValueDetailResponseDto"][];
-            /** @description Per zone since the previous CONFIRMED reading of this meter; null if none */
-            consumption: components["schemas"]["ReadingValueResponseDto"][] | null;
-            /** Format: uuid */
-            createdById: string;
-            /** Format: date-time */
-            confirmedAt: string | null;
-            /** Format: uuid */
-            confirmedById: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-        };
-        CreateDraftValueDto: {
-            /**
-             * @description Month the reading is for
-             * @example 2026-10
-             */
-            period: string;
-            /**
-             * Format: date
-             * @description Used for a new draft; an existing draft keeps its own
-             * @example 2026-10-28
-             */
-            readingDate: string;
-            zone: components["schemas"]["Zone"];
-            /**
-             * @description Decimal string, >= 0, up to 3 decimals
-             * @example 1520.350
-             */
-            value: string;
-            /**
-             * Format: uuid
-             * @description Photo of this apartment the value was read from
-             */
-            photoId: string;
-            /** @description Appended to the draft's note */
-            note?: string;
-        };
-        CancelReadingDto: {
-            /**
-             * @description Stored in the reading note
-             * @example Typo in the day value
-             */
-            reason: string;
-        };
+  schemas: {
+    /** @enum {string} */
+    LeaseTenantRole: 'PRIMARY' | 'CONTACT';
+    LeaseTenantResponseDto: {
+      /** Format: uuid */
+      tenantId: string;
+      /** @example Ivan Petrenko */
+      fullName: string;
+      /** @example +380501112233 */
+      phone: string;
+      role: components['schemas']['LeaseTenantRole'];
     };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    LeaseResponseDto: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      apartmentId: string;
+      /**
+       * Format: date
+       * @example 2026-01-01
+       */
+      startDate: string;
+      /**
+       * Format: date
+       * @description Inclusive last day; null = open-ended
+       * @example null
+       */
+      endDate: string | null;
+      /**
+       * @description Integer kopiyky (UAH)
+       * @example 1500000
+       */
+      monthlyRent: number;
+      notes: string | null;
+      /** @description PRIMARY first */
+      tenants: components['schemas']['LeaseTenantResponseDto'][];
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    ApartmentDetailResponseDto: {
+      /** Format: uuid */
+      id: string;
+      /** @example Shevchenka 12/5 */
+      name: string;
+      /** @example Kyiv, Shevchenka St 12, apt 5 */
+      address: string;
+      notes: string | null;
+      /** @description false = archived */
+      isActive: boolean;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      /** @description Lease covering today (Kyiv time), if any */
+      currentLease: components['schemas']['LeaseResponseDto'] | null;
+    };
+    /** @enum {string} */
+    UtilityType: 'ELECTRICITY' | 'COLD_WATER' | 'HOT_WATER' | 'GAS';
+    /** @enum {string} */
+    ZoneScheme: 'SINGLE' | 'DAY_NIGHT';
+    /** @enum {string} */
+    ReadingKind: 'REGULAR' | 'INITIAL' | 'FINAL';
+    /** @enum {string} */
+    Zone: 'TOTAL' | 'DAY' | 'NIGHT';
+    ReadingValueResponseDto: {
+      zone: components['schemas']['Zone'];
+      /**
+       * @description Decimal string with 3 decimals
+       * @example 1520.350
+       */
+      value: string;
+    };
+    ReadingSummaryResponseDto: {
+      /** Format: uuid */
+      id: string;
+      kind: components['schemas']['ReadingKind'];
+      /**
+       * @description Month the reading is for (YYYY-MM)
+       * @example 2026-10
+       */
+      period: string;
+      /**
+       * Format: date
+       * @example 2026-10-28
+       */
+      readingDate: string;
+      values: components['schemas']['ReadingValueResponseDto'][];
+    };
+    MeterResponseDto: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      apartmentId: string;
+      utility: components['schemas']['UtilityType'];
+      zoneScheme: components['schemas']['ZoneScheme'];
+      /** @example kitchen */
+      label: string | null;
+      serialNumber: string | null;
+      /**
+       * Format: date
+       * @example 2026-01-15
+       */
+      installedAt: string;
+      /**
+       * Format: date
+       * @description null = installed
+       */
+      removedAt: string | null;
+      notes: string | null;
+      /** @description Latest CONFIRMED reading (FINAL for a removed meter) */
+      lastReading: components['schemas']['ReadingSummaryResponseDto'] | null;
+      /** @description Computed by the server: DELETE would succeed (no REGULAR/FINAL readings) */
+      canDelete: boolean;
+      /** @description Computed by the server: PUT initial-values would succeed (installed, no non-cancelled REGULAR readings) */
+      canEditInitialValues: boolean;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    /**
+     * @description The worker's parse job: PENDING until it ends; null = never queued (older photos)
+     * @enum {string}
+     */
+    PhotoParseStatus: 'PENDING' | 'PARSED' | 'NOT_MATCHED' | 'FAILED';
+    PhotoUploadResultDto: {
+      /** Format: uuid */
+      id: string;
+      /**
+       * Format: uuid
+       * @description null = inbox
+       */
+      apartmentId: string | null;
+      /**
+       * @description Detected from the file content
+       * @example image/jpeg
+       */
+      mimeType: string;
+      /** @description Bytes */
+      size: number;
+      /**
+       * @description SHA-256 of the original (hex)
+       * @example e3b0c442…
+       */
+      sha256: string;
+      /** @description As displayed (EXIF orientation applied) */
+      width: number;
+      height: number;
+      originalFilename: string | null;
+      /** Format: uuid */
+      uploadedById: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** @description The worker's parse job: PENDING until it ends; null = never queued (older photos) */
+      parseStatus: components['schemas']['PhotoParseStatus'] | null;
+      /** @description Why nothing was matched, or the error (worker text, for the owner) */
+      parseNote: string | null;
+      /** @example /api/photos/3f1c…/file */
+      fileUrl: string;
+      /** @example /api/photos/3f1c…/thumbnail */
+      thumbnailUrl: string;
+      /** @description true = same file (by SHA-256) was already uploaded; existing record */
+      duplicate: boolean;
+    };
+    /** @enum {string} */
+    ReadingStatus: 'DRAFT' | 'CONFIRMED' | 'CANCELLED';
+    PhotoReadingResponseDto: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      meterId: string;
+      kind: components['schemas']['ReadingKind'];
+      status: components['schemas']['ReadingStatus'];
+      /** @example 2026-10 */
+      period: string;
+      /** @description Zones whose values were read from this photo */
+      zones: components['schemas']['Zone'][];
+    };
+    PhotoDetailResponseDto: {
+      /** Format: uuid */
+      id: string;
+      /**
+       * Format: uuid
+       * @description null = inbox
+       */
+      apartmentId: string | null;
+      /**
+       * @description Detected from the file content
+       * @example image/jpeg
+       */
+      mimeType: string;
+      /** @description Bytes */
+      size: number;
+      /**
+       * @description SHA-256 of the original (hex)
+       * @example e3b0c442…
+       */
+      sha256: string;
+      /** @description As displayed (EXIF orientation applied) */
+      width: number;
+      height: number;
+      originalFilename: string | null;
+      /** Format: uuid */
+      uploadedById: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** @description The worker's parse job: PENDING until it ends; null = never queued (older photos) */
+      parseStatus: components['schemas']['PhotoParseStatus'] | null;
+      /** @description Why nothing was matched, or the error (worker text, for the owner) */
+      parseNote: string | null;
+      /** @example /api/photos/3f1c…/file */
+      fileUrl: string;
+      /** @example /api/photos/3f1c…/thumbnail */
+      thumbnailUrl: string;
+      /** @description All readings with a value from this photo, incl. cancelled */
+      readings: components['schemas']['PhotoReadingResponseDto'][];
+    };
+    AssignPhotoApartmentDto: {
+      /** Format: uuid */
+      apartmentId: string;
+    };
+    /** @enum {string} */
+    PhotoParseResult: 'PARSED' | 'NOT_MATCHED' | 'FAILED';
+    SetParseResultDto: {
+      status: components['schemas']['PhotoParseResult'];
+      /** @description Why nothing was matched, or the error */
+      note?: string;
+    };
+    /** @enum {string} */
+    ReadingSource: 'MANUAL' | 'PHOTO';
+    ReadingValueDetailResponseDto: {
+      zone: components['schemas']['Zone'];
+      /**
+       * @description Decimal string with 3 decimals
+       * @example 1520.350
+       */
+      value: string;
+      source: components['schemas']['ReadingSource'];
+      /**
+       * Format: uuid
+       * @description Photo the value was read from (source PHOTO)
+       */
+      photoId: string | null;
+    };
+    ReadingResponseDto: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      meterId: string;
+      kind: components['schemas']['ReadingKind'];
+      status: components['schemas']['ReadingStatus'];
+      /**
+       * @description Month the reading is for (YYYY-MM)
+       * @example 2026-10
+       */
+      period: string;
+      /**
+       * Format: date
+       * @example 2026-10-28
+       */
+      readingDate: string;
+      note: string | null;
+      /** @description In zone order; a DRAFT may lack some of the meter zones */
+      values: components['schemas']['ReadingValueDetailResponseDto'][];
+      /** @description Per zone since the previous CONFIRMED reading of this meter; null if none */
+      consumption: components['schemas']['ReadingValueResponseDto'][] | null;
+      /** Format: uuid */
+      createdById: string;
+      /** Format: date-time */
+      confirmedAt: string | null;
+      /** Format: uuid */
+      confirmedById: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    CreateDraftValueDto: {
+      /**
+       * @description Month the reading is for
+       * @example 2026-10
+       */
+      period: string;
+      /**
+       * Format: date
+       * @description Used for a new draft; an existing draft keeps its own
+       * @example 2026-10-28
+       */
+      readingDate: string;
+      zone: components['schemas']['Zone'];
+      /**
+       * @description Decimal string, >= 0, up to 3 decimals
+       * @example 1520.350
+       */
+      value: string;
+      /**
+       * Format: uuid
+       * @description Photo of this apartment the value was read from
+       */
+      photoId: string;
+      /** @description Appended to the draft's note */
+      note?: string;
+    };
+    CancelReadingDto: {
+      /**
+       * @description Stored in the reading note
+       * @example Typo in the day value
+       */
+      reason: string;
+    };
+  };
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    ApartmentsController_list: {
-        parameters: {
-            query?: {
-                active?: "true" | "false" | "all";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Each with its current lease */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApartmentDetailResponseDto"][];
-                };
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  ApartmentsController_list: {
+    parameters: {
+      query?: {
+        active?: 'true' | 'false' | 'all';
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    ApartmentMetersController_list: {
-        parameters: {
-            query?: {
-                includeRemoved?: "true" | "false";
-            };
-            header?: never;
-            path: {
-                apartmentId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Each with its current lease */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Each meter with its last confirmed values */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MeterResponseDto"][];
-                };
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description API key without meters:read */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Apartment not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+        content: {
+          'application/json': components['schemas']['ApartmentDetailResponseDto'][];
         };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    MetersController_listActive: {
-        parameters: {
-            query: {
-                /** @description true = installed, not removed meters of active (not archived) apartments */
-                active: "true";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Active meters of active apartments, each with its last confirmed values */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MeterResponseDto"][];
-                };
-            };
-            /** @description active=true missing */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description API key without meters:read */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Meter not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  ApartmentMetersController_list: {
+    parameters: {
+      query?: {
+        includeRemoved?: 'true' | 'false';
+      };
+      header?: never;
+      path: {
+        apartmentId: string;
+      };
+      cookie?: never;
     };
-    PhotosController_upload: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Each meter with its last confirmed values */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "multipart/form-data": {
-                    files: string[];
-                };
-            };
+        content: {
+          'application/json': components['schemas']['MeterResponseDto'][];
         };
-        responses: {
-            /** @description In the order sent; duplicate = already uploaded (existing record returned) */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PhotoUploadResultDto"][];
-                };
-            };
-            /** @description No files, too many files, unsupported type (JPEG/PNG/WebP only) */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description API key without photos:upload */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description A file is over the size limit */
-            413: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
         };
+        content?: never;
+      };
+      /** @description API key without meters:read */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Apartment not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    PhotosController_findOne: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PhotoDetailResponseDto"];
-                };
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description API key without photos:read */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Photo not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  MetersController_listActive: {
+    parameters: {
+      query: {
+        /** @description true = installed, not removed meters of active (not archived) apartments */
+        active: 'true';
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    PhotosController_assignApartment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Active meters of active apartments, each with its last confirmed values */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AssignPhotoApartmentDto"];
-            };
+        content: {
+          'application/json': components['schemas']['MeterResponseDto'][];
         };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PhotoDetailResponseDto"];
-                };
-            };
-            /** @description Invalid body, apartment not found or archived */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Photo not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description The photo backs reading values (cancelled ones included) */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+      };
+      /** @description active=true missing */
+      400: {
+        headers: {
+          [name: string]: unknown;
         };
+        content?: never;
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description API key without meters:read */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Meter not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    PhotosController_file: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The original, unchanged */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description API key without photos:read */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Photo not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  PhotosController_upload: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    PhotosController_thumbnail: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          files: string[];
         };
-        requestBody?: never;
-        responses: {
-            /** @description WebP, max 400px */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description API key without photos:read */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Photo not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+      };
     };
-    PhotosController_setParseResult: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description In the order sent; duplicate = already uploaded (existing record returned) */
+      201: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SetParseResultDto"];
-            };
+        content: {
+          'application/json': components['schemas']['PhotoUploadResultDto'][];
         };
-        responses: {
-            /** @description parseStatus and parseNote set */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not an API key, or a key without photos:parse-result */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Photo not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+      };
+      /** @description No files, too many files, unsupported type (JPEG/PNG/WebP only) */
+      400: {
+        headers: {
+          [name: string]: unknown;
         };
+        content?: never;
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description API key without photos:upload */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A file is over the size limit */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    MeterDraftValuesController_add: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                meterId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateDraftValueDto"];
-            };
-        };
-        responses: {
-            /** @description Zone added to the open draft, or already there from this photo (no change) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReadingResponseDto"];
-                };
-            };
-            /** @description New DRAFT with this zone */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReadingResponseDto"];
-                };
-            };
-            /** @description Zone not in the meter's scheme; photo not found or of another apartment */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not an API key, or a key without readings:create-draft */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Meter not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Meter removed; apartment archived; zone already filled from another photo (body has readingId) */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  PhotosController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
     };
-    ReadingsController_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReadingResponseDto"];
-                };
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Reading not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+        content: {
+          'application/json': components['schemas']['PhotoDetailResponseDto'];
         };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description API key without photos:read */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Photo not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    ReadingsController_confirm: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReadingResponseDto"];
-                };
-            };
-            /** @description Zones missing (incomplete draft), date outside window/in future, value out of order */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Reading not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not a DRAFT, meter removed, or period already confirmed */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  PhotosController_assignApartment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
     };
-    ReadingsController_cancel: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CancelReadingDto"];
-            };
-        };
-        responses: {
-            /** @description Reason is appended to the note */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReadingResponseDto"];
-                };
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Reading not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description INITIAL/FINAL reading, already cancelled, or (API key) not a DRAFT */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AssignPhotoApartmentDto'];
+      };
     };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PhotoDetailResponseDto'];
+        };
+      };
+      /** @description Invalid body, apartment not found or archived */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Photo not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The photo backs reading values (cancelled ones included) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PhotosController_file: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The original, unchanged */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description API key without photos:read */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Photo not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PhotosController_thumbnail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description WebP, max 400px */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description API key without photos:read */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Photo not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PhotosController_setParseResult: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SetParseResultDto'];
+      };
+    };
+    responses: {
+      /** @description parseStatus and parseNote set */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not an API key, or a key without photos:parse-result */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Photo not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MeterDraftValuesController_add: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        meterId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateDraftValueDto'];
+      };
+    };
+    responses: {
+      /** @description Zone added to the open draft, or already there from this photo (no change) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ReadingResponseDto'];
+        };
+      };
+      /** @description New DRAFT with this zone */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ReadingResponseDto'];
+        };
+      };
+      /** @description Zone not in the meter's scheme; photo not found or of another apartment */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not an API key, or a key without readings:create-draft */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Meter not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Meter removed; apartment archived; zone already filled from another photo (body has readingId) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ReadingsController_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ReadingResponseDto'];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Reading not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ReadingsController_confirm: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ReadingResponseDto'];
+        };
+      };
+      /** @description Zones missing (incomplete draft), date outside window/in future, value out of order */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Reading not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not a DRAFT, meter removed, or period already confirmed */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ReadingsController_cancel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CancelReadingDto'];
+      };
+    };
+    responses: {
+      /** @description Reason is appended to the note */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ReadingResponseDto'];
+        };
+      };
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Reading not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description INITIAL/FINAL reading, already cancelled, or (API key) not a DRAFT */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
 }

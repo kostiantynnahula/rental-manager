@@ -3,7 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import type { Api, Context } from 'grammy';
 import { Env } from '../config/env.validation.js';
 import { PhotoUploaderService } from '../photos/photo-uploader.service.js';
-import type { UploadOutcome } from '../photos/upload-outcome.js';
+import type { UploadResult } from '../photos/upload-outcome.js';
+import { ParseWatcherService } from '../results/parse-watcher.service.js';
 import {
   downloadTelegramFile,
   TELEGRAM_MAX_DOWNLOAD_BYTES,
@@ -17,10 +18,11 @@ import { batchReply, MESSAGES } from './messages.js';
 // ends a batch.
 const BATCH_SILENCE_MS = 1500;
 
-interface UploadedPhoto {
+interface UploadedPhoto extends UploadResult {
   api: Api;
   chatId: number;
-  outcome: UploadOutcome;
+  // The user's message with the photo: results are sent as replies to it.
+  messageId: number;
 }
 
 // Photos sent to the bot → the API inbox, one reply per batch (an album, or single photos in a row).
@@ -40,6 +42,7 @@ export class PhotoIntakeService {
   constructor(
     config: ConfigService<Env, true>,
     private readonly uploader: PhotoUploaderService,
+    private readonly watcher: ParseWatcherService,
   ) {
     const apiLimit = config.get('PHOTO_MAX_FILE_SIZE_MB', { infer: true }) * 1024 * 1024;
     this.maxBytes = Math.min(TELEGRAM_MAX_DOWNLOAD_BYTES, apiLimit);
@@ -59,8 +62,13 @@ export class PhotoIntakeService {
       ? `album:${message.media_group_id}`
       : `chat:${message.chat.id}`;
     this.batcher.hold(key);
-    const outcome = await this.uploadOne(ctx.api, photo);
-    this.batcher.add(key, { api: ctx.api, chatId: message.chat.id, outcome });
+    const result = await this.uploadOne(ctx.api, photo);
+    this.batcher.add(key, {
+      ...result,
+      api: ctx.api,
+      chatId: message.chat.id,
+      messageId: message.message_id,
+    });
   }
 
   // Shutdown (called by TelegramBotService after polling has stopped, so no add() can follow): send the replies
@@ -87,20 +95,26 @@ export class PhotoIntakeService {
       const err = error instanceof Error ? error : new Error(String(error));
       this.logger.error(`Batch reply to chat ${chatId} failed: ${err.name}: ${err.message}`);
     }
+    // Then wait for the worker and show what it found (one summary per batch). Not awaited: the watcher tracks
+    // its own work (it can take minutes), drain() must not wait for it.
+    const photos = items.flatMap((i) =>
+      i.photoId ? [{ photoId: i.photoId, messageId: i.messageId }] : [],
+    );
+    this.watcher.watch(api, chatId, photos);
   }
 
   // Never throws: a failed photo is an outcome, so the rest of the album still goes through.
-  private async uploadOne(api: Api, photo: IncomingPhoto): Promise<UploadOutcome> {
+  private async uploadOne(api: Api, photo: IncomingPhoto): Promise<UploadResult> {
     // file_size is optional in the Bot API: then the downloaded size decides, before the upload.
-    if ((photo.fileSize ?? 0) > this.maxBytes) return 'too-large';
+    if ((photo.fileSize ?? 0) > this.maxBytes) return { outcome: 'too-large' };
     try {
       const bytes = await downloadTelegramFile(api, photo.fileId);
-      if (bytes.byteLength > this.maxBytes) return 'too-large';
+      if (bytes.byteLength > this.maxBytes) return { outcome: 'too-large' };
       return await this.uploader.upload(bytes, photo.filename);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       this.logger.error(`Photo ${photo.filename} failed: ${err.name}: ${err.message}`);
-      return 'failed';
+      return { outcome: 'failed' };
     }
   }
 }
