@@ -7,7 +7,7 @@ export function apiError(what: string, response: Response, body: unknown): Error
     typeof body === 'object' && body !== null && 'message' in body ? String(body.message) : '';
   const detail = `${what}: HTTP ${response.status}${message ? ` (${message})` : ''}`;
   if (response.status === 401 || response.status === 403) {
-    return new UnrecoverableError(`${detail} — check API_KEY and its scopes`);
+    return new UnrecoverableError(`${detail} — check WORKER_API_KEY and its scopes`);
   }
   if (response.status === 404 || response.status === 400) return new UnrecoverableError(detail);
   return new Error(detail);

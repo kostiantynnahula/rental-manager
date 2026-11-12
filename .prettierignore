@@ -8,5 +8,6 @@ apps/web/AGENTS.md
 apps/api/openapi.json
 apps/web/lib/api/schema.d.ts
 apps/worker/src/api/schema.d.ts
+apps/bot/src/api/schema.d.ts
 **/.claude/skills
 .junie

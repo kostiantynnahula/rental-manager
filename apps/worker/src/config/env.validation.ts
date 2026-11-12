@@ -42,8 +42,8 @@ export class Env {
 
   // API key of the worker's service user (`pnpm --filter api apikey:create ...`). Never log it.
   // The message must not echo the value.
-  @Matches(/^rm_/, { message: 'API_KEY must be an API key (rm_…)' })
-  API_KEY: string;
+  @Matches(/^rm_/, { message: 'WORKER_API_KEY must be an API key (rm_…)' })
+  WORKER_API_KEY: string;
 
   @IsString()
   @MinLength(1)
