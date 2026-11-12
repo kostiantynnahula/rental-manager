@@ -13,23 +13,27 @@ import { PhotoBatcher } from './helpers/photo-batcher.js';
 import type { IncomingPhoto } from './interfaces/incoming-photo.interface.js';
 import { batchReply, MESSAGES } from './messages.js';
 
-// An album arrives as one update per photo, a few hundred ms apart; this much silence ends a batch.
+// An album arrives as one update per photo, a few hundred ms apart; this much silence after the last upload
+// ends a batch.
 const BATCH_SILENCE_MS = 1500;
 
-interface QueuedPhoto {
+interface UploadedPhoto {
   api: Api;
   chatId: number;
-  photo: IncomingPhoto;
+  outcome: UploadOutcome;
 }
 
 // Photos sent to the bot → the API inbox, one reply per batch (an album, or single photos in a row).
+// Each photo is uploaded inside its update handler: grammY confirms an update to Telegram only after the handler
+// returns, so a crash mid-upload means Telegram sends it again after a restart (a repeat is a sha256 duplicate,
+// never a second photo). Only the reply is batched; a crash before it loses the reply, never a photo.
 @Injectable()
 export class PhotoIntakeService {
   private readonly logger = new Logger(PhotoIntakeService.name);
   private readonly token: string;
   private readonly inFlight = new Set<Promise<void>>();
-  private readonly batcher = new PhotoBatcher<QueuedPhoto>(BATCH_SILENCE_MS, (items) =>
-    this.track(this.processBatch(items)),
+  private readonly batcher = new PhotoBatcher<UploadedPhoto>(BATCH_SILENCE_MS, (items) =>
+    this.track(this.sendReply(items)),
   );
 
   constructor(
@@ -39,8 +43,8 @@ export class PhotoIntakeService {
     this.token = config.get('TELEGRAM_BOT_TOKEN', { infer: true });
   }
 
-  // Returns at once: grammY handles updates one by one, so awaiting the batch here would hold back the album's
-  // next photo.
+  // Awaits this photo's upload (see above), not the batch: grammY handles updates one by one, so the album's next
+  // photo comes after it. Photos are uploaded in the order they were sent.
   async add(ctx: Context): Promise<void> {
     const message = ctx.message;
     if (!message) return;
@@ -52,11 +56,13 @@ export class PhotoIntakeService {
     const key = message.media_group_id
       ? `album:${message.media_group_id}`
       : `chat:${message.chat.id}`;
-    this.batcher.add(key, { api: ctx.api, chatId: message.chat.id, photo });
+    this.batcher.hold(key);
+    const outcome = await this.uploadOne(ctx.api, photo);
+    this.batcher.add(key, { api: ctx.api, chatId: message.chat.id, outcome });
   }
 
-  // Shutdown (called by TelegramBotService after polling has stopped, so no add() can follow): send what is
-  // still buffered and wait for it, so no photo is dropped. Not a Nest hook: Nest runs hooks concurrently.
+  // Shutdown (called by TelegramBotService after polling has stopped, so no add() can follow): send the replies
+  // still waiting and wait for them. Not a Nest hook: Nest runs hooks concurrently.
   async drain(): Promise<void> {
     this.batcher.flushAll();
     await Promise.allSettled([...this.inFlight]);
@@ -67,26 +73,12 @@ export class PhotoIntakeService {
     void job.finally(() => this.inFlight.delete(job));
   }
 
-  // Runs outside grammY's middleware, so bot.catch doesn't see its errors: handled here.
-  private async processBatch(items: QueuedPhoto[]): Promise<void> {
+  // Runs from a timer, outside grammY's middleware (bot.catch doesn't see it). The photos are already uploaded,
+  // so a failed reply is only logged (telling the user to try again would make them resend the album).
+  private async sendReply(items: UploadedPhoto[]): Promise<void> {
     const { api, chatId } = items[0];
-    const outcomes: UploadOutcome[] = [];
-    try {
-      // In order, one at a time: the inbox lists them as sent, and the API isn't hit with 10 uploads at once.
-      for (const item of items) outcomes.push(await this.uploadOne(item));
-      this.logger.log(`Chat ${chatId}: ${items.length} photo(s) → ${outcomes.join(', ')}`);
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error(`Photo batch for chat ${chatId} failed: ${err.name}: ${err.message}`);
-      try {
-        await api.sendMessage(chatId, MESSAGES.error);
-      } catch {
-        // Telegram is unreachable: already logged.
-      }
-      return;
-    }
-    // Separate from the error above: the photos are already in the inbox, so a failed summary only gets logged
-    // (telling the user to try again would make them resend the album).
+    const outcomes = items.map((i) => i.outcome);
+    this.logger.log(`Chat ${chatId}: ${items.length} photo(s) → ${outcomes.join(', ')}`);
     try {
       await api.sendMessage(chatId, batchReply(outcomes));
     } catch (error) {
@@ -95,7 +87,8 @@ export class PhotoIntakeService {
     }
   }
 
-  private async uploadOne({ api, photo }: QueuedPhoto): Promise<UploadOutcome> {
+  // Never throws: a failed photo is an outcome, so the rest of the album still goes through.
+  private async uploadOne(api: Api, photo: IncomingPhoto): Promise<UploadOutcome> {
     if ((photo.fileSize ?? 0) > TELEGRAM_MAX_DOWNLOAD_BYTES) return 'too-large';
     try {
       const bytes = await downloadTelegramFile(api, this.token, photo.fileId);
