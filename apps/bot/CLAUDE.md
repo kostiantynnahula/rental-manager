@@ -11,7 +11,7 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM �
 ## Setup
 
 - Env (validated in `src/config/env.validation.ts`; names in the root `.env.example`): `TELEGRAM_BOT_TOKEN`
-  (BotFather), `TELEGRAM_ALLOWED_USER_IDS` (comma-separated Telegram user ids), `API_BASE_URL` (with `/api`),
+  (BotFather), `TELEGRAM_ALLOWED_USER_IDS` (comma-separated Telegram user ids), `PHOTO_MAX_FILE_SIZE_MB?` (default 15, shared with the API), `API_BASE_URL` (with `/api`),
   `BOT_API_KEY` (the bot's own key; the worker's is `WORKER_API_KEY`). Root `.env`; an optional `apps/bot/.env` wins
   over it.
 - Key: `pnpm --filter api apikey:create --service telegram-bot --name "<label>" --scopes photos:upload` (at least one scope;
@@ -37,7 +37,8 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM �
 ## Lifecycle (`src/telegram/telegram-bot.service.ts`)
 
 - `onApplicationBootstrap`: `bot.init()` (getMe — a bad token fails startup), `setMyCommands` (`/start`, `/help`),
-  then `bot.start()` **not awaited** (it resolves only when polling stops; a rejection → log + exit 1).
+  then `bot.start()` **not awaited** (it resolves only when polling stops; a rejection → log + SIGTERM to itself:
+  the Ctrl+C path, so `drain()` still runs; exit code 143).
 - `onApplicationShutdown` (`enableShutdownHooks`, Ctrl+C / SIGTERM), in this order: `bot.stop()` (only aborts
   `getUpdates`) → await the `start()` promise (the current batch of updates is handled) → `intake.drain()`. Not a
   hook of its own in `PhotoIntakeService`: Nest runs hooks concurrently, and a flush before polling ends can drop a photo.
@@ -55,10 +56,12 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM �
   the timer while the next photo uploads (an upload can take longer than that). In memory: a crash loses only the
   reply. Shutdown: `drain()` (after polling stopped) sends the waiting replies.
 - Per photo (in the order sent): `getFile` + download (`helpers/download-telegram-file.ts`), then **one `POST /photos` each**
-  (inbox, scope `photos:upload`) so one rejected file doesn't fail the album. Over 20 MB (Bot API download limit) →
-  not downloaded. Outcomes: accepted / duplicate (sha256 — information, not an error) / unsupported (400 `files[i]: …`:
-  type / corrupt) / too-large (413 or > 20 MB) / unauthorized (401/403: key or scope — no "try again") / failed
+  (inbox, scope `photos:upload`) so one rejected file doesn't fail the album. Over `min(20 MB Bot API download limit,
+PHOTO_MAX_FILE_SIZE_MB)` → not downloaded (no `file_size` → checked after the download, before the upload).
+  `PHOTO_MAX_FILE_SIZE_MB` = the API's var (same name and default 15, one value in the root `.env`). Outcomes: accepted / duplicate (sha256 — information, not an error) / unsupported (400 `files[i]: …`:
+  type / corrupt) / too-large (413 or over the limit) / unauthorized (401/403: key or scope — no "try again") / failed
   (other statuses, network) → **one reply per batch** (`batchReply`, «Прийнято N фото, розпізнаю…»).
-- The file download URL contains the token: its errors are rethrown without URL or cause. `uploadOne`
+- The file download URL (`<apiRoot>/file/bot<token>/…`, root, environment and token taken from the grammY `Api`, never
+  hardcoded or read from config) contains the token: its errors are rethrown without URL or cause. `uploadOne`
   never throws (an error = `failed` outcome). The reply runs from a timer, outside the middleware (`bot.catch`
   doesn't see it): if it fails, that is only logged (the photos are already in the inbox).

@@ -10,9 +10,9 @@ export class PhotoUploaderService {
 
   constructor(@Inject(API_CLIENT) private readonly api: ApiClient) {}
 
-  async upload(bytes: Buffer, filename: string): Promise<UploadOutcome> {
+  async upload(bytes: Uint8Array<ArrayBuffer>, filename: string): Promise<UploadOutcome> {
     const form = new FormData();
-    form.append('files', new Blob([new Uint8Array(bytes)]), filename);
+    form.append('files', new Blob([bytes]), filename);
     const { data, error, response } = await this.api.POST('/photos', {
       // The typed body is a placeholder: the request body is the FormData above.
       body: { files: [] },

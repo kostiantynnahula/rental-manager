@@ -1,7 +1,7 @@
 // Needed by class-transformer's implicit conversion; Nest loads it too, but this module must work standalone.
 import 'reflect-metadata';
 import { plainToInstance } from 'class-transformer';
-import { IsEnum, Matches, validateSync } from 'class-validator';
+import { IsEnum, IsInt, Matches, Max, Min, validateSync } from 'class-validator';
 
 export enum NodeEnv {
   Development = 'development',
@@ -24,6 +24,13 @@ export class Env {
     message: 'TELEGRAM_ALLOWED_USER_IDS must be comma-separated Telegram user ids',
   })
   TELEGRAM_ALLOWED_USER_IDS: string;
+
+  // The API's upload limit (same name and default as in apps/api, so the shared root .env sets both): bigger
+  // photos are answered "too large" without downloading them.
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  PHOTO_MAX_FILE_SIZE_MB: number = 15;
 
   // Includes the global prefix, e.g. http://localhost:3001/api (OpenAPI paths have no /api).
   @Matches(/^https?:\/\//, { message: 'API_BASE_URL must be an http(s):// URL' })

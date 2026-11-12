@@ -53,14 +53,17 @@ export class TelegramBotService implements OnApplicationBootstrap, OnApplication
     await this.bot.init();
     await this.bot.api.setMyCommands(COMMANDS);
     // start() resolves only when polling stops, so it isn't awaited. It rejects e.g. on 409 (another process
-    // polls the same token): without polling the app is useless, so exit.
+    // polls the same token): without polling the app is useless, so shut down — through SIGTERM, the same path as
+    // Ctrl+C (enableShutdownHooks → app.close() → onApplicationShutdown → drain()), so waiting replies still go out.
+    // The process then ends by the signal (exit code 143), not 0.
     this.polling = this.bot
       .start({
         onStart: (me) => this.logger.log(`Polling as @${me.username}`),
       })
       .catch((error: unknown) => {
-        this.logger.error(`Polling stopped: ${(error as Error).message}`);
-        process.exit(1);
+        const { name, message } = error instanceof Error ? error : new Error(String(error));
+        this.logger.error(`Polling stopped: ${name}: ${message}`);
+        process.kill(process.pid, 'SIGTERM');
       });
   }
 

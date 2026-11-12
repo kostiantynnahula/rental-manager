@@ -30,7 +30,8 @@ interface UploadedPhoto {
 @Injectable()
 export class PhotoIntakeService {
   private readonly logger = new Logger(PhotoIntakeService.name);
-  private readonly token: string;
+  // The smaller of what Telegram lets us download and what the API accepts.
+  private readonly maxBytes: number;
   private readonly inFlight = new Set<Promise<void>>();
   private readonly batcher = new PhotoBatcher<UploadedPhoto>(BATCH_SILENCE_MS, (items) =>
     this.track(this.sendReply(items)),
@@ -40,7 +41,8 @@ export class PhotoIntakeService {
     config: ConfigService<Env, true>,
     private readonly uploader: PhotoUploaderService,
   ) {
-    this.token = config.get('TELEGRAM_BOT_TOKEN', { infer: true });
+    const apiLimit = config.get('PHOTO_MAX_FILE_SIZE_MB', { infer: true }) * 1024 * 1024;
+    this.maxBytes = Math.min(TELEGRAM_MAX_DOWNLOAD_BYTES, apiLimit);
   }
 
   // Awaits this photo's upload (see above), not the batch: grammY handles updates one by one, so the album's next
@@ -89,9 +91,11 @@ export class PhotoIntakeService {
 
   // Never throws: a failed photo is an outcome, so the rest of the album still goes through.
   private async uploadOne(api: Api, photo: IncomingPhoto): Promise<UploadOutcome> {
-    if ((photo.fileSize ?? 0) > TELEGRAM_MAX_DOWNLOAD_BYTES) return 'too-large';
+    // file_size is optional in the Bot API: then the downloaded size decides, before the upload.
+    if ((photo.fileSize ?? 0) > this.maxBytes) return 'too-large';
     try {
-      const bytes = await downloadTelegramFile(api, this.token, photo.fileId);
+      const bytes = await downloadTelegramFile(api, photo.fileId);
+      if (bytes.byteLength > this.maxBytes) return 'too-large';
       return await this.uploader.upload(bytes, photo.filename);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
