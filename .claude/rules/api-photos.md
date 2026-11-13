@@ -28,6 +28,13 @@ paths:
 - **Dedup by sha256** (unique): same file in the same place (same apartment, or both inbox) → existing record with
   `duplicate: true`, nothing stored; an inbox upload of a file that already has an apartment → also `duplicate: true`;
   an apartment upload of a file in another apartment or in the inbox → 409 (`findDuplicate`; sort it with PATCH instead).
+- **Batch** (`Photo.batchId`, uuid, indexed; null = uploaded before batches): every upload request generates one
+  `batchId` for the photos it **newly stores**; duplicates keep their own. No batch table — one request = one batch,
+  complete from the start. `POST /photos` also takes an optional multipart field `replyTo` (≤ 128 chars,
+  `UploadPhotosBodyDto`), stored on the batch's new photos: an **opaque** client string (the bot: `chatId:messageId`),
+  never parsed, not returned in responses (it's for the bot-notification events). `batchId` is in every photo response.
+- **All-or-nothing**: the validation pass checks every file before the first one is stored — type, decode (the
+  thumbnail is made there), and a file belonging to another place (409). Any failure → nothing stored.
 - Consistency: upload = objects first, then the row (insert fails → delete the objects); delete = row first (tx), then
   objects (a failure only leaves a logged orphan object, never a row pointing at nothing).
 - Limits (`PHOTO_MAX_FILES`, `PHOTO_MAX_FILE_SIZE_MB`) go through `MulterModule.registerAsync` (in-memory). Too many
