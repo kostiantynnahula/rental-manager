@@ -16,7 +16,7 @@
 - Nest 12, native ESM (`"type": "module"`): relative imports need the `.js` extension.
 - Tests: vitest (globals on). Unit `*.spec.ts` next to the code; e2e in `test/*.e2e-spec.ts`.
 - One Nest module per domain area (apartments, tenants, leases, meters, readings, tariffs, statements, photos,
-  api-keys); infra modules: auth, users, prisma, storage, queue, health, cli.
+  photo-batches, api-keys); infra modules: auth, users, prisma, storage, queue, health, cli.
 - Shared types come from `@rental/shared` (built to `dist/`; root `dev`/`test`/`lint` build it first).
 - Env: read via `ConfigService<Env, true>`, never `process.env`. New vars → `src/config/env.validation.ts` + root `.env.example`.
 - Global `ValidationPipe` (whitelist, forbidNonWhitelisted, transform) and Swagger are set up in `src/main.ts`; e2e tests repeat the pipe options — keep them in sync.

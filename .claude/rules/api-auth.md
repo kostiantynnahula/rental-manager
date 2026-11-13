@@ -37,7 +37,8 @@ paths:
     `photos:upload` → `POST /photos` (inbox only — the Telegram bot; the apartment upload stays human-only);
     the Telegram bot's results: `photos:assign` → `PATCH /photos/:id`, `apartments:read` → `GET /apartments`,
     `readings:read` → `GET /readings/:id`, `readings:confirm` → `POST /readings/:id/confirm`, `readings:cancel` →
-    `POST /readings/:id/cancel`.
+    `POST /readings/:id/cancel`; `photos:read` + `readings:read` (both) → `GET /photo-batches/:batchId` (the batch
+    summary, see `api-photo-batches.md`).
   - **Confirming with a key = on behalf of a human action only**: `readings:confirm` / `readings:cancel` go to a key
     whose every call follows an allowlisted user's tap (the bot's buttons). The worker's key never gets them — a
     parsed value is never used until a human confirmed it. With a key, cancel accepts only a **DRAFT** (409

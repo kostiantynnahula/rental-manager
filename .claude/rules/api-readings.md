@@ -38,6 +38,8 @@ see `api-auth.md`).
 - `consumption` in per-reading responses comes from the `reading_consumption` view
   (`ReadingsService.withConsumption`, SQL in `helpers/reading-consumption-sql.ts`): CONFIRMED readings read their
   own rows; DRAFT/CANCELLED ones (not in the view) = value − the previous confirmed view row of the meter + zone.
+  The rows (with `previousValue` / `previousPeriod`) are public as `ReadingsService.consumptionRows` — reuse it
+  (the photo batch summary does), don't write another query.
 - Apartment view (`GET /apartments/:id/readings?period=`): meters active in the period; CONFIRMED = confirmed REGULAR
   or FINAL of that period, DRAFT = newest draft, MISSING = nothing yet.
 - History (`GET /apartments/:id/readings/history?from&to&meterIds&page&pageSize`): CONFIRMED readings (all kinds),
