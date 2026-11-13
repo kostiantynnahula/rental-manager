@@ -16,15 +16,19 @@ interface HistoryValueWarningsInput {
   leases: ReadonlyArray<{ startDate: Date; endDate: Date | null }>;
 }
 
+// Months the consumption covers: since the previous reading's period, at least 1.
+export function monthsSincePrevious(previousPeriod: Date | null, period: Date): number {
+  return Math.max(1, previousPeriod ? monthsBetween(previousPeriod, period) : 1);
+}
+
 // One history value through the shared consumption rule (the same as the statement's UNUSUAL_CONSUMPTION).
 export function historyValueWarnings(input: HistoryValueWarningsInput): ConsumptionWarning[] {
   if (input.consumption === null) return [];
-  const months = input.previousPeriod ? monthsBetween(input.previousPeriod, input.period) : 1;
   return consumptionWarnings({
     utility: input.utility,
     zone: input.zone,
     consumption: consumptionString(input.consumption),
-    months: Math.max(1, months),
+    months: monthsSincePrevious(input.previousPeriod, input.period),
     hasLease: input.leases.some((l) => leaseOverlapsPeriod(l, input.period)),
   });
 }
