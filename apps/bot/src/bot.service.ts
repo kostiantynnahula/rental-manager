@@ -6,41 +6,37 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Bot } from 'grammy';
-import { Env } from '../config/env.validation.js';
-import { ParseWatcherService } from '../results/parse-watcher.service.js';
-import { ResultActionsService } from '../results/result-actions.service.js';
-import { RESULT_CALLBACK } from '../results/results-state.service.js';
+import { Env } from './config/env.validation.js';
 import { allowlist } from './helpers/allowlist.middleware.js';
 import { parseUserIds } from './helpers/parse-user-ids.js';
+import { IntakeService } from './intake/intake.service.js';
 import { COMMANDS, MESSAGES } from './messages.js';
-import { PhotoIntakeService } from './photo-intake.service.js';
 
-// Owns the grammY Bot: long polling from bootstrap to shutdown. Never log the token, the bot/api objects or
-// `ctx` (they carry the token); grammY keeps it out of its own error messages (`sensitiveLogs` is off).
+// The bot's only entry point and its map: every input is wired here, features never call each other.
+// Inputs: Telegram updates (below) and, next, BullMQ `bot-notifications` events (→ results/).
+// Never log the token, the bot/api objects or `ctx` (they carry the token); grammY keeps it out of its own error
+// messages while `sensitiveLogs` is off (the default).
 @Injectable()
-export class TelegramBotService implements OnApplicationBootstrap, OnApplicationShutdown {
-  private readonly logger = new Logger(TelegramBotService.name);
+export class BotService implements OnApplicationBootstrap, OnApplicationShutdown {
+  private readonly logger = new Logger(BotService.name);
   private readonly bot: Bot;
   // bot.start(): resolves once polling has stopped and the last batch of updates was handled.
   private polling?: Promise<void>;
 
   constructor(
     config: ConfigService<Env, true>,
-    private readonly intake: PhotoIntakeService,
-    private readonly watcher: ParseWatcherService,
-    actions: ResultActionsService,
+    private readonly intake: IntakeService,
   ) {
     this.bot = new Bot(config.get('TELEGRAM_BOT_TOKEN', { infer: true }));
     const allowed = parseUserIds(config.get('TELEGRAM_ALLOWED_USER_IDS', { infer: true }));
 
+    // First: strangers get nothing, not even a reply.
     this.bot.use(allowlist(allowed, this.logger));
     this.bot.command('start', (ctx) => ctx.reply(MESSAGES.start));
     this.bot.command('help', (ctx) => ctx.reply(MESSAGES.help));
-    // Photos and image files → the inbox (batched: one reply per album).
+    // Photos and image files → intake (an album = one upload, one reply).
     this.bot.on(['message:photo', 'message:document'], (ctx) => this.intake.add(ctx));
-    // Result buttons (confirm / cancel / confirm all / assign an apartment) — after the allowlist, so only the owner's
-    // tap makes the bot's key confirm anything.
-    this.bot.callbackQuery(RESULT_CALLBACK, (ctx) => actions.handle(ctx));
+    // Result buttons → results/ (next issue).
 
     // A failing handler: log it, tell the user, keep polling.
     this.bot.catch(async (err) => {
@@ -61,13 +57,10 @@ export class TelegramBotService implements OnApplicationBootstrap, OnApplication
     await this.bot.init();
     await this.bot.api.setMyCommands(COMMANDS);
     // start() resolves only when polling stops, so it isn't awaited. It rejects e.g. on 409 (another process
-    // polls the same token): without polling the app is useless, so shut down — through SIGTERM, the same path as
-    // Ctrl+C (enableShutdownHooks → app.close() → onApplicationShutdown → drain()), so waiting replies still go out.
-    // The process then ends by the signal (exit code 143), not 0.
+    // polls the same token): without polling the bot is useless, so shut down through SIGTERM — the Ctrl+C path
+    // (enableShutdownHooks → onApplicationShutdown), so buffered photos are still uploaded. Exit code 143.
     this.polling = this.bot
-      .start({
-        onStart: (me) => this.logger.log(`Polling as @${me.username}`),
-      })
+      .start({ onStart: (me) => this.logger.log(`Polling as @${me.username}`) })
       .catch((error: unknown) => {
         const { name, message } = error instanceof Error ? error : new Error(String(error));
         this.logger.error(`Polling stopped: ${name}: ${message}`);
@@ -75,13 +68,12 @@ export class TelegramBotService implements OnApplicationBootstrap, OnApplication
       });
   }
 
-  // Order matters: bot.stop() only aborts getUpdates, the current batch of updates is still being handled until
-  // start() resolves. Only then is nothing left to call intake.add(), and the buffered photos can be flushed.
+  // Order matters: bot.stop() only aborts getUpdates; the current batch of updates is handled until start()
+  // resolves. Only then can nothing call intake.add(), and the buffered photos are uploaded. One hook for all:
+  // Nest runs hooks concurrently.
   async onApplicationShutdown(): Promise<void> {
     if (this.bot.isRunning()) await this.bot.stop();
     await this.polling;
-    await this.intake.drain();
-    // Last: drain() may still hand photos to the watcher (it then ignores them).
-    await this.watcher.stop();
+    await this.intake.flush();
   }
 }

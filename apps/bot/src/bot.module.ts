@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { BotService } from './bot.service.js';
 import { configModuleOptions } from './config/config-module-options.js';
-import { TelegramModule } from './telegram/telegram.module.js';
+import { IntakeModule } from './intake/intake.module.js';
 
-// Root: global config and the Telegram bot (which imports the API client for the photo intake).
+// Root: global config, the features, and BotService — the one entry point that wires them to Telegram.
 @Module({
-  imports: [ConfigModule.forRoot(configModuleOptions), TelegramModule],
+  imports: [ConfigModule.forRoot(configModuleOptions), IntakeModule],
+  providers: [BotService],
 })
 export class BotModule {}
