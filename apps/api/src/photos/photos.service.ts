@@ -9,15 +9,12 @@ import {
 } from '@nestjs/common';
 import { ApartmentsService } from '../apartments/apartments.service.js';
 import type { AuthUser } from '../auth/interfaces/auth-user.interface.js';
-import { todayDateOnly } from '../common/helpers/date-only.js';
 import type { Photo, Prisma } from '../generated/prisma/client.js';
 import { PhotoParseStatus, ReadingSource, ReadingStatus } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PhotoJobsService } from '../queue/photo-jobs.service.js';
 import { StorageService } from '../storage/storage.service.js';
 import { detectImageType } from './helpers/image-type.js';
-import { cleanOriginalFilename } from './helpers/original-filename.js';
-import { photoKeys } from './helpers/photo-keys.js';
 import { photoWithReadingsInclude, type PhotoWithReadings } from './helpers/photo-with-readings.js';
 import {
   activeReadingValue,
@@ -27,6 +24,8 @@ import {
 import { sha256Hex } from './helpers/sha256.js';
 import { SetParseResultDto } from './dto/set-parse-result.dto.js';
 import { makeThumbnail, THUMBNAIL_MIME_TYPE } from './helpers/thumbnail.js';
+import { newPhotos, uploadAnswers } from './helpers/upload-batch.js';
+import type { NewPhoto } from './interfaces/new-photo.interface.js';
 import type { PhotoBatch } from './interfaces/photo-batch.interface.js';
 import type { PhotoFile } from './interfaces/photo-file.interface.js';
 import type { PreparedPhoto } from './interfaces/prepared-photo.interface.js';
@@ -67,39 +66,52 @@ export class PhotosService {
     }
     if (!files?.length) throw new BadRequestException('No files: send them in the "files" field');
 
-    // Validate everything before storing anything, so a bad file rejects the whole request with nothing stored:
-    // the type, the decode (thumbnail) and a file that belongs to another place (409).
-    const prepared: PreparedPhoto[] = [];
+    const prepared = await this.validateAll(files, apartmentId);
+    const batch: PhotoBatch = { batchId: randomUUID(), replyTo: replyTo ?? null };
+    const stored = await this.storeAll(
+      newPhotos(prepared, apartmentId, batch, userId),
+      apartmentId,
+    );
+    // Jobs only after the commit, so none points at a rolled-back photo. A lost race is a duplicate: no job.
+    for (const { photo, duplicate } of stored.values()) {
+      if (!duplicate) await this.photoJobs.enqueueParse(photo.id);
+    }
+    return uploadAnswers(prepared, stored);
+  }
+
+  // Every file is checked before anything is stored, so a bad one rejects the whole request: the type, the
+  // decode (thumbnail) and a file that belongs to another place (409).
+  private async validateAll(
+    files: Express.Multer.File[],
+    apartmentId: string | null,
+  ): Promise<PreparedPhoto[]> {
+    // Cheap checks first, for every file: the type and a file that belongs to another place (409).
+    const checked: Omit<PreparedPhoto, 'thumbnail'>[] = [];
     for (const [i, file] of files.entries()) {
       const result = await detectImageType(file.buffer);
       if (!result.ok) throw new BadRequestException(`files[${i}]: ${result.message}`);
-      let thumbnail: Thumbnail;
-      try {
-        thumbnail = await makeThumbnail(file.buffer);
-      } catch {
-        throw new BadRequestException(`files[${i}]: the image is corrupt or can't be decoded`);
-      }
       const sha256 = sha256Hex(file.buffer);
-      await this.findDuplicate(sha256, apartmentId);
-      prepared.push({ file, type: result.type, sha256, thumbnail });
+      const existing = await this.findDuplicate(sha256, apartmentId);
+      checked.push({ file, type: result.type, sha256, existing });
     }
 
-    const batch: PhotoBatch = { batchId: randomUUID(), replyTo: replyTo ?? null };
-    // Sequential: two identical files in one request dedup against each other.
-    const results: UploadedPhoto[] = [];
-    for (const item of prepared) {
-      const existing = await this.findDuplicate(item.sha256, apartmentId);
-      if (existing) {
-        results.push({ photo: existing, duplicate: true });
-        continue;
+    // Then the decode (the thumbnail), only for the files this request stores: not a duplicate, not a repeat.
+    const seen = new Set<string>();
+    const prepared: PreparedPhoto[] = [];
+    for (const [i, item] of checked.entries()) {
+      const isNew = !item.existing && !seen.has(item.sha256);
+      seen.add(item.sha256);
+      let thumbnail: Thumbnail | null = null;
+      if (isNew) {
+        try {
+          thumbnail = await makeThumbnail(item.file.buffer);
+        } catch {
+          throw new BadRequestException(`files[${i}]: the image is corrupt or can't be decoded`);
+        }
       }
-      const stored = await this.store(apartmentId, item, batch, userId);
-      // Only a newly stored photo gets a job; `duplicate` also covers losing a race to a parallel upload
-      // of the same file (the winner enqueued it).
-      if (!stored.duplicate) await this.photoJobs.enqueueParse(stored.photo.id);
-      results.push(stored);
+      prepared.push({ ...item, thumbnail });
     }
-    return results;
+    return prepared;
   }
 
   async list(apartmentId: string, unassigned: boolean): Promise<PhotoWithUsage[]> {
@@ -234,7 +246,12 @@ export class PhotosService {
   // in another apartment → 409 (moving it out of the inbox is a separate action).
   private async findDuplicate(sha256: string, apartmentId: string | null): Promise<Photo | null> {
     const existing = await this.prisma.photo.findUnique({ where: { sha256 } });
-    if (!existing || apartmentId === null || existing.apartmentId === apartmentId) return existing;
+    if (existing) this.assertSamePlace(existing, apartmentId);
+    return existing;
+  }
+
+  private assertSamePlace(existing: Photo, apartmentId: string | null): void {
+    if (apartmentId === null || existing.apartmentId === apartmentId) return;
     throw new ConflictException(
       existing.apartmentId === null
         ? 'This photo is already in the inbox'
@@ -242,45 +259,56 @@ export class PhotosService {
     );
   }
 
-  // Objects first, then the row; if the insert fails, the objects are removed again.
-  private async store(
+  // All or nothing: the objects, then every row in one transaction. Any failure → the objects are deleted, no row.
+  // Result by sha256.
+  private async storeAll(
+    photos: NewPhoto[],
     apartmentId: string | null,
-    { file, type, sha256, thumbnail }: PreparedPhoto,
-    { batchId, replyTo }: PhotoBatch,
-    userId: string,
-  ): Promise<UploadedPhoto> {
-    const id = randomUUID();
-    const keys = photoKeys(id, type.ext, todayDateOnly());
+  ): Promise<Map<string, UploadedPhoto>> {
+    const putKeys: string[] = [];
+    let saved: Photo[];
     try {
-      // The original is stored byte-for-byte; only the thumbnail is derived.
-      await this.storage.put(keys.storageKey, file.buffer, type.mime);
-      await this.storage.put(keys.thumbnailKey, thumbnail.buffer, THUMBNAIL_MIME_TYPE);
-      const photo = await this.prisma.photo.create({
-        data: {
-          id,
-          apartmentId,
-          ...keys,
-          mimeType: type.mime,
-          size: file.size,
-          sha256,
-          width: thumbnail.width,
-          height: thumbnail.height,
-          originalFilename: cleanOriginalFilename(file.originalname),
-          uploadedById: userId,
-          batchId,
-          replyTo,
-          // Every newly stored photo gets a parse job right after this.
-          parseStatus: PhotoParseStatus.PENDING,
-        },
-      });
-      return { photo, duplicate: false };
+      for (const { item, row } of photos) {
+        // The original is stored byte-for-byte; only the thumbnail is derived.
+        await this.storage.put(row.storageKey, item.file.buffer, item.type.mime);
+        putKeys.push(row.storageKey);
+        await this.storage.put(row.thumbnailKey, item.thumbnail.buffer, THUMBNAIL_MIME_TYPE);
+        putKeys.push(row.thumbnailKey);
+      }
+      saved = await this.insertRows(photos, apartmentId);
     } catch (e) {
-      await this.deleteObjects(keys.storageKey, keys.thumbnailKey);
-      // A parallel upload of the same file won the sha256 unique index: return its record.
-      const winner = await this.findDuplicate(sha256, apartmentId);
-      if (winner) return { photo: winner, duplicate: true };
+      await this.deleteObjects(...putKeys);
       throw e;
     }
+
+    const savedBySha = new Map(saved.map((photo) => [photo.sha256, photo]));
+    const result = new Map<string, UploadedPhoto>();
+    for (const { row } of photos) {
+      const photo = savedBySha.get(row.sha256)!;
+      // Not our row: a parallel upload stored the same file first. Our objects are unused.
+      const lostRace = photo.id !== row.id;
+      if (lostRace) await this.deleteObjects(row.storageKey, row.thumbnailKey);
+      result.set(row.sha256, { photo, duplicate: lostRace });
+    }
+    return result;
+  }
+
+  // A file a parallel upload stored meanwhile is skipped by the insert (ON CONFLICT DO NOTHING), and the select
+  // returns that upload's row instead of ours. If it is in another place → 409, the whole transaction rolls back.
+  private insertRows(photos: NewPhoto[], apartmentId: string | null): Promise<Photo[]> {
+    const rows = photos.map((p) => p.row);
+    return this.prisma.$transaction(async (tx) => {
+      await tx.photo.createMany({ data: rows, skipDuplicates: true });
+      const saved = await tx.photo.findMany({
+        where: { sha256: { in: rows.map((r) => r.sha256) } },
+      });
+      // Only if a parallel request deleted that row between our insert and select.
+      if (saved.length !== rows.length) {
+        throw new ConflictException('A photo changed during upload — try again');
+      }
+      saved.forEach((photo) => this.assertSamePlace(photo, apartmentId));
+      return saved;
+    });
   }
 
   private async deleteObjects(...keys: string[]): Promise<void> {
