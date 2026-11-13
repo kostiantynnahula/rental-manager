@@ -2650,6 +2650,58 @@
         ]
       }
     },
+    "/photo-batches/{batchId}/confirm": {
+      "post": {
+        "description": "Confirms every reading of the batch that is canConfirm now, each on its own (same rules as POST /readings/:id/confirm; one refusal does not stop the others). API key scope: readings:confirm (only for a human action, e.g. a bot button)",
+        "operationId": "PhotoBatchesController_confirm",
+        "parameters": [
+          {
+            "name": "batchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoBatchConfirmResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "batchId is not a uuid"
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": "API key without readings:confirm"
+          },
+          "404": {
+            "description": "No photo has this batchId"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "photo-batches"
+        ]
+      }
+    },
     "/tariffs": {
       "get": {
         "operationId": "TariffsController_list",
@@ -6169,6 +6221,48 @@
           "batchId",
           "photos",
           "apartments"
+        ]
+      },
+      "PhotoBatchRefusalResponseDto": {
+        "type": "object",
+        "properties": {
+          "readingId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "type": "string",
+            "example": "A confirmed reading for this period already exists — cancel it first",
+            "description": "The confirm rule that refused it (as POST /readings/:id/confirm would answer)"
+          }
+        },
+        "required": [
+          "readingId",
+          "reason"
+        ]
+      },
+      "PhotoBatchConfirmResponseDto": {
+        "type": "object",
+        "properties": {
+          "confirmed": {
+            "description": "Readings confirmed now",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "refused": {
+            "description": "canConfirm readings the confirm rules refused. Not confirmable ones (partial, not a DRAFT) are in neither list",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhotoBatchRefusalResponseDto"
+            }
+          }
+        },
+        "required": [
+          "confirmed",
+          "refused"
         ]
       },
       "TariffKind": {

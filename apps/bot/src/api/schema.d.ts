@@ -227,6 +227,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/photo-batches/{batchId}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Confirms every reading of the batch that is canConfirm now, each on its own (same rules as POST /readings/:id/confirm; one refusal does not stop the others). API key scope: readings:confirm (only for a human action, e.g. a bot button) */
+        post: operations["PhotoBatchesController_confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -654,6 +671,21 @@ export interface components {
             photos: components["schemas"]["PhotoBatchPhotoResponseDto"][];
             /** @description The readings taken from the photos, by the meter's apartment (by name); empty = nothing matched */
             apartments: components["schemas"]["PhotoBatchApartmentResponseDto"][];
+        };
+        PhotoBatchRefusalResponseDto: {
+            /** Format: uuid */
+            readingId: string;
+            /**
+             * @description The confirm rule that refused it (as POST /readings/:id/confirm would answer)
+             * @example A confirmed reading for this period already exists — cancel it first
+             */
+            reason: string;
+        };
+        PhotoBatchConfirmResponseDto: {
+            /** @description Readings confirmed now */
+            confirmed: string[];
+            /** @description canConfirm readings the confirm rules refused. Not confirmable ones (partial, not a DRAFT) are in neither list */
+            refused: components["schemas"]["PhotoBatchRefusalResponseDto"][];
         };
     };
     responses: never;
@@ -1294,6 +1326,54 @@ export interface operations {
                 content?: never;
             };
             /** @description API key without photos:read and readings:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No photo has this batchId */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PhotoBatchesController_confirm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                batchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhotoBatchConfirmResponseDto"];
+                };
+            };
+            /** @description batchId is not a uuid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without readings:confirm */
             403: {
                 headers: {
                     [name: string]: unknown;
