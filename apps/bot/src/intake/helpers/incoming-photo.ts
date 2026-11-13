@@ -11,6 +11,7 @@ export function incomingPhoto(message: Message): IncomingPhoto | null {
       fileId: largest.file_id,
       fileSize: largest.file_size,
       filename: `photo-${largest.file_unique_id}.jpg`,
+      displayName: null,
     };
   }
   const doc = message.document;
@@ -19,6 +20,7 @@ export function incomingPhoto(message: Message): IncomingPhoto | null {
       fileId: doc.file_id,
       fileSize: doc.file_size,
       filename: doc.file_name ?? `file-${doc.file_unique_id}`,
+      displayName: doc.file_name ?? null,
     };
   }
   return null;

@@ -1,12 +1,13 @@
-// In-memory debounce buffer: items with one key are collected until `silenceMs` pass without a new one, then
-// handed to `onFlush` together. Telegram sends every photo of an album as a separate update, so this is what
-// turns them into one batch (and one reply). Single process only: nothing survives a restart — so it only holds
-// what is already safe (upload results, not photos).
-export class PhotoBatcher<T> {
+// In-memory debounce buffer (pure: no Nest, no grammY). Items with one key are collected until `silenceMs` pass
+// without a new one — or `maxItems` are there — then handed to `onFlush` together. Telegram sends every photo of
+// an album as a separate update, so this is what turns them into one upload request (one batch).
+// Single process only: a crash inside the window loses what is buffered (resending is safe: sha256 dedup).
+export class AlbumBuffer<T> {
   private readonly pending = new Map<string, { items: T[]; timer: NodeJS.Timeout }>();
 
   constructor(
     private readonly silenceMs: number,
+    private readonly maxItems: number,
     private readonly onFlush: (items: T[]) => void,
   ) {}
 
@@ -16,13 +17,7 @@ export class PhotoBatcher<T> {
     const items = batch ? [...batch.items, item] : [item];
     const timer = setTimeout(() => this.flush(key), this.silenceMs);
     this.pending.set(key, { items, timer });
-  }
-
-  // Stops the key's silence timer (its items stay) while the next item is being produced, e.g. uploaded: that can
-  // take longer than `silenceMs`, and the album must not be split. The next add() restarts the timer.
-  hold(key: string): void {
-    const batch = this.pending.get(key);
-    if (batch) clearTimeout(batch.timer);
+    if (items.length >= this.maxItems) this.flush(key);
   }
 
   // Shutdown: hand over everything still waiting, without waiting for the silence.
