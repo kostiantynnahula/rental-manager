@@ -2598,6 +2598,58 @@
         ]
       }
     },
+    "/photo-batches/{batchId}": {
+      "get": {
+        "description": "The batch's photos and the readings taken from them, by apartment, with previous values, consumption, warnings, missing zones and canConfirm. API key scopes: photos:read + readings:read",
+        "operationId": "PhotoBatchesController_summary",
+        "parameters": [
+          {
+            "name": "batchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoBatchResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "batchId is not a uuid"
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": "API key without photos:read and readings:read"
+          },
+          "404": {
+            "description": "No photo has this batchId"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "photo-batches"
+        ]
+      }
+    },
     "/tariffs": {
       "get": {
         "operationId": "TariffsController_list",
@@ -5847,6 +5899,276 @@
         },
         "required": [
           "reason"
+        ]
+      },
+      "PhotoBatchPhotoResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "parseStatus": {
+            "nullable": true,
+            "description": "The worker's parse job: PENDING until it ends",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PhotoParseStatus"
+              }
+            ]
+          },
+          "parseNote": {
+            "type": "string",
+            "nullable": true,
+            "description": "Why nothing was matched, or the error (worker text)"
+          }
+        },
+        "required": [
+          "id",
+          "parseStatus",
+          "parseNote"
+        ]
+      },
+      "PhotoBatchMeterResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "utility": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UtilityType"
+              }
+            ]
+          },
+          "label": {
+            "type": "string",
+            "nullable": true,
+            "example": "kitchen"
+          },
+          "serialNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "zoneScheme": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ZoneScheme"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "utility",
+          "label",
+          "serialNumber",
+          "zoneScheme"
+        ]
+      },
+      "PhotoBatchWarningResponseDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConsumptionWarningReason"
+              }
+            ]
+          },
+          "limit": {
+            "type": "number",
+            "nullable": true,
+            "example": 130,
+            "description": "Usual monthly limit of the utility + zone (ABOVE_LIMIT); null for ZERO_CONSUMPTION"
+          },
+          "months": {
+            "type": "number",
+            "example": 1,
+            "description": "Months since the previous reading (≥ 1)"
+          }
+        },
+        "required": [
+          "code",
+          "limit",
+          "months"
+        ]
+      },
+      "PhotoBatchValueResponseDto": {
+        "type": "object",
+        "properties": {
+          "zone": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Zone"
+              }
+            ]
+          },
+          "value": {
+            "type": "string",
+            "example": "1520.350",
+            "description": "Decimal string with 3 decimals"
+          },
+          "photoId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Photo the value was read from"
+          },
+          "previousValue": {
+            "type": "string",
+            "nullable": true,
+            "example": "1400.350",
+            "description": "Previous CONFIRMED value of the meter and zone; null if there is none"
+          },
+          "consumption": {
+            "type": "string",
+            "nullable": true,
+            "example": "120.000",
+            "description": "value − previousValue; null without a previous value; negative = lowerThanPrevious"
+          },
+          "lowerThanPrevious": {
+            "type": "boolean",
+            "description": "Lower than the previous value: the reading cannot be confirmed"
+          },
+          "warnings": {
+            "description": "Shared consumption rule (as the readings history); never blocks. Empty = fine",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhotoBatchWarningResponseDto"
+            }
+          }
+        },
+        "required": [
+          "zone",
+          "value",
+          "photoId",
+          "previousValue",
+          "consumption",
+          "lowerThanPrevious",
+          "warnings"
+        ]
+      },
+      "PhotoBatchReadingResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReadingStatus"
+              }
+            ]
+          },
+          "period": {
+            "type": "string",
+            "example": "2026-10",
+            "description": "Month the reading is for (YYYY-MM)"
+          },
+          "readingDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-10-28"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "meter": {
+            "$ref": "#/components/schemas/PhotoBatchMeterResponseDto"
+          },
+          "canConfirm": {
+            "type": "boolean",
+            "description": "DRAFT, no zone missing, none lower than the previous value. Other rules (dates, a confirmed reading of the same period) are still checked by the confirm"
+          },
+          "missingZones": {
+            "type": "array",
+            "description": "Zones of the meter the reading does not have yet",
+            "items": {
+              "$ref": "#/components/schemas/Zone"
+            }
+          },
+          "values": {
+            "description": "In the meter's zone order",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhotoBatchValueResponseDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "period",
+          "readingDate",
+          "note",
+          "meter",
+          "canConfirm",
+          "missingZones",
+          "values"
+        ]
+      },
+      "PhotoBatchApartmentResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Shevchenka 12/5"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "false = archived"
+          },
+          "readings": {
+            "description": "By utility, label, period; each reading once",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhotoBatchReadingResponseDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "isActive",
+          "readings"
+        ]
+      },
+      "PhotoBatchResponseDto": {
+        "type": "object",
+        "properties": {
+          "batchId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "photos": {
+            "description": "In upload order",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhotoBatchPhotoResponseDto"
+            }
+          },
+          "apartments": {
+            "description": "The readings taken from the photos, by the meter's apartment (by name); empty = nothing matched",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhotoBatchApartmentResponseDto"
+            }
+          }
+        },
+        "required": [
+          "batchId",
+          "photos",
+          "apartments"
         ]
       },
       "TariffKind": {

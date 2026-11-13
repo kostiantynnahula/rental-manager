@@ -579,6 +579,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/photo-batches/{batchId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The batch's photos and the readings taken from them, by apartment, with previous values, consumption, warnings, missing zones and canConfirm. API key scopes: photos:read + readings:read */
+        get: operations["PhotoBatchesController_summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tariffs": {
         parameters: {
             query?: never;
@@ -1611,6 +1628,104 @@ export interface components {
              * @example Typo in the day value
              */
             reason: string;
+        };
+        PhotoBatchPhotoResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** @description The worker's parse job: PENDING until it ends */
+            parseStatus: components["schemas"]["PhotoParseStatus"] | null;
+            /** @description Why nothing was matched, or the error (worker text) */
+            parseNote: string | null;
+        };
+        PhotoBatchMeterResponseDto: {
+            /** Format: uuid */
+            id: string;
+            utility: components["schemas"]["UtilityType"];
+            /** @example kitchen */
+            label: string | null;
+            serialNumber: string | null;
+            zoneScheme: components["schemas"]["ZoneScheme"];
+        };
+        PhotoBatchWarningResponseDto: {
+            code: components["schemas"]["ConsumptionWarningReason"];
+            /**
+             * @description Usual monthly limit of the utility + zone (ABOVE_LIMIT); null for ZERO_CONSUMPTION
+             * @example 130
+             */
+            limit: number | null;
+            /**
+             * @description Months since the previous reading (≥ 1)
+             * @example 1
+             */
+            months: number;
+        };
+        PhotoBatchValueResponseDto: {
+            zone: components["schemas"]["Zone"];
+            /**
+             * @description Decimal string with 3 decimals
+             * @example 1520.350
+             */
+            value: string;
+            /**
+             * Format: uuid
+             * @description Photo the value was read from
+             */
+            photoId: string | null;
+            /**
+             * @description Previous CONFIRMED value of the meter and zone; null if there is none
+             * @example 1400.350
+             */
+            previousValue: string | null;
+            /**
+             * @description value − previousValue; null without a previous value; negative = lowerThanPrevious
+             * @example 120.000
+             */
+            consumption: string | null;
+            /** @description Lower than the previous value: the reading cannot be confirmed */
+            lowerThanPrevious: boolean;
+            /** @description Shared consumption rule (as the readings history); never blocks. Empty = fine */
+            warnings: components["schemas"]["PhotoBatchWarningResponseDto"][];
+        };
+        PhotoBatchReadingResponseDto: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["ReadingStatus"];
+            /**
+             * @description Month the reading is for (YYYY-MM)
+             * @example 2026-10
+             */
+            period: string;
+            /**
+             * Format: date
+             * @example 2026-10-28
+             */
+            readingDate: string;
+            note: string | null;
+            meter: components["schemas"]["PhotoBatchMeterResponseDto"];
+            /** @description DRAFT, no zone missing, none lower than the previous value. Other rules (dates, a confirmed reading of the same period) are still checked by the confirm */
+            canConfirm: boolean;
+            /** @description Zones of the meter the reading does not have yet */
+            missingZones: components["schemas"]["Zone"][];
+            /** @description In the meter's zone order */
+            values: components["schemas"]["PhotoBatchValueResponseDto"][];
+        };
+        PhotoBatchApartmentResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example Shevchenka 12/5 */
+            name: string;
+            /** @description false = archived */
+            isActive: boolean;
+            /** @description By utility, label, period; each reading once */
+            readings: components["schemas"]["PhotoBatchReadingResponseDto"][];
+        };
+        PhotoBatchResponseDto: {
+            /** Format: uuid */
+            batchId: string;
+            /** @description In upload order */
+            photos: components["schemas"]["PhotoBatchPhotoResponseDto"][];
+            /** @description The readings taken from the photos, by the meter's apartment (by name); empty = nothing matched */
+            apartments: components["schemas"]["PhotoBatchApartmentResponseDto"][];
         };
         /** @enum {string} */
         TariffKind: "METERED" | "FIXED" | "MANUAL";
@@ -4274,6 +4389,54 @@ export interface operations {
             };
             /** @description INITIAL/FINAL reading, already cancelled, or (API key) not a DRAFT */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PhotoBatchesController_summary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                batchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhotoBatchResponseDto"];
+                };
+            };
+            /** @description batchId is not a uuid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without photos:read and readings:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No photo has this batchId */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
