@@ -300,10 +300,15 @@ model Photo {
   parseStatus      PhotoParseStatus?
   // Why nothing was matched, or the job's error (the worker's text).
   parseNote        String?
+  // One upload request = one batch: the photos newly stored by it. null = uploaded before batches existed.
+  batchId          String?           @db.Uuid
+  // Opaque client string (the bot: chatId:messageId) — where the answer to the batch goes; never parsed.
+  replyTo          String?           @db.VarChar(128)
   readingValues    ReadingValue[]
 
   @@index([apartmentId, createdAt])
   @@index([uploadedById])
+  @@index([batchId])
   @@map("photos")
 }
 

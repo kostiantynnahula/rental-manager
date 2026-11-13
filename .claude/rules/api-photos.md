@@ -28,7 +28,20 @@ paths:
 - **Dedup by sha256** (unique): same file in the same place (same apartment, or both inbox) → existing record with
   `duplicate: true`, nothing stored; an inbox upload of a file that already has an apartment → also `duplicate: true`;
   an apartment upload of a file in another apartment or in the inbox → 409 (`findDuplicate`; sort it with PATCH instead).
-- Consistency: upload = objects first, then the row (insert fails → delete the objects); delete = row first (tx), then
+- **Batch** (`Photo.batchId`, uuid, indexed; null = uploaded before batches): every upload request generates one
+  `batchId` for the photos it **newly stores**; duplicates keep their own. No batch table — one request = one batch,
+  complete from the start. `POST /photos` also takes an optional multipart field `replyTo` (≤ 128 chars,
+  `UploadPhotosBodyDto`), stored on the batch's new photos: an **opaque** client string (the bot: `chatId:messageId`),
+  never parsed, not returned in responses (it's for the bot-notification events). `batchId` is in every photo response.
+- **All-or-nothing**: the validation pass (`validateAll`) checks every file before the first one is stored — first
+  the cheap checks for all files (type, a file belonging to another place → 409), then the decode (the thumbnail is
+  made there) only for the files the request stores: duplicates and repeats are never decoded (`thumbnail: null`).
+  The `findDuplicate` result is kept (`PreparedPhoto.existing`), not re-queried. A file repeated inside one request
+  is stored once (the repeats are `duplicate: true`). Then `storeAll`: every object, then **all rows in one transaction** (`createMany`
+  `skipDuplicates` + re-select by sha256): a file a parallel upload stored meanwhile → that record, `duplicate: true`
+  (our objects deleted), or 409 if it is in another place, which rolls the whole request back. Any failure → no row,
+  objects deleted. Parse jobs are enqueued only after the commit.
+- Consistency: upload = objects first, then the rows (insert fails → delete the objects); delete = row first (tx), then
   objects (a failure only leaves a logged orphan object, never a row pointing at nothing).
 - Limits (`PHOTO_MAX_FILES`, `PHOTO_MAX_FILE_SIZE_MB`) go through `MulterModule.registerAsync` (in-memory). Too many
   files → 400, too large → 413. `multer` isn't a direct dependency: don't import it at runtime (types come from `@types/multer`).
