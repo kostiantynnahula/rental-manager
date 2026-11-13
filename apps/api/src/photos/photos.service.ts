@@ -27,8 +27,9 @@ import {
 import { sha256Hex } from './helpers/sha256.js';
 import { SetParseResultDto } from './dto/set-parse-result.dto.js';
 import { makeThumbnail, THUMBNAIL_MIME_TYPE } from './helpers/thumbnail.js';
-import type { ImageType } from './interfaces/image-type.interface.js';
+import type { PhotoBatch } from './interfaces/photo-batch.interface.js';
 import type { PhotoFile } from './interfaces/photo-file.interface.js';
+import type { PreparedPhoto } from './interfaces/prepared-photo.interface.js';
 import type { Thumbnail } from './interfaces/thumbnail.interface.js';
 import type { UploadedPhoto } from './interfaces/uploaded-photo.interface.js';
 
@@ -52,11 +53,13 @@ export class PhotosService {
     private readonly photoJobs: PhotoJobsService,
   ) {}
 
-  // apartmentId null = inbox (no apartment yet).
+  // apartmentId null = inbox (no apartment yet). One request = one batch: every photo it newly stores gets the same
+  // batchId (and replyTo, an opaque client string); duplicates keep their own.
   async upload(
     apartmentId: string | null,
     files: Express.Multer.File[] | undefined,
     userId: string,
+    replyTo?: string,
   ): Promise<UploadedPhoto[]> {
     if (apartmentId) {
       const apartment = await this.apartments.findOrThrow(apartmentId);
@@ -64,29 +67,33 @@ export class PhotosService {
     }
     if (!files?.length) throw new BadRequestException('No files: send them in the "files" field');
 
-    // Validate everything before storing anything, so a bad file rejects the whole request.
-    const prepared: { file: Express.Multer.File; type: ImageType; sha256: string }[] = [];
+    // Validate everything before storing anything, so a bad file rejects the whole request with nothing stored:
+    // the type, the decode (thumbnail) and a file that belongs to another place (409).
+    const prepared: PreparedPhoto[] = [];
     for (const [i, file] of files.entries()) {
       const result = await detectImageType(file.buffer);
       if (!result.ok) throw new BadRequestException(`files[${i}]: ${result.message}`);
-      prepared.push({ file, type: result.type, sha256: sha256Hex(file.buffer) });
-    }
-
-    // Sequential: two identical files in one request dedup against each other.
-    const results: UploadedPhoto[] = [];
-    for (const [i, { file, type, sha256 }] of prepared.entries()) {
-      const existing = await this.findDuplicate(sha256, apartmentId);
-      if (existing) {
-        results.push({ photo: existing, duplicate: true });
-        continue;
-      }
       let thumbnail: Thumbnail;
       try {
         thumbnail = await makeThumbnail(file.buffer);
       } catch {
         throw new BadRequestException(`files[${i}]: the image is corrupt or can't be decoded`);
       }
-      const stored = await this.store(apartmentId, file, type, sha256, thumbnail, userId);
+      const sha256 = sha256Hex(file.buffer);
+      await this.findDuplicate(sha256, apartmentId);
+      prepared.push({ file, type: result.type, sha256, thumbnail });
+    }
+
+    const batch: PhotoBatch = { batchId: randomUUID(), replyTo: replyTo ?? null };
+    // Sequential: two identical files in one request dedup against each other.
+    const results: UploadedPhoto[] = [];
+    for (const item of prepared) {
+      const existing = await this.findDuplicate(item.sha256, apartmentId);
+      if (existing) {
+        results.push({ photo: existing, duplicate: true });
+        continue;
+      }
+      const stored = await this.store(apartmentId, item, batch, userId);
       // Only a newly stored photo gets a job; `duplicate` also covers losing a race to a parallel upload
       // of the same file (the winner enqueued it).
       if (!stored.duplicate) await this.photoJobs.enqueueParse(stored.photo.id);
@@ -238,10 +245,8 @@ export class PhotosService {
   // Objects first, then the row; if the insert fails, the objects are removed again.
   private async store(
     apartmentId: string | null,
-    file: Express.Multer.File,
-    type: ImageType,
-    sha256: string,
-    thumbnail: Thumbnail,
+    { file, type, sha256, thumbnail }: PreparedPhoto,
+    { batchId, replyTo }: PhotoBatch,
     userId: string,
   ): Promise<UploadedPhoto> {
     const id = randomUUID();
@@ -262,6 +267,8 @@ export class PhotosService {
           height: thumbnail.height,
           originalFilename: cleanOriginalFilename(file.originalname),
           uploadedById: userId,
+          batchId,
+          replyTo,
           // Every newly stored photo gets a parse job right after this.
           parseStatus: PhotoParseStatus.PENDING,
         },
