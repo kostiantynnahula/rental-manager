@@ -12,7 +12,7 @@ function kindRank(alias: string): Prisma.Sql {
 // CONFIRMED readings: their rows of the view as is.
 export function confirmedConsumptionQuery(meterIds: string[], readingIds: string[]): Prisma.Sql {
   return Prisma.sql`
-    SELECT "readingId", "zone", "value", "consumption"
+    SELECT "readingId", "zone", "value", "consumption", "previousValue", "previousPeriod"
     FROM "reading_consumption"
     -- "meterId" is pushed down into the view (PARTITION BY column); readingId alone isn't.
     WHERE "meterId" = ANY(${meterIds}::uuid[])
@@ -24,11 +24,12 @@ export function confirmedConsumptionQuery(meterIds: string[], readingIds: string
 // comes before the reading in the view's order (period, readingDate, kind, createdAt). NULL without one.
 export function unconfirmedConsumptionQuery(meterIds: string[], readingIds: string[]): Prisma.Sql {
   return Prisma.sql`
-    SELECT r."id" AS "readingId", v."zone", v."value", v."value" - prev."value" AS "consumption"
+    SELECT r."id" AS "readingId", v."zone", v."value", v."value" - prev."value" AS "consumption",
+           prev."value" AS "previousValue", prev."period" AS "previousPeriod"
     FROM "readings" r
     JOIN "reading_values" v ON v."readingId" = r."id"
     LEFT JOIN LATERAL (
-      SELECT c."value"
+      SELECT c."value", c."period"
       FROM "reading_consumption" c
       JOIN "readings" cr ON cr."id" = c."readingId"
       WHERE c."meterId" = ANY(${meterIds}::uuid[])

@@ -346,12 +346,15 @@ export class ReadingsService {
     }));
   }
 
-  // Consumption from the reading_consumption view: CONFIRMED readings read their own rows, others are
-  // compared with the previous confirmed row (helpers/reading-consumption-sql.ts). One query per group.
-  private async withConsumption(readings: ReadingWithValues[]): Promise<ReadingWithConsumption[]> {
+  // Every value of the readings with its previous confirmed value and consumption, from the reading_consumption
+  // view: CONFIRMED readings read their own rows, others are compared with the previous confirmed row
+  // (helpers/reading-consumption-sql.ts). One query per group.
+  async consumptionRows(
+    readings: ReadonlyArray<Pick<ReadingWithValues, 'id' | 'meterId' | 'status'>>,
+  ): Promise<ReadingConsumptionRow[]> {
     const confirmed = readings.filter((r) => r.status === ReadingStatus.CONFIRMED);
     const unconfirmed = readings.filter((r) => r.status !== ReadingStatus.CONFIRMED);
-    const query = (group: ReadingWithValues[], build: typeof confirmedConsumptionQuery) =>
+    const query = (group: typeof readings, build: typeof confirmedConsumptionQuery) =>
       group.length === 0
         ? Promise.resolve([])
         : this.prisma.$queryRaw<ReadingConsumptionRow[]>(
@@ -360,13 +363,16 @@ export class ReadingsService {
               group.map((r) => r.id),
             ),
           );
-    const rows = (
+    return (
       await Promise.all([
         query(confirmed, confirmedConsumptionQuery),
         query(unconfirmed, unconfirmedConsumptionQuery),
       ])
     ).flat();
-    const byReading = consumptionByReading(rows);
+  }
+
+  private async withConsumption(readings: ReadingWithValues[]): Promise<ReadingWithConsumption[]> {
+    const byReading = consumptionByReading(await this.consumptionRows(readings));
     return readings.map((reading) => ({
       reading,
       consumption: byReading.get(reading.id) ?? null,
