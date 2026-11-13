@@ -13,4 +13,11 @@ export {
 } from './consumption.js';
 export { fromThousandths, toThousandths } from './decimal.js';
 export { normalizeUaPhone, phoneSearchDigits } from './phone.js';
-export { PARSE_PHOTO_JOB, PHOTO_QUEUE, type ParsePhotoJobData } from './queues.js';
+export {
+  BATCH_PARSED_JOB,
+  BOT_NOTIFICATIONS_QUEUE,
+  PARSE_PHOTO_JOB,
+  PHOTO_QUEUE,
+  type BatchParsedJobData,
+  type ParsePhotoJobData,
+} from './queues.js';
