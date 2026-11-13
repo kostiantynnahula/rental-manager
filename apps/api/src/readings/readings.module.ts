@@ -18,5 +18,7 @@ import { ReadingsService } from './readings.service.js';
     ReadingsController,
   ],
   providers: [ReadingsService, DraftValuesService],
+  // photo-batches: the batch summary (consumption rows).
+  exports: [ReadingsService],
 })
 export class ReadingsModule {}
