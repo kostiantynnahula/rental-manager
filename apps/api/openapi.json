@@ -1486,7 +1486,7 @@
         },
         "responses": {
           "201": {
-            "description": "In the order sent; duplicate = already uploaded (existing record returned)",
+            "description": "In the order sent; the newly stored photos share one batchId. duplicate = already uploaded (existing record returned, with its own batchId)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1601,6 +1601,11 @@
                       "type": "string",
                       "format": "binary"
                     }
+                  },
+                  "replyTo": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "description": "Opaque: where the answer to this batch goes (the bot: chatId:messageId)"
                   }
                 }
               }
@@ -1609,7 +1614,7 @@
         },
         "responses": {
           "201": {
-            "description": "In the order sent; duplicate = already uploaded (existing record returned)",
+            "description": "In the order sent; the newly stored photos share one batchId. duplicate = already uploaded (existing record returned, with its own batchId)",
             "content": {
               "application/json": {
                 "schema": {
@@ -4991,6 +4996,12 @@
             "nullable": true,
             "description": "Why nothing was matched, or the error (worker text, for the owner)"
           },
+          "batchId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "The upload request that stored it (photos sent together share it); null = uploaded before batches"
+          },
           "fileUrl": {
             "type": "string",
             "example": "/api/photos/3f1c…/file"
@@ -5017,6 +5028,7 @@
           "createdAt",
           "parseStatus",
           "parseNote",
+          "batchId",
           "fileUrl",
           "thumbnailUrl",
           "duplicate"
@@ -5082,6 +5094,12 @@
             "nullable": true,
             "description": "Why nothing was matched, or the error (worker text, for the owner)"
           },
+          "batchId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "The upload request that stored it (photos sent together share it); null = uploaded before batches"
+          },
           "fileUrl": {
             "type": "string",
             "example": "/api/photos/3f1c…/file"
@@ -5108,6 +5126,7 @@
           "createdAt",
           "parseStatus",
           "parseNote",
+          "batchId",
           "fileUrl",
           "thumbnailUrl",
           "canDelete"
@@ -5227,6 +5246,12 @@
             "nullable": true,
             "description": "Why nothing was matched, or the error (worker text, for the owner)"
           },
+          "batchId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "The upload request that stored it (photos sent together share it); null = uploaded before batches"
+          },
           "fileUrl": {
             "type": "string",
             "example": "/api/photos/3f1c…/file"
@@ -5256,6 +5281,7 @@
           "createdAt",
           "parseStatus",
           "parseNote",
+          "batchId",
           "fileUrl",
           "thumbnailUrl",
           "readings"

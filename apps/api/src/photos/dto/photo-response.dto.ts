@@ -50,6 +50,15 @@ export class PhotoResponseDto {
   })
   parseNote: string | null;
 
+  @ApiProperty({
+    type: String,
+    format: 'uuid',
+    nullable: true,
+    description:
+      'The upload request that stored it (photos sent together share it); null = uploaded before batches',
+  })
+  batchId: string | null;
+
   @ApiProperty({ example: '/api/photos/3f1c…/file' })
   fileUrl: string;
 
@@ -70,6 +79,7 @@ export class PhotoResponseDto {
       createdAt: p.createdAt,
       parseStatus: p.parseStatus,
       parseNote: p.parseNote,
+      batchId: p.batchId,
       fileUrl: `/api/photos/${p.id}/file`,
       thumbnailUrl: `/api/photos/${p.id}/thumbnail`,
     };

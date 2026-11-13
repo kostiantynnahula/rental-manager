@@ -38,6 +38,7 @@ import { PhotoDetailResponseDto } from './dto/photo-detail-response.dto.js';
 import { PhotoListItemResponseDto } from './dto/photo-list-item-response.dto.js';
 import { PhotoUploadResultDto } from './dto/photo-upload-result.dto.js';
 import { SetParseResultDto } from './dto/set-parse-result.dto.js';
+import { UploadPhotosBodyDto } from './dto/upload-photos-body.dto.js';
 import type { PhotoFile } from './interfaces/photo-file.interface.js';
 import { PhotoUpload } from './photo-upload.decorator.js';
 import { PhotosService } from './photos.service.js';
@@ -54,7 +55,7 @@ export class PhotosController {
   constructor(private readonly photos: PhotosService) {}
 
   @Post()
-  @PhotoUpload()
+  @PhotoUpload({ replyTo: true })
   // The Telegram bot uploads forwarded photos with an API key.
   @Scopes('photos:upload')
   @ApiBearerAuth()
@@ -67,9 +68,10 @@ export class PhotosController {
   })
   async upload(
     @UploadedFiles() files: Express.Multer.File[] | undefined,
+    @Body() body: UploadPhotosBodyDto,
     @CurrentUser() user: AuthUser,
   ): Promise<PhotoUploadResultDto[]> {
-    const results = await this.photos.upload(null, files, user.id);
+    const results = await this.photos.upload(null, files, user.id, body.replyTo);
     return results.map((r) => PhotoUploadResultDto.fromUpload(r));
   }
 

@@ -1282,6 +1282,11 @@ export interface components {
             parseStatus: components["schemas"]["PhotoParseStatus"] | null;
             /** @description Why nothing was matched, or the error (worker text, for the owner) */
             parseNote: string | null;
+            /**
+             * Format: uuid
+             * @description The upload request that stored it (photos sent together share it); null = uploaded before batches
+             */
+            batchId: string | null;
             /** @example /api/photos/3f1c…/file */
             fileUrl: string;
             /** @example /api/photos/3f1c…/thumbnail */
@@ -1321,6 +1326,11 @@ export interface components {
             parseStatus: components["schemas"]["PhotoParseStatus"] | null;
             /** @description Why nothing was matched, or the error (worker text, for the owner) */
             parseNote: string | null;
+            /**
+             * Format: uuid
+             * @description The upload request that stored it (photos sent together share it); null = uploaded before batches
+             */
+            batchId: string | null;
             /** @example /api/photos/3f1c…/file */
             fileUrl: string;
             /** @example /api/photos/3f1c…/thumbnail */
@@ -1374,6 +1384,11 @@ export interface components {
             parseStatus: components["schemas"]["PhotoParseStatus"] | null;
             /** @description Why nothing was matched, or the error (worker text, for the owner) */
             parseNote: string | null;
+            /**
+             * Format: uuid
+             * @description The upload request that stored it (photos sent together share it); null = uploaded before batches
+             */
+            batchId: string | null;
             /** @example /api/photos/3f1c…/file */
             fileUrl: string;
             /** @example /api/photos/3f1c…/thumbnail */
@@ -3378,7 +3393,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description In the order sent; duplicate = already uploaded (existing record returned) */
+            /** @description In the order sent; the newly stored photos share one batchId. duplicate = already uploaded (existing record returned, with its own batchId) */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -3470,11 +3485,13 @@ export interface operations {
             content: {
                 "multipart/form-data": {
                     files: string[];
+                    /** @description Opaque: where the answer to this batch goes (the bot: chatId:messageId) */
+                    replyTo?: string;
                 };
             };
         };
         responses: {
-            /** @description In the order sent; duplicate = already uploaded (existing record returned) */
+            /** @description In the order sent; the newly stored photos share one batchId. duplicate = already uploaded (existing record returned, with its own batchId) */
             201: {
                 headers: {
                     [name: string]: unknown;
