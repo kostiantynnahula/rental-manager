@@ -6,7 +6,7 @@ paths:
 # Photo batches (API)
 
 A **batch** = the photos newly stored by one upload request (`Photo.batchId`; no table — see `api-photos.md`).
-Module `src/photo-batches/` (imports `ReadingsModule`); confirming by batch comes next (#77).
+Module `src/photo-batches/` (imports `ReadingsModule`): the summary and confirm by batch.
 
 ## Summary (`GET /photo-batches/:batchId`)
 
@@ -28,3 +28,17 @@ Module `src/photo-batches/` (imports `ReadingsModule`); confirming by batch come
   previous (that's a confirm error, not a warning). Never block.
 - `canConfirm` = DRAFT ∧ no missing zone ∧ no zone lower than previous. The other confirm rules (reading window,
   a confirmed reading of the same period, …) are still checked by `POST /readings/:id/confirm` — it may still say no.
+
+## Confirm (`POST /photo-batches/:batchId/confirm`)
+
+- «Підтвердити всі» in the bot, without the bot keeping reading ids. Scope `readings:confirm` — like
+  `POST /readings/:id/confirm`, a key calls it **only on behalf of a human tap** (never the worker).
+- Candidates = the readings that are `canConfirm` **now** (from `summary`, same rule as above). Not confirmable ones
+  (partial, not a DRAFT, lower than previous) are **skipped** — in neither list.
+- Each candidate goes through `ReadingsService.confirm` (its own transaction, the same rules), **sequentially** (two
+  drafts of one meter + period: the first wins, the second is refused as a duplicate period — not raced). One
+  refusal doesn't stop the others.
+- 200 `{ confirmed: readingId[], refused: { readingId, reason }[] }`; unknown batch → 404. `reason` =
+  `helpers/refusal-reason.ts`: the rule's message (400 messages joined with `; `), a known Prisma error mapped by
+  `toHttpException` (e.g. losing a race on `readings_one_confirmed_regular_per_period`). Anything else → 500; what
+  was confirmed before it stays confirmed.
