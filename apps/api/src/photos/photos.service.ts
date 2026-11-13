@@ -12,6 +12,7 @@ import type { AuthUser } from '../auth/interfaces/auth-user.interface.js';
 import type { Photo, Prisma } from '../generated/prisma/client.js';
 import { PhotoParseStatus, ReadingSource, ReadingStatus } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { BotNotificationsService } from '../queue/bot-notifications.service.js';
 import { PhotoJobsService } from '../queue/photo-jobs.service.js';
 import { StorageService } from '../storage/storage.service.js';
 import { detectImageType } from './helpers/image-type.js';
@@ -50,6 +51,7 @@ export class PhotosService {
     private readonly storage: StorageService,
     private readonly apartments: ApartmentsService,
     private readonly photoJobs: PhotoJobsService,
+    private readonly botNotifications: BotNotificationsService,
   ) {}
 
   // apartmentId null = inbox (no apartment yet). One request = one batch: every photo it newly stores gets the same
@@ -163,6 +165,22 @@ export class PhotosService {
       data: { parseStatus: dto.status, parseNote: dto.note ?? null },
     });
     if (count === 0) throw new NotFoundException('Photo not found');
+    await this.notifyIfBatchParsed(id);
+  }
+
+  // The last photo of a batch with a replyTo is done → batch-parsed for the bot. Two last photos finishing at once
+  // may both get here; the event's jobId makes that one job. A re-parse (PATCH) makes a photo PENDING again, so the
+  // batch notifies again when it is done.
+  private async notifyIfBatchParsed(id: string): Promise<void> {
+    const photo = await this.prisma.photo.findUnique({
+      where: { id },
+      select: { batchId: true, replyTo: true },
+    });
+    if (!photo?.batchId || !photo.replyTo) return;
+    const pending = await this.prisma.photo.count({
+      where: { batchId: photo.batchId, parseStatus: PhotoParseStatus.PENDING },
+    });
+    if (pending === 0) await this.botNotifications.notifyBatchParsed(photo.batchId, photo.replyTo);
   }
 
   async findOrThrow(id: string): Promise<PhotoWithReadings> {

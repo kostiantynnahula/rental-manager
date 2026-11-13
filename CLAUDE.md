@@ -60,11 +60,12 @@ pnpm workspaces monorepo:
   photos, extracts the values (LangChain.js + Claude vision, `src/extraction/`), matches them to meters (inbox photos: by serial across all active meters) and saves
   them as DRAFT readings over HTTP (`draft-values`).
 - `apps/bot` — Telegram bot (see `apps/bot/CLAUDE.md`). NestJS standalone + grammY, long polling, only answers
-  allowlisted Telegram users; an HTTP client of the API with its own API key.
+  allowlisted Telegram users; an HTTP client of the API with its own API key. API → bot events go through the
+  BullMQ queue `bot-notifications` (the job name = the event type, e.g. `batch-parsed`; a signal only).
 - The API is the only way to data and business rules: every other app (web, worker, the Telegram bot, later an
   MCP server) is an HTTP client of it. No second Prisma client or raw SQL outside `apps/api`.
 - `packages/shared` — code shared by api and web that isn't part of the API contract (e.g. phone
-  normalization), and the BullMQ contract between api and worker (queue/job names, job payloads).
+  normalization), and the BullMQ contracts api → worker and api → bot (queue/job names, job payloads).
   API request/response types are never put here: the web generates them from OpenAPI.
 
 Infra in Docker Compose: Postgres, MinIO (S3-compatible photo storage;

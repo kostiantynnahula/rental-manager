@@ -55,7 +55,15 @@ paths:
 - **Parse status** (`Photo.parseStatus` / `parseNote`, enum `photo_parse_status`): `PENDING` on upload (every new
   photo gets a job; it stays PENDING if the enqueue failed) → the worker sets `PARSED` (drafts created), `NOT_MATCHED`
   (+ why) or `FAILED` (+ error) via `PUT /photos/:id/parse-result` (API keys only, scope `photos:parse-result`, 204).
-  `null` = photos from before parsing existed. The web polls while PENDING.
+  `null` = photos from before parsing existed. The web polls while PENDING; the bot gets an event (below).
+- **Batch-parsed event** (`BotNotificationsService`, `src/queue/`): after `parse-result`, if the photo has a `replyTo`
+  and no photo of its `batchId` is still `PENDING` → job `batch-parsed` (`{ batchId, replyTo }`) on queue
+  `bot-notifications` (names/payload from `@rental/shared`). A signal only: the bot loads fresh data from the API.
+  `jobId = batch-parsed-<batchId>` (BullMQ forbids `:` in an id): two last photos finishing at once → one job.
+  `removeOnComplete: true` frees the id, so a **re-parse** (PATCH sets PENDING again) notifies the batch again when
+  done — no extra code. 5 attempts, exponential backoff from 10 s; failed jobs kept 7 days (the id is blocked meanwhile).
+  No `replyTo` (web uploads) → no event. Same enqueue rules as below (3 s timeout, never fails the request; a lost
+  event is only logged).
 - File endpoints stream through the API (auth required), `Cache-Control: private, max-age=86400`.
 - **Parse job**: a newly stored photo gets one BullMQ job `parse-photo` (`{ photoId }`) on queue `photos`
   (`PhotoJobsService.enqueueParse`, `src/queue/`; names and payload type from `@rental/shared`).
