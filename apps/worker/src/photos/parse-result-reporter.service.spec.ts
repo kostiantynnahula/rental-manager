@@ -1,4 +1,4 @@
-import { json, status } from '../test/fake-api.js';
+import { json, status } from '@rental/testing';
 import { photoServices } from '../test/photo-services.js';
 
 const RESULT = 'PUT /photos/photo-1/parse-result';

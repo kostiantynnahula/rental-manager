@@ -1,7 +1,5 @@
-import createClient from 'openapi-fetch';
+import createClient, { type Client } from 'openapi-fetch';
 import { expect, onTestFinished } from 'vitest';
-import type { ApiClient } from '../api/api-client.js';
-import type { paths } from '../api/schema.js';
 
 // One request the code under test sent. `url` is the path + query relative to the base URL ("/meters?active=true");
 // `body` is the parsed JSON body, undefined when there is none.
@@ -18,9 +16,13 @@ export type Routes = Record<string, Route>;
 
 const BASE_URL = 'http://api.test';
 
-// The real openapi-fetch client (same typed calls as production) with a fake fetch. An unknown route throws and
-// also fails the test at its end — the code under test may swallow the throw (ParseResultReporter does).
-export function fakeApi(routes: Routes): { api: ApiClient; requests: RecordedRequest[] } {
+// The real openapi-fetch client (same typed calls as production) with a fake fetch, typed by the app's generated
+// `paths` (`fakeApi<paths>(routes)`). An unknown route throws and also fails the test at its end — the code under
+// test may swallow the throw.
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- openapi-fetch's own constraint on `paths`
+export function fakeApi<Paths extends {}>(
+  routes: Routes,
+): { api: Client<Paths>; requests: RecordedRequest[] } {
   const requests: RecordedRequest[] = [];
   const unknown: string[] = [];
   onTestFinished(() => {
@@ -45,7 +47,7 @@ export function fakeApi(routes: Routes): { api: ApiClient; requests: RecordedReq
     return typeof route === 'function' ? route(recorded) : route.clone();
   };
 
-  return { api: createClient<paths>({ baseUrl: BASE_URL, fetch }), requests };
+  return { api: createClient<Paths>({ baseUrl: BASE_URL, fetch }), requests };
 }
 
 export function json(body: unknown, status = 200): Response {

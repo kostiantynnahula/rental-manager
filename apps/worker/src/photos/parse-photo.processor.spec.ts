@@ -1,6 +1,6 @@
 import { PARSE_PHOTO_JOB, type ParsePhotoJobData } from '@rental/shared';
 import { type Job, UnrecoverableError } from 'bullmq';
-import { json } from '../test/fake-api.js';
+import { json } from '@rental/testing';
 import { photoServices } from '../test/photo-services.js';
 
 const RESULT = 'PUT /photos/photo-1/parse-result';

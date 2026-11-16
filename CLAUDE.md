@@ -69,6 +69,9 @@ pnpm workspaces monorepo:
   normalization), and the BullMQ contracts api → worker and api → bot (queue/job names, job payloads).
   API request/response types are never put here: the web generates them from OpenAPI.
   Consumption warnings rule (one for worker, API, web, bot): `.claude/rules/shared-consumption.md`.
+- `packages/testing` (`@rental/testing`) — test-only helpers shared by the apps' Vitest suites (`fakeApi`, `json`,
+  `status`). No build: `exports` points at `src/index.ts`, loaded by Vitest only. A devDependency, imported only from
+  specs and `src/test/` — never from production code. App-specific builders stay in the app.
 
 Infra in Docker Compose: Postgres, MinIO (S3-compatible photo storage;
 community `pgsty/minio` image, since official MinIO images are no longer published), Redis (BullMQ queues,

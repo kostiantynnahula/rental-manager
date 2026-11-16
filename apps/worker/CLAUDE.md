@@ -35,11 +35,12 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
 
 ## Tests
 
-- `pnpm --filter worker test` (Vitest, globals). Specs are colocated (`foo.ts` → `foo.spec.ts`); shared builders and
-  fakes live in `src/test/`, kept out of the build (`tsconfig.build.json` excludes it and `**/*spec.ts`).
-- Service tests: the API is `fakeApi(routes)` (the real openapi-fetch client with a fake `fetch`; routes
-  `'METHOD /path?query'`; records requests; an unknown route fails the test). Build the photo-job services only via
-  `photoServices()` (`src/test/photo-services.ts`) — never `new` them in a spec, so a constructor change touches one file.
+- `pnpm --filter worker test` (Vitest, globals). Specs are colocated (`foo.ts` → `foo.spec.ts`); the worker's own
+  builders live in `src/test/`, kept out of the build (`tsconfig.build.json` excludes it and `**/*spec.ts`).
+- Service tests: the API is `fakeApi<paths>(routes)` from `@rental/testing` (`packages/testing`) — the real
+  openapi-fetch client with a fake `fetch`; routes `'METHOD /path?query'` → `json()` / `status()` responses; records
+  requests; an unknown route fails the test. Build the photo-job services only via `photoServices()`
+  (`src/test/photo-services.ts`) — never `new` them in a spec, so a constructor change touches one file.
 - A PR that changes behaviour comes with tests for it.
 - A test failing because of this PR's change → fix it in this PR. Never weaken a test to make it pass — tell me.
 - A bug found in merged code → an `it.fails(...)` test with a `// bug: …` line above it, listed under "Found bugs" in
