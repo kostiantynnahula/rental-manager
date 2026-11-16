@@ -33,6 +33,6 @@ paths:
 - Expected refusals of `draft-values` are logged, not failures: 409 with `readingId` (zone already filled from another
   photo), 409 "Meter is removed", 400. No `ANTHROPIC_API_KEY` → `UnrecoverableError` (`ExtractionNotConfiguredError`).
   A retry repeats the paid model call; the posts themselves are idempotent per photo + zone.
-- Errors (`src/api/helpers/api-error.ts`): 404/400 and 401/403 → `UnrecoverableError` (retrying can't help; 401/403
+- Errors (mapped in `WorkerApi` via `src/api/helpers/api-error.ts`): 404/400 and 401/403 → `UnrecoverableError` (retrying can't help; 401/403
   hint at the key/scopes); other statuses and network errors → plain `Error`, retried by BullMQ. Failures are
   logged by the processor's `failed` handler.

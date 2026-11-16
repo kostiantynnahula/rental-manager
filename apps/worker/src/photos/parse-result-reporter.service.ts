@@ -1,6 +1,6 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { API_CLIENT, type ApiClient } from '../api/api-client.js';
+import { Injectable, Logger } from '@nestjs/common';
 import type { components } from '../api/schema.js';
+import { WorkerApi } from '../api/worker-api.service.js';
 
 type ParseResult = components['schemas']['PhotoParseResult'];
 
@@ -14,21 +14,18 @@ const MAX_NOTE = 1000;
 export class ParseResultReporter {
   private readonly logger = new Logger(ParseResultReporter.name);
 
-  constructor(@Inject(API_CLIENT) private readonly api: ApiClient) {}
+  constructor(private readonly api: WorkerApi) {}
 
   async report(photoId: string, status: ParseResult, note?: string): Promise<void> {
     try {
-      const res = await this.api.PUT('/photos/{id}/parse-result', {
-        params: { path: { id: photoId } },
-        body: { status, note: note && truncate(note) },
-      });
-      if (res.response.ok) return;
+      const res = await this.api.putParseResult(photoId, status, note && truncate(note));
+      if (res.ok) return;
       const hint =
-        res.response.status === 401 || res.response.status === 403
+        res.status === 401 || res.status === 403
           ? ' — the key needs the photos:parse-result scope'
           : '';
       this.logger.warn(
-        `photo ${photoId}: parse result ${status} not saved (HTTP ${res.response.status})${hint}`,
+        `photo ${photoId}: parse result ${status} not saved (HTTP ${res.status})${hint}`,
       );
     } catch (e) {
       this.logger.warn(

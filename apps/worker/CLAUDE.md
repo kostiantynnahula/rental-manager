@@ -25,6 +25,9 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
 
 - **Talks to the API only** (HTTP, `API_CLIENT` = openapi-fetch typed by `src/api/schema.d.ts`). No DB, no MinIO,
   no Prisma, no raw SQL — the API owns data and business rules. Never hand-write API types.
+- Services call `WorkerApi` (`src/api/worker-api.service.ts`), never `API_CLIENT` directly (`ApiClientModule`
+  exports only `WorkerApi`). A new endpoint = a new `WorkerApi` method: returns data or throws (`apiError`); an
+  expected refusal (e.g. `postDraftValue`'s 409/400) comes back as a typed `{ ok: false, ... }` result.
 - Never log `WORKER_API_KEY`, the `Authorization` header or photo bytes (log sizes, ids, meter summaries).
 - Queue/job names and payloads come from `@rental/shared` (`PHOTO_QUEUE`, `PARSE_PHOTO_JOB`, `ParsePhotoJobData`);
   the API is the producer (`jobId = photoId`, attempts + backoff set there).
@@ -47,7 +50,7 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
 
 - `WorkerModule` (root) holds only global infra: `ConfigModule` and `BullModule.forRootAsync` (Redis connection).
 - One feature module per queue (e.g. `PhotosModule`): it calls `BullModule.registerQueue` for its queue (required,
-  or the `@Processor` fails at startup), imports `ApiClientModule` and provides its processor + services.
+  or the `@Processor` fails at startup), imports `ApiClientModule` (for `WorkerApi`) and provides its processor + services.
 
 ## More
 
