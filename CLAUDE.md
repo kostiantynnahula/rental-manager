@@ -93,4 +93,5 @@ Node 24 (`.nvmrc`), pnpm via corepack. First run: `cp .env.example .env && pnpm 
   breaks one, tell me rather than silently rewriting it.
 - Briefly explain non-obvious decisions — I'm learning the workflow.
 - Ask before adding dependencies or changing the DB schema.
-- App-specific rules live in `apps/*/CLAUDE.md`; detailed docs in `docs/`.
+- App-specific rules live in `apps/*/CLAUDE.md`; details per area in path-scoped `.claude/rules/<app>-<area>.md`
+  (`api-`, `web-`, `shared-`, `bot-`, `worker-`); detailed docs in `docs/`.

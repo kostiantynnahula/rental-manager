@@ -73,53 +73,7 @@ src/
   the `start()` promise (the current batch of updates is handled) → `intake.flush()`. One hook for everything: Nest
   runs hooks concurrently, and a flush before polling ends could miss a photo.
 
-## Photo intake (`src/intake/`)
+## Details (path-scoped rules, loaded when those files are touched)
 
-- Accepted: `message:photo` (the largest size) and `message:document` with an `image/*` MIME (sent as a file =
-  original quality). Any other document → «Надішліть фото лічильника». The API decides the real type by content.
-- **Buffer, then one upload**: an album is one update per photo (same `media_group_id`). `AlbumBuffer` (pure class)
-  collects them by `album:<media_group_id>`, else `chat:<chatId>`, until 1.5 s of silence or 10 photos (Telegram's
-  album maximum = the API's default `PHOTO_MAX_FILES`). Then: download each (`getFile`, over
-  `min(20 MB Bot API limit, PHOTO_MAX_FILE_SIZE_MB)` → not downloaded), then **one `POST /photos`** with all files and
-  `replyTo = <chatId>:<messageId of the first photo>` → one `batchId` for the album.
-- **Relaxed rule** (was "never buffer photos before upload"): the handler returns before the upload, so a crash
-  inside the window loses the buffered photos — the user resends; resending is safe (sha256 dedup).
-- The API rejects a request with a bad file as a whole (`400 files[i]: …`, nothing stored): the bot drops file `i`
-  and sends the rest again. 413 → the rest is "too large"; 401/403 → "no access to the API" (logged: check the key and
-  scope); other errors → "try again".
-- **One reply** to the first photo: «Прийнято N фото, розпізнаю…», «N фото вже отримано раніше.» (duplicates), one
-  line per rejected file — its file name, or «фото N» (position) for a compressed photo. A failed reply is only
-  logged (the photos are in the inbox).
-- The file download URL (`<apiRoot>/file/bot<token>/…`, root, environment and token taken from the grammY `Api`,
-  never hardcoded or read from config) contains the token: its errors are rethrown without URL or cause.
-
-## Results (`src/results/`)
-
-- **Input**: `notifications.consumer.ts` — BullMQ `@Processor` of `bot-notifications` (contract in `@rental/shared`),
-  dispatch on the job name: `batch-parsed` (`{ batchId, replyTo }`) → `ResultsSender.send`. A signal only: the
-  sender always loads fresh data. Retries are the API's job options (5 attempts, exponential); a failure is logged
-  (ids + message). Unknown job name → `UnrecoverableError`.
-- **Redis is used only for this** (consuming `bot-notifications`): `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD?`,
-  the same names and defaults as the API and the worker (`src/queue/bullmq.config.ts`). The bot never enqueues.
-- `ResultsSender` (own grammY `Api` from the token — no dependency on `BotService`):
-  - `send(batchId, replyTo)`: `replyTo` = the intake's `<chatId>:<messageId>` (malformed → logged, dropped) →
-    `GET /photo-batches/{batchId}` (+ `GET /apartments?active=true` only when a photo is `NOT_MATCHED`) → render →
-    reply to the first photo. Batch 404 (photos deleted) → logged, no retry; other API errors / Telegram errors →
-    thrown, so BullMQ retries.
-  - `refresh(chatId, messageId, batchId)`: the same, as `editMessageText` of the tapped message ("message is not
-    modified" ignored).
-- **Render** (`render/summary.ts`, pure): the API's summary → text + buttons; the API computed everything (previous
-  value, consumption, `lowerThanPrevious`, warnings `{ code, limit, months }`, `missingZones`, `canConfirm`) — the
-  bot only words it (web wording for warnings, values `1520,350`). Per DRAFT: «Підтвердити» (only `canConfirm`) +
-  «Скасувати»; «Підтвердити всі» for ≥ 2 `canConfirm`. Photos without a reading: `NOT_MATCHED` → one button per
-  active apartment, `FAILED` → its `parseNote`, `PENDING` (after assign) → «розпізнаю…». Text cut at 4096.
-- **callback_data** (`render/callback-data.ts`, ≤ 64 bytes, UUIDs as base64url = 22 chars):
-  `rc:<batch>:<reading>` confirm, `rx:<batch>:<reading>` cancel, `bc:<batch>` confirm all,
-  `as:<photo>:<apartment>` assign. The batch is in the reading buttons so the summary can be re-rendered; after
-  assign it comes from the PATCH response. Unparseable (e.g. the old bot's `a:<token>`) → «Кнопка застаріла».
-- **Buttons** (`buttons.handler.ts`, wired in `bot.service.ts` after the allowlist): `POST /readings/{id}/confirm`,
-  `POST /readings/{id}/cancel` (reason «Скасовано в Telegram»; a key cancels only DRAFTs),
-  `POST /photo-batches/{batchId}/confirm` (refusals → alert with the reasons), `PATCH /photos/{id}` (re-parse — the
-  new summary comes with the next `batch-parsed`, as a new reply). API refusals (400/404/409) → an alert with the
-  API's message. Always `answerCallbackQuery` once, then `refresh` (✅ / ❌, finished readings lose their buttons).
-- Nothing in memory: a restart loses nothing but a buffered album (see intake); old buttons keep working.
+- Photo intake (`src/intake/`): `.claude/rules/bot-intake.md`
+- Results, render, buttons, `callback_data` (`src/results/`, `src/queue/`): `.claude/rules/bot-results.md`
