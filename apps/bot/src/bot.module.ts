@@ -7,6 +7,7 @@ import { Env } from './config/env.validation.js';
 import { IntakeModule } from './intake/intake.module.js';
 import { bullmqOptionsFromConfig } from './queue/bullmq.config.js';
 import { ResultsModule } from './results/results.module.js';
+import { TelegramModule } from './telegram/telegram.module.js';
 
 // Root: global config and Redis (only for the bot-notifications consumer), the features, and BotService — the one
 // entry point that wires them to Telegram.
@@ -17,6 +18,7 @@ import { ResultsModule } from './results/results.module.js';
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) => bullmqOptionsFromConfig(config),
     }),
+    TelegramModule,
     IntakeModule,
     ResultsModule,
   ],

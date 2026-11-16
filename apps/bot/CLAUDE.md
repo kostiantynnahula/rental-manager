@@ -27,6 +27,7 @@ src/
   bot.service.ts   THE entry point: the Bot, every handler, polling start/stop
   messages.ts      every user-facing text
   config/  api/    env validation · the typed API client
+  telegram/        the grammY Bot (TELEGRAM_BOT) — the process's one Telegram client
   helpers/         allowlist middleware, user-id parsing
   intake/          photos → the API inbox (one upload per album)
   results/         batch-parsed (BullMQ) → summary; result buttons
@@ -36,6 +37,8 @@ src/
 - **One entry point**: `bot.service.ts` reads as the bot's map — allowlist, `/start`, `/help`, photos → `intake`,
   callbacks → `results`. Every Telegram input is wired there and nowhere else; the BullMQ input is
   `results/notifications.consumer.ts` (a `@Processor` must be its own provider).
+- **One Telegram client**: the `TELEGRAM_BOT` provider (`telegram/`). Handlers reach Telegram via `ctx.api`, the
+  results via `bot.api`; nothing else does `new Bot` / `new Api` — so a test can provide a Bot with a fake transport.
 - **Two inputs**: Telegram updates (long polling) and BullMQ `bot-notifications` events from the API (`batch-parsed`,
   a signal only — load fresh data from the API).
 - **Features don't call each other** and depend only on `api/` (+ `messages.ts`). Anything that needs two features
