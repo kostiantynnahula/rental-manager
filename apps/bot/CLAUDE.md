@@ -80,9 +80,14 @@ src/
 
 - `pnpm --filter bot test` (Vitest, globals). Specs are colocated (`foo.ts` → `foo.spec.ts`); the bot's own builders
   and fakes live in `src/test/`, kept out of the build (`tsconfig.build.json` excludes it and `**/*spec.ts`).
-- **Never Telegram, never the network**: the token is in every Bot API URL. Telegram is faked with an API transformer
-  (`bot.api.config.use(...)`, real grammY, no request leaves); the API is `fakeApi<paths>(routes)` from
-  `@rental/testing` (`packages/testing`; `json()` / `status()` responses; an unknown route fails the test).
+- **Never Telegram, never the network**: the token is in every Bot API URL. Telegram is `fakeTelegram()`
+  (`src/test/fake-telegram.ts`): a real grammY `Bot` whose API transformer records `{ method, payload }` and answers
+  from routes (`telegramError()` → a real `GrammyError`; an unknown method fails the test); it also stubs the file
+  download (global `fetch`). `contextFor(bot, message)` gives a real `Context`. The API is `fakeApi<paths>(routes)`
+  from `@rental/testing` (`packages/testing`; `json()` / `status()` responses; multipart bodies recorded as
+  `FormData`; an unknown route fails the test).
+- Build services only via their builder in `src/test/` (e.g. `intakeService()`) — never `new` them in a spec, so a
+  constructor change touches one file.
 - Timers (the album buffer) — Vitest fake timers (`vi.useFakeTimers()`), never real waits.
 - A PR that changes behaviour comes with tests for it.
 - A test failing because of this PR's change → fix it in this PR. Never weaken a test to make it pass — tell me.
