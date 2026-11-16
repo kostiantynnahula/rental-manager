@@ -86,8 +86,11 @@ src/
   download (global `fetch`). `contextFor(bot, message)` gives a real `Context`. The API is `fakeApi<paths>(routes)`
   from `@rental/testing` (`packages/testing`; `json()` / `status()` responses; multipart bodies recorded as
   `FormData`; an unknown route fails the test).
-- Build services only via their builder in `src/test/` (e.g. `intakeService()`) — never `new` them in a spec, so a
-  constructor change touches one file.
+- Build services only via `botServices()` (`src/test/bot-services.ts`; one fake API + one `fakeTelegram` for all of
+  them; `intakeService()` wraps it) — never `new` them in a spec, so a constructor change touches one file.
+- Pipeline tests deliver updates with `bot.handleUpdates([...])` — the polling path (private in grammY's types),
+  so `bot.catch` runs as in production; `bot.handleUpdate` would only throw a `BotError`. A button tap:
+  `callbackUpdate()` / `callbackContext()`.
 - Timers (the album buffer) — Vitest fake timers (`vi.useFakeTimers()`), never real waits.
 - A PR that changes behaviour comes with tests for it.
 - A test failing because of this PR's change → fix it in this PR. Never weaken a test to make it pass — tell me.
