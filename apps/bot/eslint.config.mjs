@@ -4,7 +4,7 @@ import base from '../../eslint.base.mjs';
 
 export default tseslint.config(...base, {
   languageOptions: {
-    globals: { ...globals.node },
+    globals: { ...globals.node, ...globals.vitest },
     parserOptions: {
       projectService: { allowDefaultProject: ['*.mjs', 'scripts/*.mjs'] },
       tsconfigRootDir: import.meta.dirname,
