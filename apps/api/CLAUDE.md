@@ -130,6 +130,13 @@ photos:read`, `apikey:list`, `apikey:revoke <prefix>`. `create` upserts `<servic
 
 ## More
 
-- Feature details: `.claude/rules/api-*.md` (load when you touch that feature).
+- Feature details — path-scoped rules, loaded when a file of that area is opened:
+  - Auth, sessions, API keys and scopes (`src/auth/`): `.claude/rules/api-auth.md`
+  - Prisma schema, migrations, client (`prisma/`, `src/prisma/`): `.claude/rules/api-database.md`
+  - Photos, storage (MinIO), inbox, parse queue (`src/{photos,storage,queue}/`): `.claude/rules/api-photos.md`
+  - Photo batches — summary, confirm by batch (`src/photo-batches/`): `.claude/rules/api-photo-batches.md`
+  - Readings and meters (`src/{readings,meters}/`): `.claude/rules/api-readings.md`
+  - Statements (`src/statements/`): `.claude/rules/api-statements.md`
+  - Tariffs (`src/tariffs/`): `.claude/rules/api-tariffs.md`
 - Billing reuses the `reading_consumption` view and `priceForPeriod` — never re-implement.
 - Project rules override advice from skills.

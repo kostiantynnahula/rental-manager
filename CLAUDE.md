@@ -68,6 +68,7 @@ pnpm workspaces monorepo:
 - `packages/shared` — code shared by api and web that isn't part of the API contract (e.g. phone
   normalization), and the BullMQ contracts api → worker and api → bot (queue/job names, job payloads).
   API request/response types are never put here: the web generates them from OpenAPI.
+  Consumption warnings rule (one for worker, API, web, bot): `.claude/rules/shared-consumption.md`.
 
 Infra in Docker Compose: Postgres, MinIO (S3-compatible photo storage;
 community `pgsty/minio` image, since official MinIO images are no longer published), Redis (BullMQ queues,
@@ -93,4 +94,5 @@ Node 24 (`.nvmrc`), pnpm via corepack. First run: `cp .env.example .env && pnpm 
   breaks one, tell me rather than silently rewriting it.
 - Briefly explain non-obvious decisions — I'm learning the workflow.
 - Ask before adding dependencies or changing the DB schema.
-- App-specific rules live in `apps/*/CLAUDE.md`; detailed docs in `docs/`.
+- App-specific rules live in `apps/*/CLAUDE.md`; details per area in path-scoped `.claude/rules/<app>-<area>.md`
+  (`api-`, `web-`, `shared-`, `bot-`, `worker-`); detailed docs in `docs/`.
