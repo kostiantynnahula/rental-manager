@@ -13,6 +13,9 @@ paths:
 - After a schema change: `pnpm --filter api db:migrate --name <change>` (creates + applies a migration), then `db:generate`.
 - Other: `db:migrate:deploy` (apply pending, prod/CI), `db:studio` (or root `pnpm prisma:studio`).
 - Never edit an applied migration — always create a new one. Ask before changing the schema.
+- Raw-SQL constraints (CHECKs, exclusions, partial unique indexes — not visible in `schema.prisma`) are listed in
+  the rule of their area: `api-leases.md`, `api-readings.md`, `api-tariffs.md`, `api-statements.md`. A new one → list it
+  there and add its message to `CONSTRAINT_MESSAGES` (see `apps/api/docs/api-conventions.md`, Errors).
 
 ## Seeding users
 

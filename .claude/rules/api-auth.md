@@ -1,6 +1,6 @@
 ---
 paths:
-  - 'apps/api/src/auth/**'
+  - 'apps/api/src/{auth,users,api-keys,cli}/**'
   - 'apps/web/lib/api/auth-*'
 ---
 
@@ -16,13 +16,13 @@ paths:
 - Rotation on every `POST /auth/refresh` (atomic: old row gets `revokedAt` + `replacedById`). Presenting a revoked token = reuse → **all** sessions of that user are revoked. Two tabs refreshing at once trigger this too (accepted for a single user).
 - `JwtAuthGuard` is global (`APP_GUARD`) and stateless (no DB hit): every route needs a valid access token unless marked `@Public()`. Use `@CurrentUser()` → `{ id }`; load the user if you need more. Deactivation takes effect within one access TTL.
 - Endpoints: `POST /auth/login` (public), `POST /auth/refresh` (public), `POST /auth/logout` (public, revokes the session from the refresh cookie, always clears cookies), `GET /auth/me`.
-- Login: email normalized; unknown email, SERVICE user (no password), wrong password and inactive user all → `401 Invalid email or password` (a dummy argon2 verify keeps timing equal). Service users authenticate only with API keys (`ApiKey`, see `apps/api/CLAUDE.md`).
+- Login: email normalized; unknown email, SERVICE user (no password), wrong password and inactive user all → `401 Invalid email or password` (a dummy argon2 verify keeps timing equal). Service users authenticate only with API keys (`ApiKey`, see «Service users and API keys» below).
 - Rate limit: `ThrottlerGuard` on `AuthController` only — login 5/min, refresh 30/min per IP (`trust proxy` = loopback, so the proxy's `X-Forwarded-For` counts).
 - Secrets/TTLs come from `ConfigService` (`JWT_ACCESS_SECRET` ≥ 32 chars, required). Never log tokens.
 - Config → options mapping lives in `src/auth/config/` as pure `*OptionsFromConfig(config: ConfigService<Env, true>)` functions (`jwt.config.ts`, `cookie.config.ts`). Follow this pattern in other features (`src/<feature>/config/`).
 - Swagger: cookie auth is declared; log in via "Try it out" on `/api/auth/login` and the browser sends the cookie for later calls.
 - e2e tests importing `AppModule` get the guard too — test-only controllers need `@Public()`.
-- **API keys** (service users, `src/api-keys/`, see `apps/api/CLAUDE.md`): `Authorization: Bearer rm_…` → the same
+- **API keys** (service users, `src/api-keys/`, see «Service users and API keys» below): `Authorization: Bearer rm_…` → the same
   global guard looks the key up with `ApiKeysService.verify` (the only DB hit in the guard). A Bearer that isn't
   `rm_…` is ignored: humans authenticate with the cookie only.
   - **Deny by default**: a key works only on routes with `@Scopes(...)` (`scopes.decorator.ts`; method over class,
@@ -45,3 +45,18 @@ paths:
     parsed value is never used until a human confirmed it. With a key, cancel accepts only a **DRAFT** (409
     otherwise): cancelling a CONFIRMED reading changes statements, a human does that in the web.
   - Never log the `Authorization` header or a key — only its prefix.
+
+## Service users and API keys (`src/users/`, `src/api-keys/`, `src/cli/`)
+
+- **Users** (migration `add_service_users_api_keys`): `kind` HUMAN (password login) or SERVICE (worker, bots — API keys
+  only). Raw-SQL CHECK `users_password_matches_kind`: HUMAN ⇒ `passwordHash` NOT NULL, SERVICE ⇒ NULL. Service emails
+  use the reserved `.invalid` TLD (`worker@service.invalid`); email stays required and unique.
+- **ApiKey** belongs to a user (`onDelete: Restrict`): only `keyHash` (SHA-256) and a public `prefix` are stored,
+  `scopes String[]`; revoked via `revokedAt`, never deleted. Never log or return a key after creation.
+- **API keys** (`src/api-keys/`): scopes only from `API_KEY_SCOPES` (`constants/api-key-scopes.ts`, type
+  `ApiKeyScope`). Key = `rm_<8 hex>_<32 bytes base64url>`; `prefix` = `rm_<8 hex>` (public, shown in lists/logs),
+  `keyHash` = SHA-256 of the whole key (the lookup). `ApiKeysService.verify(token)` → `{ apiKey, user }` or null
+  (not `rm_…`, unknown, revoked, inactive or non-SERVICE user). Managed by the CLI (`src/cli/api-keys.ts`, own slim
+  `CliModule`; scripts build first): `pnpm --filter api apikey:create --service worker --name "<label>" --scopes
+photos:read`, `apikey:list`, `apikey:revoke <prefix>`. `create` upserts `<service>@service.invalid`; the full
+  key is printed once there and nowhere else.

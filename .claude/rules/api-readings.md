@@ -48,3 +48,40 @@ see `api-auth.md`).
   (`ConsumptionWarningReason[]`, `helpers/history-value-warnings.ts`): the shared `consumptionWarnings` on the value's
   consumption, `months` from the view's `previousPeriod`, `hasLease` = a lease of the apartment overlaps the reading's
   period (`leaseOverlapsPeriod`, also used by statements). Never blocks anything. Parameterized SQL fragments in `helpers/reading-history-sql.ts` (`Prisma.sql` / `Prisma.empty`).
+
+## Data model and DB rules
+
+- Raw-SQL constraints in migration `add_meters_readings`:
+  - `readings_period_first_of_month`: `period` is the 1st of a month.
+  - `meters_removed_after_installed`: `removedAt >= installedAt`.
+  - `reading_values_non_negative`: `value >= 0`.
+  - `readings_confirmed_has_confirmer`: CONFIRMED ⇒ `confirmedAt` and `confirmedById` set.
+  - `reading_values_source_matches_photo` (migration `reading_value_photo`): `source = PHOTO` ⇔ `photoId` set.
+  - Partial unique indexes over CONFIRMED rows only (drafts/cancelled may repeat):
+    `readings_one_confirmed_regular_per_period` (meter + period), `readings_one_confirmed_initial`,
+    `readings_one_confirmed_final` (one each per meter).
+- **Consumption** = view `reading_consumption` (migration `add_reading_consumption_view`): one row per value of every
+  CONFIRMED reading with `previousValue` and `consumption` (`LAG` per meter + zone, ordered by period, readingDate,
+  kind INITIAL < REGULAR < FINAL, createdAt; NULL without a previous value). **The single place consumption is
+  computed — billing must reuse it**, not re-implement it. Read it with `$queryRaw` (no Prisma model; Prisma ignores
+  views when diffing). Filter it from outside by `"meterId"` (pushed into the view, so LAG still sees the full
+  history); never filter by period inside it.
+- Reading rules the **services** must enforce (the DB doesn't):
+  - Zones match the meter: SINGLE → exactly TOTAL; DAY_NIGHT → exactly DAY and NIGHT (confirmed readings; a DRAFT
+    may hold a subset — no unknown or duplicate zones).
+  - Confirmed values never decrease within one meter and zone (compare with the previous confirmed reading);
+    INITIAL is the meter's first reading, FINAL its last — nothing after FINAL.
+  - CONFIRMED readings are immutable — correct by cancelling and creating a new one.
+  - No readings outside `installedAt..removedAt` (`readingDate` within the range).
+- **Reading rules are shared pure functions** in `src/readings/helpers/` — reuse, don't re-implement:
+  `zonesMismatch(scheme, values)` (zones vs `zoneScheme`), `zonesInvalid` (drafts: subset allowed), `missingZones`, `decreasedZones(previous, next)` (values never decrease),
+  `lastConfirmedReadingInclude` (a meter's latest CONFIRMED reading). They return data; services throw 400/409.
+
+## Meter lifecycle
+
+- **Meter lifecycle** (`src/meters/`): create = meter + CONFIRMED INITIAL reading; wrong initial value = cancel the
+  INITIAL + create a new one (only before any non-cancelled REGULAR reading); remove = CONFIRMED FINAL + `removedAt`;
+  replace = remove + create in one transaction; DELETE only for a mistaken meter (nothing but INITIAL readings).
+  Responses carry `canDelete` / `canEditInitialValues` (`helpers/meter-flags.ts`, added by `MetersService.withFlags`
+  in one grouped query) — same rules as DELETE / PUT initial-values, which still enforce them.
+  Dates that become a `readingDate` must not be in the future. `createdById`/`confirmedById` = `@CurrentUser()`.
