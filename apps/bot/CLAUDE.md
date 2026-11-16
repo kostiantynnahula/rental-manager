@@ -73,7 +73,9 @@ src/
   the `start()` promise (the current batch of updates is handled) → `intake.flush()`. One hook for everything: Nest
   runs hooks concurrently, and a flush before polling ends could miss a photo.
 
-## Details (path-scoped rules, loaded when those files are touched)
+## More
 
-- Photo intake (`src/intake/`): `.claude/rules/bot-intake.md`
-- Results, render, buttons, `callback_data` (`src/results/`, `src/queue/`): `.claude/rules/bot-results.md`
+- Feature details — path-scoped rules, loaded when a file of that area is opened:
+  - Photo intake (`src/intake/`): `.claude/rules/bot-intake.md`
+  - Results, render, buttons, `callback_data` (`src/results/`, `src/queue/`): `.claude/rules/bot-results.md`
+- Project rules override advice from skills.

@@ -55,5 +55,6 @@
   - Readings and meters (`components/{readings,meters}/`): `.claude/rules/web-readings.md`
   - Statements (`components/statements/`): `.claude/rules/web-statements.md`
   - Tariffs (`components/tariffs/`): `.claude/rules/web-tariffs.md`
-- Billing reuses the `reading_consumption` view and `priceForPeriod` — never re-implement.
+- Billing (consumption, prices, statement totals) is computed by the API only (`reading_consumption` view,
+  `priceForPeriod`): the web shows what the API returns and never re-implements a calculation.
 - Project rules override advice from skills.

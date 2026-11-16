@@ -36,8 +36,10 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
 - One feature module per queue (e.g. `PhotosModule`): it calls `BullModule.registerQueue` for its queue (required,
   or the `@Processor` fails at startup), imports `ApiClientModule` and provides its processor + services.
 
-## Details (path-scoped rules, loaded when those files are touched)
+## More
 
-- Job flow — parse-photo, matching, inbox, plausibility, errors (`src/photos/`): `.claude/rules/worker-photos.md`
-- Photo extraction — LangChain call, prompt, normalization, samples script (`src/extraction/`, `src/scripts/`):
-  `.claude/rules/worker-extraction.md`
+- Feature details — path-scoped rules, loaded when a file of that area is opened:
+  - Job flow — parse-photo, matching, inbox, plausibility, errors (`src/photos/`): `.claude/rules/worker-photos.md`
+  - Photo extraction — LangChain call, prompt, normalization, samples script (`src/extraction/`, `src/scripts/`):
+    `.claude/rules/worker-extraction.md`
+- Project rules override advice from skills.
