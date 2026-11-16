@@ -4,6 +4,7 @@ import type { ExtractedReading } from '../extraction/interfaces/extracted-readin
 type Schemas = components['schemas'];
 type Meter = Schemas['MeterResponseDto'];
 type ReadingSummary = Schemas['ReadingSummaryResponseDto'];
+type PhotoDetail = Schemas['PhotoDetailResponseDto'];
 
 // Test-only builders: valid defaults, override what the test is about.
 
@@ -54,5 +55,28 @@ export function lastReading(
       zone: zone as Schemas['Zone'],
       value,
     })),
+  };
+}
+
+export function photo(overrides: Partial<PhotoDetail> = {}): PhotoDetail {
+  return {
+    id: 'photo-1',
+    apartmentId: 'apt-1',
+    mimeType: 'image/jpeg',
+    size: 3,
+    sha256: 'e3b0c442',
+    width: 1200,
+    height: 1600,
+    originalFilename: 'meter.jpg',
+    uploadedById: 'user-1',
+    // Kyiv: 2026-11-01 00:30 → readingDate 2026-11-01, period 2026-11.
+    createdAt: '2026-10-31T22:30:00.000Z',
+    parseStatus: 'PENDING',
+    parseNote: null,
+    batchId: null,
+    fileUrl: '/api/photos/photo-1/file',
+    thumbnailUrl: '/api/photos/photo-1/thumbnail',
+    readings: [],
+    ...overrides,
   };
 }
