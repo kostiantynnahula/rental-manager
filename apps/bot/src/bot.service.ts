@@ -10,10 +10,12 @@ import { Env } from './config/env.validation.js';
 import { allowlist } from './helpers/allowlist.middleware.js';
 import { parseUserIds } from './helpers/parse-user-ids.js';
 import { IntakeService } from './intake/intake.service.js';
+import { ButtonsHandler } from './results/buttons.handler.js';
 import { COMMANDS, MESSAGES } from './messages.js';
 
 // The bot's only entry point and its map: every input is wired here, features never call each other.
-// Inputs: Telegram updates (below) and, next, BullMQ `bot-notifications` events (→ results/).
+// Inputs: Telegram updates (below) and BullMQ `bot-notifications` events (results/notifications.consumer.ts — a
+// @Processor must be its own provider).
 // Never log the token, the bot/api objects or `ctx` (they carry the token); grammY keeps it out of its own error
 // messages while `sensitiveLogs` is off (the default).
 @Injectable()
@@ -26,6 +28,7 @@ export class BotService implements OnApplicationBootstrap, OnApplicationShutdown
   constructor(
     config: ConfigService<Env, true>,
     private readonly intake: IntakeService,
+    private readonly buttons: ButtonsHandler,
   ) {
     this.bot = new Bot(config.get('TELEGRAM_BOT_TOKEN', { infer: true }));
     const allowed = parseUserIds(config.get('TELEGRAM_ALLOWED_USER_IDS', { infer: true }));
@@ -36,7 +39,8 @@ export class BotService implements OnApplicationBootstrap, OnApplicationShutdown
     this.bot.command('help', (ctx) => ctx.reply(MESSAGES.help));
     // Photos and image files → intake (an album = one upload, one reply).
     this.bot.on(['message:photo', 'message:document'], (ctx) => this.intake.add(ctx));
-    // Result buttons → results/ (next issue).
+    // Result buttons (confirm / cancel / confirm all / assign) → results/. Stateless: all in callback_data.
+    this.bot.on('callback_query:data', (ctx) => this.buttons.handle(ctx));
 
     // A failing handler: log it, tell the user, keep polling.
     this.bot.catch(async (err) => {

@@ -61,7 +61,8 @@ pnpm workspaces monorepo:
   them as DRAFT readings over HTTP (`draft-values`).
 - `apps/bot` — Telegram bot (see `apps/bot/CLAUDE.md`). NestJS standalone + grammY, long polling, only answers
   allowlisted Telegram users; an HTTP client of the API with its own API key. API → bot events go through the
-  BullMQ queue `bot-notifications` (the job name = the event type, e.g. `batch-parsed`; a signal only).
+  BullMQ queue `bot-notifications` (the job name = the event type, e.g. `batch-parsed`; a signal only) — the bot's
+  only use of Redis.
 - The API is the only way to data and business rules: every other app (web, worker, the Telegram bot, later an
   MCP server) is an HTTP client of it. No second Prisma client or raw SQL outside `apps/api`.
 - `packages/shared` — code shared by api and web that isn't part of the API contract (e.g. phone

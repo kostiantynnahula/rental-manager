@@ -13,8 +13,8 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM �
 - Env (validated in `src/config/env.validation.ts`; names in the root `.env.example`): `TELEGRAM_BOT_TOKEN`
   (BotFather), `TELEGRAM_ALLOWED_USER_IDS` (comma-separated Telegram user ids), `PHOTO_MAX_FILE_SIZE_MB?` (default
   15, shared with the API), `API_BASE_URL` (with `/api`), `BOT_API_KEY` (the bot's own key; the worker's is
-  `WORKER_API_KEY`). Root `.env`; an optional `apps/bot/.env` wins over it.
-- Key: `pnpm --filter api apikey:create --service telegram-bot --name "<label>" --scopes photos:upload,photos:read,meters:read,apartments:read,readings:read,readings:confirm,readings:cancel,photos:assign`
+  `WORKER_API_KEY`), `REDIS_HOST?` / `REDIS_PORT?` / `REDIS_PASSWORD?` (as the API's). Root `.env`; an optional `apps/bot/.env` wins over it.
+- Key: `pnpm --filter api apikey:create --service telegram-bot --name "<label>" --scopes photos:upload,photos:read,apartments:read,readings:read,readings:confirm,readings:cancel,photos:assign`
   (at least one scope; fixed at creation — re-create the key and revoke the old one when the bot needs a new scope)
   → `BOT_API_KEY`.
 
@@ -29,11 +29,13 @@ src/
   config/  api/    env validation · the typed API client
   helpers/         allowlist middleware, user-id parsing
   intake/          photos → the API inbox (one upload per album)
-  results/         parse results and buttons (next: BullMQ bot-notifications)
+  results/         batch-parsed (BullMQ) → summary; result buttons
+  queue/           the Redis connection (bot-notifications only)
 ```
 
 - **One entry point**: `bot.service.ts` reads as the bot's map — allowlist, `/start`, `/help`, photos → `intake`,
-  callbacks → `results`. Every input is wired there and nowhere else.
+  callbacks → `results`. Every Telegram input is wired there and nowhere else; the BullMQ input is
+  `results/notifications.consumer.ts` (a `@Processor` must be its own provider).
 - **Two inputs**: Telegram updates (long polling) and BullMQ `bot-notifications` events from the API (`batch-parsed`,
   a signal only — load fresh data from the API).
 - **Features don't call each other** and depend only on `api/` (+ `messages.ts`). Anything that needs two features
@@ -47,8 +49,8 @@ src/
 
 ## Rules
 
-- **Talks to the API only** (HTTP, `API_CLIENT` = openapi-fetch typed by `src/api/schema.d.ts`) — plus reading its
-  BullMQ queue. No DB, no MinIO. Never hand-write API types.
+- **Talks to the API only** (HTTP, `API_CLIENT` = openapi-fetch typed by `src/api/schema.d.ts`) — plus consuming
+  the API's `bot-notifications` queue (Redis, nothing else there). No DB, no MinIO. Never hand-write API types.
 - **Never log the bot token** — it is part of every Bot API URL (`/bot<token>/<method>`) — nor `BOT_API_KEY`, the
   `Authorization` header, the `Bot` / `Api` objects or `ctx` (they carry the token). Log ids, names, messages.
   grammY keeps the token out of its error messages while `sensitiveLogs` is off (the default): keep it off.
@@ -93,5 +95,31 @@ src/
 
 ## Results (`src/results/`)
 
-Not built yet (#79): results come from the `batch-parsed` event, the summary from `GET /photo-batches/:batchId`,
-«Підтвердити всі» = `POST /photo-batches/:batchId/confirm`. Until then the bot only uploads.
+- **Input**: `notifications.consumer.ts` — BullMQ `@Processor` of `bot-notifications` (contract in `@rental/shared`),
+  dispatch on the job name: `batch-parsed` (`{ batchId, replyTo }`) → `ResultsSender.send`. A signal only: the
+  sender always loads fresh data. Retries are the API's job options (5 attempts, exponential); a failure is logged
+  (ids + message). Unknown job name → `UnrecoverableError`.
+- **Redis is used only for this** (consuming `bot-notifications`): `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD?`,
+  the same names and defaults as the API and the worker (`src/queue/bullmq.config.ts`). The bot never enqueues.
+- `ResultsSender` (own grammY `Api` from the token — no dependency on `BotService`):
+  - `send(batchId, replyTo)`: `replyTo` = the intake's `<chatId>:<messageId>` (malformed → logged, dropped) →
+    `GET /photo-batches/{batchId}` (+ `GET /apartments?active=true` only when a photo is `NOT_MATCHED`) → render →
+    reply to the first photo. Batch 404 (photos deleted) → logged, no retry; other API errors / Telegram errors →
+    thrown, so BullMQ retries.
+  - `refresh(chatId, messageId, batchId)`: the same, as `editMessageText` of the tapped message ("message is not
+    modified" ignored).
+- **Render** (`render/summary.ts`, pure): the API's summary → text + buttons; the API computed everything (previous
+  value, consumption, `lowerThanPrevious`, warnings `{ code, limit, months }`, `missingZones`, `canConfirm`) — the
+  bot only words it (web wording for warnings, values `1520,350`). Per DRAFT: «Підтвердити» (only `canConfirm`) +
+  «Скасувати»; «Підтвердити всі» for ≥ 2 `canConfirm`. Photos without a reading: `NOT_MATCHED` → one button per
+  active apartment, `FAILED` → its `parseNote`, `PENDING` (after assign) → «розпізнаю…». Text cut at 4096.
+- **callback_data** (`render/callback-data.ts`, ≤ 64 bytes, UUIDs as base64url = 22 chars):
+  `rc:<batch>:<reading>` confirm, `rx:<batch>:<reading>` cancel, `bc:<batch>` confirm all,
+  `as:<photo>:<apartment>` assign. The batch is in the reading buttons so the summary can be re-rendered; after
+  assign it comes from the PATCH response. Unparseable (e.g. the old bot's `a:<token>`) → «Кнопка застаріла».
+- **Buttons** (`buttons.handler.ts`, wired in `bot.service.ts` after the allowlist): `POST /readings/{id}/confirm`,
+  `POST /readings/{id}/cancel` (reason «Скасовано в Telegram»; a key cancels only DRAFTs),
+  `POST /photo-batches/{batchId}/confirm` (refusals → alert with the reasons), `PATCH /photos/{id}` (re-parse — the
+  new summary comes with the next `batch-parsed`, as a new reply). API refusals (400/404/409) → an alert with the
+  API's message. Always `answerCallbackQuery` once, then `refresh` (✅ / ❌, finished readings lose their buttons).
+- Nothing in memory: a restart loses nothing but a buffered album (see intake); old buttons keep working.
