@@ -21,6 +21,8 @@ paths:
   by serial only"). The image is auto-oriented and fit into 1568 px
   (`prepareImage`, sharp) — Claude's base64 limit is 5 MB, the API accepts 15 MB photos.
 - Never log the image, the prompt contents or `ANTHROPIC_API_KEY` (model, duration and counts only).
+- Tests mock `@langchain/anthropic` (`vi.mock`, see `photo-extractor.service.spec.ts`) — never a real model call;
+  images are generated with sharp in the test. The golden set below stays manual.
 - Manual check: `pnpm --filter worker extract:samples -- samples [--inbox]` (from the repo root: path relative to
   `apps/worker`; `--inbox` = the inbox prompt). The dir holds photos + `meters.json` + optional `expected.json` (format: `samples.example/`) and
   prints every reading plus ✓/✗ against the golden values. One paid model call per photo; `samples/` is gitignored.
