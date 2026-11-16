@@ -1,8 +1,7 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { UnrecoverableError } from 'bullmq';
-import { API_CLIENT, type ApiClient } from '../api/api-client.js';
-import { apiError } from '../api/helpers/api-error.js';
 import type { components } from '../api/schema.js';
+import { WorkerApi } from '../api/worker-api.service.js';
 import { ExtractionNotConfiguredError } from '../extraction/errors/extraction-not-configured.error.js';
 import { PhotoExtractorService } from '../extraction/photo-extractor.service.js';
 import { describeMeter } from './helpers/describe-meter.js';
@@ -27,24 +26,21 @@ export class ParsePhotoService {
   private readonly logger = new Logger(ParsePhotoService.name);
 
   constructor(
-    @Inject(API_CLIENT) private readonly api: ApiClient,
+    private readonly api: WorkerApi,
     private readonly extractor: PhotoExtractorService,
     private readonly results: ParseResultReporter,
   ) {}
 
   async run(photoId: string): Promise<void> {
-    const photo = await this.api.GET('/photos/{id}', { params: { path: { id: photoId } } });
-    if (!photo.data) {
-      if (photo.response.status === 404)
-        throw new UnrecoverableError(`Photo ${photoId} was deleted`);
-      throw apiError(`GET /photos/${photoId}`, photo.response, photo.error);
-    }
-
-    const { apartmentId, mimeType, createdAt } = photo.data;
+    const { apartmentId, mimeType, createdAt } = await this.api.getPhoto(photoId);
     const inbox = apartmentId === null;
     const where = inbox ? 'inbox' : `apartment ${apartmentId}`;
 
-    const meters = await this.candidates(apartmentId);
+    // The apartment's installed meters, or every active meter (of active apartments) for an inbox photo.
+    const meters =
+      apartmentId === null
+        ? await this.api.getActiveMeters()
+        : await this.api.getApartmentMeters(apartmentId);
     if (meters.length === 0) {
       const why = inbox ? 'no active meters' : 'no installed meters';
       this.logger.warn(`photo ${photoId} (${where}): ${why}, nothing to read`);
@@ -52,19 +48,15 @@ export class ParsePhotoService {
       return;
     }
 
-    const file = await this.api.GET('/photos/{id}/file', {
-      params: { path: { id: photoId } },
-      parseAs: 'arrayBuffer',
-    });
-    if (!file.data) throw apiError(`GET /photos/${photoId}/file`, file.response, file.error);
+    const image = await this.api.getPhotoFile(photoId);
 
     this.logger.log(
-      `photo ${photoId} (${where}): ${file.data.byteLength} bytes ${mimeType}; ` +
+      `photo ${photoId} (${where}): ${image.byteLength} bytes ${mimeType}; ` +
         `${meters.length} meters:` +
         meters.map((m) => `\n  - ${describeMeter(m)}`).join(''),
     );
 
-    const extraction = await this.extract(Buffer.from(file.data), meters, inbox);
+    const extraction = await this.extract(image, meters, inbox);
     if (extraction.photoIssues.length > 0) {
       this.logger.warn(`photo ${photoId}: ${extraction.photoIssues.join('; ')}`);
     }
@@ -119,20 +111,6 @@ export class ParsePhotoService {
     }
   }
 
-  // The apartment's installed meters, or every active meter (of active apartments) for an inbox photo.
-  private async candidates(apartmentId: string | null): Promise<Meter[]> {
-    if (apartmentId === null) {
-      const res = await this.api.GET('/meters', { params: { query: { active: 'true' } } });
-      if (!res.data) throw apiError('GET /meters?active=true', res.response, res.error);
-      return res.data;
-    }
-    const res = await this.api.GET('/apartments/{apartmentId}/meters', {
-      params: { path: { apartmentId }, query: {} },
-    });
-    if (!res.data) throw apiError(`GET /apartments/${apartmentId}/meters`, res.response, res.error);
-    return res.data;
-  }
-
   private async extract(image: Buffer, meters: Meter[], inbox: boolean) {
     try {
       return await this.extractor.extract({ image, meters, inbox });
@@ -145,31 +123,17 @@ export class ParsePhotoService {
 
   // One zone into the key user's open draft. Returns what happened, for the summary log. Expected refusals
   // (the zone came from another photo, the meter was removed meanwhile, a 400) are logged, not job failures;
-  // anything else throws (5xx / network → retried).
+  // anything else throws in WorkerApi (5xx / network → retried).
   private async postDraftValue(meter: Meter, body: DraftValue): Promise<string> {
-    const res = await this.api.POST('/meters/{meterId}/draft-values', {
-      params: { path: { meterId: meter.id } },
-      body,
-    });
-    if (res.data) {
-      return res.response.status === 201
-        ? `draft ${res.data.id} created`
-        : `draft ${res.data.id} updated (or already had it)`;
+    const res = await this.api.postDraftValue(meter.id, body);
+    if (res.ok) {
+      return res.created
+        ? `draft ${res.draftId} created`
+        : `draft ${res.draftId} updated (or already had it)`;
     }
-    const error: unknown = res.error;
-    const message =
-      typeof error === 'object' && error !== null && 'message' in error
-        ? String(error.message)
-        : '';
-    const status = res.response.status;
-    if (status === 409) {
-      const readingId =
-        typeof error === 'object' && error !== null && 'readingId' in error
-          ? ` (draft ${String(error.readingId)})`
-          : '';
-      return `not posted, 409 ${message}${readingId}`;
-    }
-    if (status === 400) return `not posted, 400 ${message}`;
-    throw apiError(`POST /meters/${meter.id}/draft-values`, res.response, res.error);
+    const readingId = res.readingId !== undefined ? ` (draft ${res.readingId})` : '';
+    return res.status === 409
+      ? `not posted, 409 ${res.message}${readingId}`
+      : `not posted, 400 ${res.message}`;
   }
 }

@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { onTestFinished, vi } from 'vitest';
+import { WorkerApi } from '../api/worker-api.service.js';
 import type { Extraction } from '../extraction/interfaces/extraction.interface.js';
 import type { PhotoExtractorService } from '../extraction/photo-extractor.service.js';
 import { ParsePhotoProcessor } from '../photos/parse-photo.processor.js';
@@ -35,8 +36,9 @@ export function photoServices({ routes = {}, extraction }: PhotoServicesOptions 
     logs.error.mockRestore();
   });
 
-  const reporter = new ParseResultReporter(api);
-  const service = new ParsePhotoService(api, extractor, reporter);
+  const worker = new WorkerApi(api);
+  const reporter = new ParseResultReporter(worker);
+  const service = new ParsePhotoService(worker, extractor, reporter);
   const processor = new ParsePhotoProcessor(service, reporter);
   return { requests, extract, logs, reporter, service, processor };
 }
