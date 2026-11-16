@@ -1,12 +1,13 @@
 import { Logger } from '@nestjs/common';
+import { fakeApi, type Routes } from '@rental/testing';
 import { onTestFinished, vi } from 'vitest';
+import type { paths } from '../api/schema.js';
 import { WorkerApi } from '../api/worker-api.service.js';
 import type { Extraction } from '../extraction/interfaces/extraction.interface.js';
 import type { PhotoExtractorService } from '../extraction/photo-extractor.service.js';
 import { ParsePhotoProcessor } from '../photos/parse-photo.processor.js';
 import { ParsePhotoService } from '../photos/parse-photo.service.js';
 import { ParseResultReporter } from '../photos/parse-result-reporter.service.js';
-import { fakeApi, type Routes } from './fake-api.js';
 
 export interface PhotoServicesOptions {
   routes?: Routes;
@@ -17,7 +18,7 @@ export interface PhotoServicesOptions {
 // The one place that builds the photo-job services (plain `new`, no Nest container): a constructor change touches
 // only this file. Nest's Logger is silenced; the spies are returned for assertions.
 export function photoServices({ routes = {}, extraction }: PhotoServicesOptions = {}) {
-  const { api, requests } = fakeApi(routes);
+  const { api, requests } = fakeApi<paths>(routes);
   const extract = vi.fn(() =>
     extraction instanceof Error
       ? Promise.reject(extraction)

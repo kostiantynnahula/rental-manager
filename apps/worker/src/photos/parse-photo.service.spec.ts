@@ -1,8 +1,8 @@
 import { UnrecoverableError } from 'bullmq';
+import { json, status, type RecordedRequest, type Routes } from '@rental/testing';
 import { ExtractionNotConfiguredError } from '../extraction/errors/extraction-not-configured.error.js';
 import type { Extraction } from '../extraction/interfaces/extraction.interface.js';
 import { extracted, meter, photo } from '../test/builders.js';
-import { json, status, type RecordedRequest, type Routes } from '../test/fake-api.js';
 import { photoServices } from '../test/photo-services.js';
 
 const PHOTO = 'GET /photos/photo-1';
