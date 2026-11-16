@@ -12,7 +12,7 @@ paths:
   (ids + message). Unknown job name → `UnrecoverableError`.
 - **Redis is used only for this** (consuming `bot-notifications`): `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD?`,
   the same names and defaults as the API and the worker (`src/queue/bullmq.config.ts`). The bot never enqueues.
-- `ResultsSender` (own grammY `Api` from the token — no dependency on `BotService`):
+- `ResultsSender` (`bot.api` of the `TELEGRAM_BOT` provider — no dependency on `BotService`):
   - `send(batchId, replyTo)`: `replyTo` = the intake's `<chatId>:<messageId>` (malformed → logged, dropped) →
     `GET /photo-batches/{batchId}` (+ `GET /apartments?active=true` only when a photo is `NOT_MATCHED`) → render →
     reply to the first photo. Batch 404 (photos deleted) → logged, no retry; other API errors / Telegram errors →
