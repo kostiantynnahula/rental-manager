@@ -1,5 +1,5 @@
 import { Bot, Context, type Transformer } from 'grammy';
-import type { Message, Update, UserFromGetMe } from 'grammy/types';
+import type { Message, Update, User, UserFromGetMe } from 'grammy/types';
 import { expect, onTestFinished, vi } from 'vitest';
 
 // The token of every fake Bot: it shows up in download URLs, so tests can check it never leaks.
@@ -158,8 +158,54 @@ export function documentMessage(
 
 let updateIds = 1;
 
+export function messageUpdate(message: Message): Update {
+  return { update_id: updateIds++, message } as Update;
+}
+
+// The summary message a result button sits on (sent by the bot to the owner's chat).
+export const SUMMARY_MESSAGE_ID = 500;
+
+export interface CallbackOptions {
+  // The message with the button; null = Telegram didn't send it (too old, or an inline message).
+  message?: Message | null;
+  // The user who tapped; default the owner.
+  from?: User;
+}
+
+export const OWNER: User = { id: CHAT_ID, is_bot: false, first_name: 'Owner' };
+
+export function callbackUpdate(
+  data: string,
+  { message, from = OWNER }: CallbackOptions = {},
+): Update {
+  const onMessage =
+    message === undefined
+      ? ({
+          message_id: SUMMARY_MESSAGE_ID,
+          date: 0,
+          chat: { id: CHAT_ID, type: 'private', first_name: 'Owner' },
+          from: { id: BOT_INFO.id, is_bot: true, first_name: BOT_INFO.first_name },
+          text: 'Результат розпізнавання:',
+        } as Message)
+      : (message ?? undefined);
+  return {
+    update_id: updateIds++,
+    callback_query: {
+      id: `cb-${updateIds}`,
+      from,
+      chat_instance: 'chat-instance',
+      data,
+      ...(onMessage ? { message: onMessage } : {}),
+    },
+  } as Update;
+}
+
 // A real grammY Context for one message: ctx.reply and ctx.api go through the fake transport.
 export function contextFor(bot: Bot, message: Message): Context {
-  const update = { update_id: updateIds++, message } as Update;
-  return new Context(update, bot.api, bot.botInfo);
+  return new Context(messageUpdate(message), bot.api, bot.botInfo);
+}
+
+// A real grammY Context for a button tap.
+export function callbackContext(bot: Bot, data: string, options?: CallbackOptions): Context {
+  return new Context(callbackUpdate(data, options), bot.api, bot.botInfo);
 }
