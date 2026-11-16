@@ -2,7 +2,8 @@ import createClient, { type Client } from 'openapi-fetch';
 import { expect, onTestFinished } from 'vitest';
 
 // One request the code under test sent. `url` is the path + query relative to the base URL ("/meters?active=true");
-// `body` is the parsed JSON body, undefined when there is none.
+// `body`: a JSON body parsed, a multipart body as its FormData (`body.getAll('files')`), any other as text;
+// undefined when there is none.
 export interface RecordedRequest {
   method: string;
   url: string;
@@ -31,11 +32,10 @@ export function fakeApi<Paths extends {}>(
 
   const fetch = async (request: Request): Promise<Response> => {
     const { pathname, search } = new URL(request.url);
-    const text = await request.text();
     const recorded: RecordedRequest = {
       method: request.method,
       url: `${pathname}${search}`,
-      body: text === '' ? undefined : JSON.parse(text),
+      body: await readBody(request),
     };
     requests.push(recorded);
     const key = `${recorded.method} ${recorded.url}`;
@@ -48,6 +48,14 @@ export function fakeApi<Paths extends {}>(
   };
 
   return { api: createClient<Paths>({ baseUrl: BASE_URL, fetch }), requests };
+}
+
+async function readBody(request: Request): Promise<unknown> {
+  const type = request.headers.get('content-type') ?? '';
+  if (type.startsWith('multipart/form-data')) return request.formData();
+  const text = await request.text();
+  if (text === '') return undefined;
+  return type.includes('json') ? JSON.parse(text) : text;
 }
 
 export function json(body: unknown, status = 200): Response {
