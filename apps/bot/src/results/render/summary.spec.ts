@@ -269,17 +269,32 @@ describe('renderSummary', () => {
       expect(summary.lines.at(-1)).toBe('📷 фото 1: розпізнаю…');
     });
 
-    // Current behaviour; questioned in the PR: «Усе опрацьовано.» right after a failure.
-    it('says «all done» after a FAILED photo, which leaves no buttons', () => {
+    // bug: «all done» is shown whenever there are no buttons, so a FAILED photo is followed by «Усе опрацьовано.»
+    // although nothing was read from it.
+    it.fails('does not say «all done» after a FAILED photo', () => {
       const summary = render(
         batch({ photos: [batchPhoto({ parseStatus: 'FAILED', parseNote: null })], apartments: [] }),
       );
-      expect(summary.lines.slice(-3)).toEqual([
-        '📷 фото 1: помилка розпізнавання',
-        '',
-        'Усе опрацьовано.',
-      ]);
+      expect(summary.lines).toContain('📷 фото 1: помилка розпізнавання');
+      expect(summary.lines).not.toContain(RESULT_TEXTS.allDone);
     });
+
+    // bug: a NOT_MATCHED photo with no active apartments says «Оберіть квартиру:» with nothing to pick, then
+    // «Усе опрацьовано.» (no buttons → «all done»).
+    it.fails(
+      'does not say «all done» after a NOT_MATCHED photo when there is no apartment to pick',
+      () => {
+        const summary = render(
+          batch({
+            photos: [batchPhoto({ parseStatus: 'NOT_MATCHED', parseNote: null })],
+            apartments: [],
+          }),
+          [],
+        );
+        expect(summary.lines).toContain('📷 фото 1: лічильник не знайдено. Оберіть квартиру:');
+        expect(summary.lines).not.toContain(RESULT_TEXTS.allDone);
+      },
+    );
   });
 
   it('says nothing was found for a batch without readings or photo lines', () => {
