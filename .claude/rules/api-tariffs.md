@@ -31,3 +31,19 @@ decimals) and out (`toFixed(4)`), `effectiveFrom` is `"YYYY-MM"`.
 - **Override** (`POST .../:id/override { name, effectiveFrom, prices }`) = "this price only for this apartment": one
   transaction — a copy of the tariff with its own prices from M, the old attachment ends at M−1 (deleted if it
   starts in M), the copy is attached from M with the old `activeTo`. Past months stay on the shared tariff.
+
+## Data model
+
+- **Tariffs** (migration `add_tariffs`): one catalog for meter tariffs and fixed fees. `Tariff.kind` METERED
+  (price per unit of the consumption of `utilities`, e.g. drainage = COLD_WATER + HOT_WATER) or FIXED (price per
+  month, `utilities` empty) or MANUAL (no utilities, no prices: the amount is entered per statement). District-specific prices = a separate tariff. `TariffPrice` = price history:
+  `effectiveFrom` (1st of month) + `zone` (default TOTAL) + `price` `Decimal(12,4)` UAH. Price for a period = the
+  latest `effectiveFrom <= period` for the zone, falling back to TOTAL (a two-zone meter only needs a NIGHT price).
+  `ApartmentTariff` = which tariffs an apartment is billed for, `activeFrom..activeTo` (1st days of months,
+  `activeTo` = last billed month inclusive, null = ongoing). FIXED fees bill the full month (no proration).
+  - Raw-SQL constraints: `tariffs_utilities_match_kind` (METERED ⇒ ≥ 1 utility, FIXED/MANUAL ⇒ none; the list column is
+    nullable, NULL = empty), `tariff_prices_effective_first_of_month`, `tariff_prices_non_negative`,
+    `apartment_tariffs_active_{from,to}_first_of_month`, `apartment_tariffs_dates_check`,
+    `apartment_tariffs_no_overlap` (GiST exclusion: one tariff per apartment per month).
+  - Services must enforce: DAY/NIGHT prices only for METERED tariffs with ELECTRICITY; `kind`/`utilities` of a
+    tariff in use never change (archive it and create a new one).

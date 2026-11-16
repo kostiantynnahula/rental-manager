@@ -95,4 +95,5 @@ Node 24 (`.nvmrc`), pnpm via corepack. First run: `cp .env.example .env && pnpm 
 - Briefly explain non-obvious decisions — I'm learning the workflow.
 - Ask before adding dependencies or changing the DB schema.
 - App-specific rules live in `apps/*/CLAUDE.md`; details per area in path-scoped `.claude/rules/<app>-<area>.md`
-  (`api-`, `web-`, `shared-`, `bot-`, `worker-`); detailed docs in `docs/`.
+  (`api-`, `web-`, `shared-`, `bot-`, `worker-`); long always-needed sections are split into
+  `apps/<app>/docs/*.md` and imported with `@docs/…` (still always loaded).
