@@ -1,17 +1,19 @@
 import {
+  Inject,
   Injectable,
   Logger,
   type OnApplicationBootstrap,
   type OnApplicationShutdown,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Bot } from 'grammy';
+import type { Bot } from 'grammy';
 import { Env } from './config/env.validation.js';
 import { allowlist } from './helpers/allowlist.middleware.js';
 import { parseUserIds } from './helpers/parse-user-ids.js';
 import { IntakeService } from './intake/intake.service.js';
 import { ButtonsHandler } from './results/buttons.handler.js';
 import { COMMANDS, MESSAGES } from './messages.js';
+import { TELEGRAM_BOT } from './telegram/telegram-bot.js';
 
 // The bot's only entry point and its map: every input is wired here, features never call each other.
 // Inputs: Telegram updates (below) and BullMQ `bot-notifications` events (results/notifications.consumer.ts — a
@@ -21,16 +23,15 @@ import { COMMANDS, MESSAGES } from './messages.js';
 @Injectable()
 export class BotService implements OnApplicationBootstrap, OnApplicationShutdown {
   private readonly logger = new Logger(BotService.name);
-  private readonly bot: Bot;
   // bot.start(): resolves once polling has stopped and the last batch of updates was handled.
   private polling?: Promise<void>;
 
   constructor(
     config: ConfigService<Env, true>,
+    @Inject(TELEGRAM_BOT) private readonly bot: Bot,
     private readonly intake: IntakeService,
     private readonly buttons: ButtonsHandler,
   ) {
-    this.bot = new Bot(config.get('TELEGRAM_BOT_TOKEN', { infer: true }));
     const allowed = parseUserIds(config.get('TELEGRAM_ALLOWED_USER_IDS', { infer: true }));
 
     // First: strangers get nothing, not even a reply.

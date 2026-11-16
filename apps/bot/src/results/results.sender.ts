@@ -1,25 +1,25 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Api, GrammyError } from 'grammy';
+import { type Api, type Bot, GrammyError } from 'grammy';
 import { API_CLIENT, type ApiClient } from '../api/api-client.js';
-import { Env } from '../config/env.validation.js';
+import { TELEGRAM_BOT } from '../telegram/telegram-bot.js';
 import { inlineKeyboard } from './helpers/inline-keyboard.js';
 import { parseReplyTo } from './helpers/reply-target.js';
 import type { RenderedSummary } from './interfaces/rendered-summary.interface.js';
 import { renderSummary } from './render/summary.js';
 
 // Sends a batch's summary (on `batch-parsed`) and re-renders it after a tap. Always loads fresh data from the API.
-// Its own grammY Api (no dependency on BotService): the token is in it — never log it.
+// Sends through the process's one Bot (`bot.api`, TELEGRAM_BOT) — no dependency on BotService. The token is in it:
+// never log it.
 @Injectable()
 export class ResultsSender {
   private readonly logger = new Logger(ResultsSender.name);
   private readonly telegram: Api;
 
   constructor(
-    config: ConfigService<Env, true>,
+    @Inject(TELEGRAM_BOT) bot: Bot,
     @Inject(API_CLIENT) private readonly api: ApiClient,
   ) {
-    this.telegram = new Api(config.get('TELEGRAM_BOT_TOKEN', { infer: true }));
+    this.telegram = bot.api;
   }
 
   // A reply to the batch's first photo. Throws on a temporary failure (the job is retried by BullMQ).
