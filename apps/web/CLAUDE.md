@@ -47,6 +47,13 @@
 
 ## More
 
-- Feature details: `.claude/rules/web-*.md` (load when you touch that feature).
+- Feature details — path-scoped rules, loaded when a file of that area is opened:
+  - Data layer — API client, hooks (`lib/api/`, `hooks/`): `.claude/rules/web-data-layer.md`
+  - Auth helpers (`lib/api/auth-*`): `.claude/rules/api-auth.md`
+  - Leases (`components/leases/`): `.claude/rules/web-leases.md`
+  - Photos, inbox «Вхідні» (`components/photos/`, `app/(app)/inbox/`): `.claude/rules/web-photos.md`
+  - Readings and meters (`components/{readings,meters}/`): `.claude/rules/web-readings.md`
+  - Statements (`components/statements/`): `.claude/rules/web-statements.md`
+  - Tariffs (`components/tariffs/`): `.claude/rules/web-tariffs.md`
 - Billing reuses the `reading_consumption` view and `priceForPeriod` — never re-implement.
 - Project rules override advice from skills.
