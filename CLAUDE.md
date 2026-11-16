@@ -93,7 +93,7 @@ Node 24 (`.nvmrc`), pnpm via corepack. First run: `cp .env.example .env && pnpm 
 
 - Reply in the language I write in (Russian/Ukrainian); code, comments, commits in English.
 - Small steps. Run tests/lint before saying a task is done.
-- Tests — worker: see `apps/worker/CLAUDE.md` → Tests; other apps: don't write new tests unless I ask. Still run
+- Tests — worker, bot: see `apps/<app>/CLAUDE.md` → Tests; other apps: don't write new tests unless I ask. Still run
   existing ones; if a change breaks one, tell me rather than silently rewriting it.
 - Briefly explain non-obvious decisions — I'm learning the workflow.
 - Ask before adding dependencies or changing the DB schema.

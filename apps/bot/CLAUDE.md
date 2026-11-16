@@ -73,6 +73,19 @@ src/
   the `start()` promise (the current batch of updates is handled) → `intake.flush()`. One hook for everything: Nest
   runs hooks concurrently, and a flush before polling ends could miss a photo.
 
+## Tests
+
+- `pnpm --filter bot test` (Vitest, globals). Specs are colocated (`foo.ts` → `foo.spec.ts`); the bot's own builders
+  and fakes live in `src/test/`, kept out of the build (`tsconfig.build.json` excludes it and `**/*spec.ts`).
+- **Never Telegram, never the network**: the token is in every Bot API URL. Telegram is faked with an API transformer
+  (`bot.api.config.use(...)`, real grammY, no request leaves); the API is `fakeApi<paths>(routes)` from
+  `@rental/testing` (`packages/testing`; `json()` / `status()` responses; an unknown route fails the test).
+- Timers (the album buffer) — Vitest fake timers (`vi.useFakeTimers()`), never real waits.
+- A PR that changes behaviour comes with tests for it.
+- A test failing because of this PR's change → fix it in this PR. Never weaken a test to make it pass — tell me.
+- A bug found in merged code → an `it.fails(...)` test with a `// bug: …` line above it, listed under "Found bugs" in
+  the PR description. Don't fix the code and don't create issues — I decide.
+
 ## More
 
 - Feature details — path-scoped rules, loaded when a file of that area is opened:
