@@ -30,6 +30,16 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
   the API is the producer (`jobId = photoId`, attempts + backoff set there).
 - Never create CONFIRMED readings: parsed values only ever become DRAFTs a human confirms.
 
+## Tests
+
+- `pnpm --filter worker test` (Vitest, globals). Specs are colocated (`foo.ts` → `foo.spec.ts`); shared builders and
+  fakes live in `src/test/`, kept out of the build (`tsconfig.build.json` excludes it and `**/*spec.ts`).
+- A PR that changes behaviour comes with tests for it.
+- A test failing because of this PR's change → fix it in this PR. Never weaken a test to make it pass — tell me.
+- A bug found in merged code → an `it.fails(...)` test with a `// bug: …` line above it, listed under "Found bugs" in
+  the PR description. Don't fix the code and don't create issues — I decide.
+- Never run `extract:samples` in tests or reviews (paid model calls) — only when I ask.
+
 ## Modules
 
 - `WorkerModule` (root) holds only global infra: `ConfigModule` and `BullModule.forRootAsync` (Redis connection).
