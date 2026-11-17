@@ -132,8 +132,8 @@ absolute path and restart Claude Desktop. `env` is optional (the root `.env` is 
 
 **Logs**: every tool call is one line on stderr (`[rental-mcp] tool get_statement {…} → ok 142ms`), which the
 client keeps in its MCP logs (Claude Desktop: `mcp-server-rental-manager.log`). To follow them live, set
-`MCP_LOG_FILE` in the `.env` (an absolute path, or relative to the client's cwd — the repo root for Claude Code),
-e.g. `MCP_LOG_FILE=logs/mcp.log`, and `tail -f logs/mcp.log`. Logs never contain the key or response bodies.
+`MCP_LOG_FILE` in the `.env` (an absolute path, or relative to the repo root whatever the client's cwd; the directory
+is created), e.g. `MCP_LOG_FILE=logs/mcp.log`, and `tail -f logs/mcp.log`. Logs never contain the key or response bodies.
 
 Debug it without a client in the MCP Inspector (a browser UI: list the tools, call them, see stderr):
 

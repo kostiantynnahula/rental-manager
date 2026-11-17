@@ -1,9 +1,8 @@
-# apps/mcp — MCP server (Claude Desktop)
+# apps/mcp — MCP server (Claude Code, Claude Desktop)
 
 Plain TypeScript, native ESM (relative imports need `.js`), no Nest. `@modelcontextprotocol/sdk` over stdio: Claude
 Code (the committed root `.mcp.json`), Claude Desktop or the MCP Inspector starts `node apps/mcp/dist/main.js` as a
-child process. A read-only HTTP client of
-the API with its own key (`--service mcp`, read scopes + `statements:preview`, see `.claude/rules/api-auth.md`).
+child process. A read-only HTTP client of the API with its own key (`--service mcp`, read scopes + `statements:preview`, see `.claude/rules/api-auth.md`).
 
 ## Commands (from repo root)
 
@@ -33,7 +32,9 @@ the API with its own key (`--service mcp`, read scopes + `statements:preview`, s
   `tool get_statement {"statementId":"…"} → ok 142ms` / `→ error 404 "Statement not found" 35ms` /
   `→ error unreachable (fetch failed) 3ms`. Args are truncated (200 chars); the status/message come from
   `apiError()` via `failureOf()` (kept beside the result, not sent to the client). Never response bodies, the key
-  or headers. `MCP_LOG_FILE` set → the same lines are also appended there (`tail -f`); stderr always.
+  or headers. `MCP_LOG_FILE` set → the same lines are also appended there (`tail -f`); stderr always. A relative
+  path is resolved against the repo root (`repoRoot()`, not the cwd); its directory is created; a failed write
+  disables the file (one stderr note), never the server.
 - **Field allowlist.** A tool never passes an API body through: it builds its result field by field
   (`toApartmentSummary`-style). Notes, leases and tenant data never leave the server unless a tool's issue says so
   (API keys get no tenant data anyway).

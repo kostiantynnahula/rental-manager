@@ -1,15 +1,18 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseEnv } from 'node:util';
 
+// The repo root, resolved from this file (src/config/ or dist/config/, same depth), never from the cwd: the client
+// (Claude Code, Claude Desktop) picks the cwd it spawns us with (Claude Desktop: often `/`).
+export function repoRoot(): string {
+  return fileURLToPath(new URL('../../../../', import.meta.url));
+}
+
 // The env files, most specific first: apps/mcp/.env (an override), then the repo-root .env (shared with the other
-// apps). Resolved from this file (src/config/ or dist/config/, same depth), never from the cwd: the client
-// (Claude Code, Claude Desktop) picks the cwd it spawns us with.
+// apps).
 export function defaultEnvFiles(): string[] {
-  return [
-    fileURLToPath(new URL('../../.env', import.meta.url)),
-    fileURLToPath(new URL('../../../../.env', import.meta.url)),
-  ];
+  return [join(repoRoot(), 'apps/mcp/.env'), join(repoRoot(), '.env')];
 }
 
 // Loads the first existing file into `env`. Values already set win (the client's `env` block); an empty string
