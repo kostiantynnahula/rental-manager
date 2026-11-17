@@ -55,7 +55,7 @@ export class StatementResponseDto {
   @ApiProperty({ type: String, nullable: true })
   cancelNote: string | null;
 
-  static from(s: StatementWithDetails, opts?: TenantDataOptions): StatementResponseDto {
+  static from(s: StatementWithDetails, opts: TenantDataOptions): StatementResponseDto {
     return {
       id: s.id,
       apartmentId: s.apartmentId,

@@ -15,7 +15,7 @@ export class StatementLeaseSummaryResponseDto {
 
   static from(
     lease: NonNullable<StatementWithDetails['lease']>,
-    { withTenants = true }: TenantDataOptions = {},
+    { withTenants }: TenantDataOptions,
   ): StatementLeaseSummaryResponseDto {
     return {
       id: lease.id,

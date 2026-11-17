@@ -16,7 +16,7 @@ export class ApartmentDetailResponseDto extends ApartmentResponseDto {
   static fromWithLease(
     a: Apartment,
     currentLease: LeaseWithTenants | null,
-    opts?: TenantDataOptions,
+    opts: TenantDataOptions,
   ): ApartmentDetailResponseDto {
     return {
       ...ApartmentResponseDto.from(a),

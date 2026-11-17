@@ -13,6 +13,9 @@ export class TenantCreatedResponseDto extends TenantResponseDto {
   lease: LeaseResponseDto | null;
 
   static fromWithLease(t: Tenant, lease: LeaseWithTenants | null): TenantCreatedResponseDto {
-    return { ...TenantResponseDto.from(t), lease: lease ? LeaseResponseDto.from(lease) : null };
+    return {
+      ...TenantResponseDto.from(t),
+      lease: lease ? LeaseResponseDto.from(lease, { withTenants: true }) : null,
+    };
   }
 }

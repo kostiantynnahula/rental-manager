@@ -128,6 +128,7 @@ export class ApartmentStatementsController {
         dto.acknowledgeWarnings ?? false,
         user.id,
       ),
+      { withTenants: true },
     );
   }
 }

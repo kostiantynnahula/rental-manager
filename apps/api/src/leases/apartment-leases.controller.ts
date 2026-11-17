@@ -28,7 +28,7 @@ export class ApartmentLeasesController {
     @Param('apartmentId', ParseUUIDPipe) apartmentId: string,
   ): Promise<LeaseResponseDto[]> {
     const leases = await this.leases.listForApartment(apartmentId);
-    return leases.map((l) => LeaseResponseDto.from(l));
+    return leases.map((l) => LeaseResponseDto.from(l, { withTenants: true }));
   }
 
   @Post()
@@ -42,6 +42,6 @@ export class ApartmentLeasesController {
     @Param('apartmentId', ParseUUIDPipe) apartmentId: string,
     @Body() dto: CreateLeaseDto,
   ): Promise<LeaseResponseDto> {
-    return LeaseResponseDto.from(await this.leases.create(apartmentId, dto));
+    return LeaseResponseDto.from(await this.leases.create(apartmentId, dto), { withTenants: true });
   }
 }

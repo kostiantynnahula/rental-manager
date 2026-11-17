@@ -42,10 +42,7 @@ export class LeaseResponseDto {
   updatedAt: Date;
 
   // withTenants: false for API keys — they never receive tenant data.
-  static from(
-    lease: LeaseWithTenants,
-    { withTenants = true }: TenantDataOptions = {},
-  ): LeaseResponseDto {
+  static from(lease: LeaseWithTenants, { withTenants }: TenantDataOptions): LeaseResponseDto {
     return {
       id: lease.id,
       apartmentId: lease.apartmentId,

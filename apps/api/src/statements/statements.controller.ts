@@ -68,6 +68,8 @@ export class StatementsController {
     @Body() dto: CancelStatementDto,
     @CurrentUser() user: AuthUser,
   ): Promise<StatementResponseDto> {
-    return StatementResponseDto.from(await this.statements.cancel(id, dto.note, user.id));
+    return StatementResponseDto.from(await this.statements.cancel(id, dto.note, user.id), {
+      withTenants: true,
+    });
   }
 }

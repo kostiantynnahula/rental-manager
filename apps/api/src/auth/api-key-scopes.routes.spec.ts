@@ -4,7 +4,7 @@ import type { JwtService } from '@nestjs/jwt';
 import type { ApiKeysService } from '../api-keys/api-keys.service.js';
 import { API_KEY_SCOPES, type ApiKeyScope } from '../api-keys/constants/api-key-scopes.js';
 import { ApartmentsController } from '../apartments/apartments.controller.js';
-import { ApartmentDetailResponseDto } from '../apartments/dto/apartment-detail-response.dto.js';
+import type { ApartmentsService } from '../apartments/apartments.service.js';
 import type { Apartment } from '../generated/prisma/client.js';
 import type { LeaseWithTenants } from '../leases/helpers/lease-with-tenants.js';
 import { LeasesController } from '../leases/leases.controller.js';
@@ -12,13 +12,13 @@ import { MetersController } from '../meters/meters.controller.js';
 import { ApartmentReadingsController } from '../readings/apartment-readings.controller.js';
 import { MeterReadingsController } from '../readings/meter-readings.controller.js';
 import { ApartmentStatementsController } from '../statements/apartment-statements.controller.js';
-import { StatementLeaseSummaryResponseDto } from '../statements/dto/statement-lease-summary-response.dto.js';
 import type { StatementWithDetails } from '../statements/helpers/statement-with-details.js';
 import { StatementsController } from '../statements/statements.controller.js';
+import type { StatementsService } from '../statements/statements.service.js';
 import { ApartmentTariffsController } from '../tariffs/apartment-tariffs.controller.js';
 import { TariffsController } from '../tariffs/tariffs.controller.js';
 import { TenantsController } from '../tenants/tenants.controller.js';
-import { tenantDataOptions } from './helpers/tenant-data-options.js';
+import type { AuthUser } from './interfaces/auth-user.interface.js';
 import type { AuthenticatedRequest } from './interfaces/authenticated-request.interface.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
 
@@ -129,30 +129,43 @@ describe('tenant data for API keys', () => {
     ],
   } as unknown as LeaseWithTenants;
   const apartment = { id: 'apt-1' } as unknown as Apartment;
-  const statementLease = {
-    id: 'lease-1',
-    tenants: [{ tenant: { fullName: 'Ivan Petrenko' } }],
-  } as unknown as NonNullable<StatementWithDetails['lease']>;
+  const statement = {
+    id: 'st-1',
+    apartmentId: 'apt-1',
+    period: new Date('2026-10-01'),
+    warnings: [],
+    lines: [],
+    lease: { id: 'lease-1', tenants: [{ tenant: { fullName: 'Ivan Petrenko' } }] },
+  } as unknown as StatementWithDetails;
 
-  it('a key gets no tenants', () => {
-    const opts = tenantDataOptions({ id: 'service-1', apiKeyId: 'key-1' });
-    expect(
-      ApartmentDetailResponseDto.fromWithLease(apartment, lease, opts).currentLease?.tenants,
-    ).toEqual([]);
-    expect(
-      StatementLeaseSummaryResponseDto.from(statementLease, opts).primaryTenantName,
-    ).toBeNull();
-  });
+  // Through the real controllers, so a route that forgets tenantDataOptions(user) fails here.
+  const apartments = new ApartmentsController({
+    findWithCurrentLease: vi.fn().mockResolvedValue({ apartment, currentLease: lease }),
+    list: vi.fn().mockResolvedValue([{ ...apartment, leases: [lease] }]),
+  } as unknown as ApartmentsService);
+  const statements = new StatementsController({
+    findOrThrow: vi.fn().mockResolvedValue(statement),
+  } as unknown as StatementsService);
 
-  it('a human gets them as before', () => {
-    const opts = tenantDataOptions({ id: 'human-1' });
-    expect(
-      ApartmentDetailResponseDto.fromWithLease(apartment, lease, opts).currentLease?.tenants,
-    ).toEqual([
-      { tenantId: 't-1', fullName: 'Ivan Petrenko', phone: '+380501112233', role: 'PRIMARY' },
-    ]);
-    expect(StatementLeaseSummaryResponseDto.from(statementLease, opts).primaryTenantName).toBe(
-      'Ivan Petrenko',
+  const key: AuthUser = { id: 'service-1', apiKeyId: 'key-1' };
+  const human: AuthUser = { id: 'human-1' };
+  const tenant = {
+    tenantId: 't-1',
+    fullName: 'Ivan Petrenko',
+    phone: '+380501112233',
+    role: 'PRIMARY',
+  };
+
+  it.each([
+    ['a key gets none', key, [], null],
+    ['a human gets them as before', human, [tenant], 'Ivan Petrenko'],
+  ])('%s', async (_name, user, tenants, primaryTenantName) => {
+    expect((await apartments.get('apt-1', user)).currentLease?.tenants).toEqual(tenants);
+    expect((await apartments.list({ active: 'true' }, user))[0].currentLease?.tenants).toEqual(
+      tenants,
+    );
+    expect((await statements.findOne('st-1', user)).lease?.primaryTenantName).toBe(
+      primaryTenantName,
     );
   });
 });

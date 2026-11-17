@@ -7,8 +7,7 @@ export function consumptionByReading(
   rows: ReadonlyArray<ReadingConsumptionRow>,
 ): Map<string, { zone: Zone; value: Prisma.Decimal }[] | null> {
   const byReading = new Map<string, ReadingConsumptionRow[]>();
-  for (const row of rows)
-    byReading.set(row.readingId, [...(byReading.get(row.readingId) ?? []), row]);
+  for (const row of rows) byReading.set(row.readingId, [...(byReading.get(row.readingId) ?? []), row]);
 
   const result = new Map<string, { zone: Zone; value: Prisma.Decimal }[] | null>();
   for (const [readingId, values] of byReading) {
