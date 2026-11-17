@@ -1,0 +1,28 @@
+{
+  "name": "mcp",
+  "version": "0.0.1",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/main.js",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "gen:api": "node scripts/gen-api.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "openapi-fetch": "^0.17.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@rental/testing": "workspace:*",
+    "@types/node": "^24.0.0",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.0.0",
+    "vitest": "^4.1.2"
+  }
+}
