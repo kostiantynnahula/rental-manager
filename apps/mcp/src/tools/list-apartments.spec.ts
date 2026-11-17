@@ -70,7 +70,7 @@ describe('list_apartments', () => {
   });
 
   it('reports an API error as a tool error, without the response body', async () => {
-    vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
     const { client } = await connect({
       'GET /apartments?active=true': status(500, { message: 'secret detail' }),
     });
@@ -79,5 +79,7 @@ describe('list_apartments', () => {
     expect(result.content).toEqual([
       { type: 'text', text: 'list_apartments failed: API responded 500' },
     ]);
+    expect(stderr).toHaveBeenCalledWith('[rental-mcp] list_apartments: API responded 500\n');
+    expect(JSON.stringify(stderr.mock.calls)).not.toContain('secret detail');
   });
 });

@@ -9,7 +9,9 @@ the API with its own key (`--service mcp`, read scopes + `statements:preview`, s
 - build: `pnpm --filter mcp build` → `dist/` (Claude Desktop runs the build, so rebuild after changes;
   `pnpm --filter mcp dev` = `tsc --watch`). Not part of root `pnpm dev`: the client starts the process.
 - test: `pnpm --filter mcp test` · lint: `pnpm --filter mcp lint`
-- API types: root `pnpm gen:api` → `src/api/schema.d.ts` (only the API-key operations, `scripts/gen-api.mjs`).
+- API types: root `pnpm gen:api` → `src/api/schema.d.ts`: only the operations whose `API key scope` is in the MCP
+  key's set (`MCP_SCOPES` in `scripts/gen-api.mjs`, kept in sync with the README's `apikey:create`), so write
+  routes of other keys don't type-check. A new tool needing a new scope → API + README + `MCP_SCOPES`.
 - debug: `npx @modelcontextprotocol/inspector -e API_BASE_URL=… -e MCP_API_KEY=… node apps/mcp/dist/main.js`
 
 ## Rules

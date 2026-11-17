@@ -16,6 +16,6 @@ export function apiError(
   error?: unknown,
 ): CallToolResult {
   const reason = response ? `API responded ${response.status}` : 'API unreachable';
-  log(`${tool}: ${reason}`, error instanceof Error ? error.message : '');
+  log(`${tool}: ${reason}${error instanceof Error ? ` (${error.message})` : ''}`);
   return { content: [{ type: 'text', text: `${tool} failed: ${reason}` }], isError: true };
 }

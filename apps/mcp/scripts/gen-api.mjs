@@ -1,6 +1,8 @@
-// Generates src/api/schema.d.ts from ../api/openapi.json, keeping only the operations open to API keys
-// (`bearer` security, i.e. @Scopes + @ApiBearerAuth() in the API) and the schemas they reference.
-// The MCP server authenticates with a key, so every other route would 403 anyway: it shouldn't even type-check.
+// Generates src/api/schema.d.ts from ../api/openapi.json, keeping only the operations the MCP key may call:
+// `bearer` security (@Scopes + @ApiBearerAuth() in the API) whose scopes (from the required
+// `API key scope(s): …` description) are all in MCP_SCOPES, plus the schemas they reference.
+// The key holds only these (README → MCP server), so every other route would 403: it shouldn't even type-check —
+// in particular no write route of the bot or the worker (the MCP server is read-only).
 import { readFile, writeFile } from 'node:fs/promises';
 import openapiTS, { astToString, COMMENT_HEADER } from 'openapi-typescript';
 
@@ -12,12 +14,34 @@ const SCHEMA_REF = '#/components/schemas/';
 
 const doc = JSON.parse(await readFile(INPUT, 'utf8'));
 
+// Keep in sync with the README's `apikey:create --service mcp` command.
+const MCP_SCOPES = new Set([
+  'apartments:read',
+  'meters:read',
+  'readings:read',
+  'statements:read',
+  'tariffs:read',
+  'statements:preview',
+]);
+const SCOPE_TEXT = /API key scopes?: ([\w:-]+(?: \+ [\w:-]+)*)/;
+
 const isKeyRoute = (op) => op.security?.some((req) => SECURITY_SCHEME in req) ?? false;
+
+// A key route without a readable scope fails the generation instead of being kept or dropped silently.
+const scopesOf = (method, path, op) => {
+  const match = SCOPE_TEXT.exec(op.description ?? '');
+  if (!match)
+    throw new Error(`${method.toUpperCase()} ${path}: no "API key scope: …" in its description`);
+  return match[1].split(' + ');
+};
+
+const isMcpRoute = (method, path, op) =>
+  isKeyRoute(op) && scopesOf(method, path, op).every((scope) => MCP_SCOPES.has(scope));
 
 const paths = {};
 for (const [path, item] of Object.entries(doc.paths)) {
   const kept = Object.fromEntries(
-    Object.entries(item).filter(([key, op]) => !METHODS.has(key) || isKeyRoute(op)),
+    Object.entries(item).filter(([key, op]) => !METHODS.has(key) || isMcpRoute(key, path, op)),
   );
   if (Object.keys(kept).some((key) => METHODS.has(key))) paths[path] = kept;
 }
@@ -52,6 +76,6 @@ const filtered = {
 };
 
 const ast = await openapiTS(filtered);
-const header = `${COMMENT_HEADER.trimEnd()}\n// Only the API-key (bearer) operations of apps/api/openapi.json: see scripts/gen-api.mjs.\n\n`;
+const header = `${COMMENT_HEADER.trimEnd()}\n// Only the operations the MCP key may call (read-only): see scripts/gen-api.mjs.\n\n`;
 await writeFile(OUTPUT, header + astToString(ast));
 console.log(`schema.d.ts: ${Object.keys(paths).length} paths, ${used.size} schemas`);
