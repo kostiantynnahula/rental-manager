@@ -17,7 +17,7 @@
     "dev:worker": "pnpm build:shared && pnpm --filter worker dev",
     "dev:bot": "pnpm build:shared && pnpm --filter bot dev",
     "build": "pnpm -r build",
-    "gen:api": "pnpm --filter api openapi:export && pnpm --filter web gen:api && pnpm --filter worker gen:api && pnpm --filter bot gen:api",
+    "gen:api": "pnpm --filter api openapi:export && pnpm --filter web gen:api && pnpm --filter worker gen:api && pnpm --filter bot gen:api && pnpm --filter mcp gen:api",
     "test": "pnpm build:shared && pnpm -r test",
     "lint": "pnpm build:shared && pnpm -r lint",
     "format": "prettier --write .",
