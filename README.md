@@ -108,29 +108,37 @@ pnpm --filter api apikey:create --service mcp --name "claude-desktop" \
   --scopes apartments:read,meters:read,readings:read,statements:read,tariffs:read,statements:preview
 ```
 
-Build it with `pnpm --filter mcp build`, then add it to Claude Desktop's `claude_desktop_config.json` (Settings →
-Developer → Edit Config) and restart Claude Desktop. The API must be running (`pnpm dev:api`):
+Put the key in the root `.env` as `MCP_API_KEY` (next to `API_BASE_URL`, see `.env.example`), build with
+`pnpm --filter mcp build`, and have the API running (`pnpm dev:api`). The server reads its env from
+`apps/mcp/.env` if that exists (an optional override), else from the root `.env`; values the client passes in `env`
+win over both.
+
+**Claude Code** (main way): the committed `.mcp.json` at the repo root starts `node apps/mcp/dist/main.js`, with no
+key in it. Open the repo in Claude Code, approve the `rental-manager` server, and check `/mcp`.
+
+**Claude Desktop** (alternative): add it to `claude_desktop_config.json` (Settings → Developer → Edit Config) with an
+absolute path and restart Claude Desktop. `env` is optional (the root `.env` is found from the script's location):
 
 ```json
 {
   "mcpServers": {
     "rental-manager": {
       "command": "node",
-      "args": ["/absolute/path/to/rental-manager-app/apps/mcp/dist/main.js"],
-      "env": {
-        "API_BASE_URL": "http://localhost:3001/api",
-        "MCP_API_KEY": "rm_…"
-      }
+      "args": ["/absolute/path/to/rental-manager-app/apps/mcp/dist/main.js"]
     }
   }
 }
 ```
 
-Debug it without Claude Desktop in the MCP Inspector (a browser UI: list the tools, call them, see stderr):
+**Logs**: every tool call is one line on stderr (`[rental-mcp] tool get_statement {…} → ok 142ms`), which the
+client keeps in its MCP logs (Claude Desktop: `mcp-server-rental-manager.log`). To follow them live, set
+`MCP_LOG_FILE` in the `.env` (an absolute path, or relative to the repo root whatever the client's cwd; the directory
+is created), e.g. `MCP_LOG_FILE=logs/mcp.log`, and `tail -f logs/mcp.log`. Logs never contain the key or response bodies.
+
+Debug it without a client in the MCP Inspector (a browser UI: list the tools, call them, see stderr):
 
 ```bash
-npx @modelcontextprotocol/inspector -e API_BASE_URL=http://localhost:3001/api -e MCP_API_KEY=rm_… \
-  node apps/mcp/dist/main.js
+npx @modelcontextprotocol/inspector node apps/mcp/dist/main.js
 ```
 
 `pnpm dev` starts everything at once.

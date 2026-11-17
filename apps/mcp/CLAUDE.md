@@ -1,8 +1,8 @@
-# apps/mcp — MCP server (Claude Desktop)
+# apps/mcp — MCP server (Claude Code, Claude Desktop)
 
 Plain TypeScript, native ESM (relative imports need `.js`), no Nest. `@modelcontextprotocol/sdk` over stdio: Claude
-Desktop (or the MCP Inspector) starts `node apps/mcp/dist/main.js` as a child process. A read-only HTTP client of
-the API with its own key (`--service mcp`, read scopes + `statements:preview`, see `.claude/rules/api-auth.md`).
+Code (the committed root `.mcp.json`), Claude Desktop or the MCP Inspector starts `node apps/mcp/dist/main.js` as a
+child process. A read-only HTTP client of the API with its own key (`--service mcp`, read scopes + `statements:preview`, see `.claude/rules/api-auth.md`).
 
 ## Commands (from repo root)
 
@@ -14,15 +14,27 @@ the API with its own key (`--service mcp`, read scopes + `statements:preview`, s
   routes of other keys don't type-check. A new tool needing a new scope → API + README + `MCP_SCOPES`.
 - format: run Prettier from the repo root (`pnpm format`): only the root `.prettierignore` keeps it off the
   generated `schema.d.ts`.
-- debug: `npx @modelcontextprotocol/inspector -e API_BASE_URL=… -e MCP_API_KEY=… node apps/mcp/dist/main.js`
+- debug: `npx @modelcontextprotocol/inspector node apps/mcp/dist/main.js` (env from the root `.env`; `-e VAR=…` overrides)
 
 ## Rules
 
 - **stdout is the protocol.** Any other byte there breaks it, and Claude Desktop drops the server silently. Log only
   with `log()` (`src/logger.ts`, stderr); `console.log`/`info` are lint errors (`no-console`).
-- **Env** (`src/config/env.ts`, zod): `API_BASE_URL` (with `/api`), `MCP_API_KEY` (`rm_…`), passed by the client's
-  config (`env`), not the root `.env`. Invalid → names + rules on stderr (never values), exit 1. Never log the key,
-  the client options or request headers.
+- **Env** (`src/config/env.ts`, zod): `API_BASE_URL` (with `/api`), `MCP_API_KEY` (`rm_…`), optional
+  `MCP_LOG_FILE`. Load order (`src/config/env-file.ts`, before validation): the process env (the client's `env`
+  block) wins; then the first existing of `apps/mcp/.env` (override) or the repo-root `.env` — only one file is read.
+  An empty string counts as unset (a `${VAR}` without the var must not shadow the file). Paths come from
+  `import.meta.url`, never the cwd. No node flags (`--env-file` is cwd-relative). stderr says which file was loaded
+  (path only). Invalid → names + rules on stderr (never values), exit 1. Never log the key, the client options or
+  request headers.
+- **Call log**: every tool call is one line, written by `logToolCalls()` (`src/helpers/call-log.ts`), which wraps
+  the callbacks at registration in `createServer` — tools never log themselves.
+  `tool get_statement {"statementId":"…"} → ok 142ms` / `→ error 404 "Statement not found" 35ms` /
+  `→ error unreachable (fetch failed) 3ms`. Args are truncated (200 chars); the status/message come from
+  `apiError()` via `failureOf()` (kept beside the result, not sent to the client). Never response bodies, the key
+  or headers. `MCP_LOG_FILE` set → the same lines are also appended there (`tail -f`); stderr always. A relative
+  path is resolved against the repo root (`repoRoot()`, not the cwd); its directory is created; a failed write
+  disables the file (one stderr note), never the server.
 - **Field allowlist.** A tool never passes an API body through: it builds its result field by field
   (`toApartmentSummary`-style). Notes, leases and tenant data never leave the server unless a tool's issue says so
   (API keys get no tenant data anyway).
@@ -31,7 +43,7 @@ the API with its own key (`--service mcp`, read scopes + `statements:preview`, s
   `toolResult()` (`structuredContent` + the same JSON as text); API calls go through `callApi()`, which turns a
   non-2xx or a thrown error into `apiError()` — `src/helpers/tool-result.ts`. A 4xx carries the API's `message`
   (e.g. "Apartment not found", a validation message: the model needs it to fix its call); a 5xx / network error
-  only the status. stderr never gets a response body.
+  only the status. The log never gets a response body.
 - Descriptions say when to use the tool (and which tool gives the ids it needs), the formats (`YYYY-MM` months,
   `YYYY-MM-DD` dates), that it's read-only, and that money is UAH. Inputs are validated by zod (`periodSchema`,
   `idSchema`), so a bad argument never reaches the API.
@@ -47,7 +59,7 @@ the API with its own key (`--service mcp`, read scopes + `statements:preview`, s
 - `pnpm --filter mcp test` (Vitest, globals). Specs colocated (`foo.ts` → `foo.spec.ts`), excluded from the build.
 - A tool is tested through the protocol: `connect(routes)` (`src/test/mcp-client.ts`, excluded from the build) =
   the real `createServer(api)` and an SDK `Client`, linked by `InMemoryTransport.createLinkedPair()`;
-  `captureStderr()` mutes and records the log. Shared API fixtures also live in `src/test/`. The API is
+  `connect()` mutes stderr; `captureStderr()` records it. Shared API fixtures also live in `src/test/`. The API is
   `fakeApi<paths>(routes)` from `@rental/testing` (an unknown route fails the test). Assert `structuredContent`, the text, and the requests sent; give the fake API extra fields
   (notes, lease) and assert they don't come out.
 - Every new tool gets such a spec (happy path, an API error) and a row in `src/server.spec.ts` (listed, read-only,
