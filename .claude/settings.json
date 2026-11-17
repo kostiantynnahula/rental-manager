@@ -7,7 +7,9 @@
       "Bash(pnpm gen:api)",
       "Bash(pnpm --filter:*)",
       "Bash(gh issue view:*)",
-      "Bash(gh issue list:*)"
+      "Bash(gh issue list:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)"
     ],
     "deny": ["Read(./.env)", "Read(./**/.env*)", "Read(./apps/api/prisma/seed-users.json)"]
   },
