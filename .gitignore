@@ -28,3 +28,10 @@ coverage/
 
 # Real meter photos for the extraction script (apps/worker/samples.example/ shows the format)
 apps/worker/samples/
+
+.idea/
+.vscode/
+
+# MCP server log file (MCP_LOG_FILE), e.g. logs/mcp.log
+*.log
+logs/

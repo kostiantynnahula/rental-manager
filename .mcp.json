@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "rental-manager": {
+      "command": "node",
+      "args": ["apps/mcp/dist/main.js"]
+    }
+  }
+}
