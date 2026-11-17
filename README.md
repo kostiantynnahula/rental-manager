@@ -108,6 +108,31 @@ pnpm --filter api apikey:create --service mcp --name "claude-desktop" \
   --scopes apartments:read,meters:read,readings:read,statements:read,tariffs:read,statements:preview
 ```
 
+Build it with `pnpm --filter mcp build`, then add it to Claude Desktop's `claude_desktop_config.json` (Settings →
+Developer → Edit Config) and restart Claude Desktop. The API must be running (`pnpm dev:api`):
+
+```json
+{
+  "mcpServers": {
+    "rental-manager": {
+      "command": "node",
+      "args": ["/absolute/path/to/rental-manager-app/apps/mcp/dist/main.js"],
+      "env": {
+        "API_BASE_URL": "http://localhost:3001/api",
+        "MCP_API_KEY": "rm_…"
+      }
+    }
+  }
+}
+```
+
+Debug it without Claude Desktop in the MCP Inspector (a browser UI: list the tools, call them, see stderr):
+
+```bash
+npx @modelcontextprotocol/inspector -e API_BASE_URL=http://localhost:3001/api -e MCP_API_KEY=rm_… \
+  node apps/mcp/dist/main.js
+```
+
 `pnpm dev` starts everything at once.
 
 ## Commands

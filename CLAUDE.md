@@ -63,8 +63,10 @@ pnpm workspaces monorepo:
   allowlisted Telegram users; an HTTP client of the API with its own API key. API → bot events go through the
   BullMQ queue `bot-notifications` (the job name = the event type, e.g. `batch-parsed`; a signal only) — the bot's
   only use of Redis.
-- The API is the only way to data and business rules: every other app (web, worker, the Telegram bot, later an
-  MCP server) is an HTTP client of it. No second Prisma client or raw SQL outside `apps/api`.
+- `apps/mcp` — MCP server for Claude Desktop (see `apps/mcp/CLAUDE.md`). Plain TS + `@modelcontextprotocol/sdk`
+  over stdio (stdout = protocol only); a read-only HTTP client of the API with its own API key.
+- The API is the only way to data and business rules: every other app (web, worker, the Telegram bot, the MCP
+  server) is an HTTP client of it. No second Prisma client or raw SQL outside `apps/api`.
 - `packages/shared` — code shared by api and web that isn't part of the API contract (e.g. phone
   normalization), and the BullMQ contracts api → worker and api → bot (queue/job names, job payloads).
   API request/response types are never put here: the web generates them from OpenAPI.
@@ -83,7 +85,7 @@ Node 24 (`.nvmrc`), pnpm via corepack. First run: `cp .env.example .env && pnpm 
 
 - infra: `pnpm infra:up` / `pnpm infra:down` / `pnpm infra:logs` (Postgres on :5433, MinIO :9000, console :9001,
   Redis :6379 — inspect jobs with `docker compose exec redis redis-cli KEYS 'bull:*'`)
-- dev: `pnpm dev` (shared + api + web + worker + bot), or `pnpm dev:api` (:3001) / `pnpm dev:web` (:3000) / `pnpm dev:worker` / `pnpm dev:bot`
+- dev: `pnpm dev` (shared + api + web + worker + bot), or `pnpm dev:api` (:3001) / `pnpm dev:web` (:3000) / `pnpm dev:worker` / `pnpm dev:bot`; MCP server: `pnpm --filter mcp build` (Claude Desktop starts it)
 - test: `pnpm test`
 - lint: `pnpm lint` · format: `pnpm format` / `pnpm format:check`
 - build: `pnpm build`
@@ -93,7 +95,7 @@ Node 24 (`.nvmrc`), pnpm via corepack. First run: `cp .env.example .env && pnpm 
 
 - Reply in the language I write in (Russian/Ukrainian); code, comments, commits in English.
 - Small steps. Run tests/lint before saying a task is done.
-- Tests — worker, bot: see `apps/<app>/CLAUDE.md` → Tests; other apps: don't write new tests unless I ask. Still run
+- Tests — worker, bot, mcp: see `apps/<app>/CLAUDE.md` → Tests; other apps: don't write new tests unless I ask. Still run
   existing ones; if a change breaks one, tell me rather than silently rewriting it.
 - Briefly explain non-obvious decisions — I'm learning the workflow.
 - Ask before adding dependencies or changing the DB schema.
