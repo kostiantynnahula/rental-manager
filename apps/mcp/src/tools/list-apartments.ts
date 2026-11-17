@@ -2,7 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { ApiClient } from '../api/api-client.js';
 import type { components } from '../api/schema.js';
-import { apiError, toolResult } from '../helpers/tool-result.js';
+import { callApi, toolResult } from '../helpers/tool-result.js';
 
 const NAME = 'list_apartments';
 
@@ -28,7 +28,7 @@ export function registerListApartments(server: McpServer, api: ApiClient): void 
     {
       title: 'List apartments',
       description:
-        'The rental apartments: id, name, address and whether it is active. Archived ones only on request.',
+        'Start here: the rental apartments (id, name, address, active). Use the id with the other tools. Read-only.',
       inputSchema: {
         includeArchived: z
           .boolean()
@@ -39,15 +39,11 @@ export function registerListApartments(server: McpServer, api: ApiClient): void 
       annotations: { readOnlyHint: true },
     },
     async ({ includeArchived }) => {
-      try {
-        const { data, response } = await api.GET('/apartments', {
-          params: { query: { active: includeArchived ? 'all' : 'true' } },
-        });
-        if (!data) return apiError(NAME, response);
-        return toolResult({ apartments: data.map(toApartmentSummary) });
-      } catch (error) {
-        return apiError(NAME, undefined, error);
-      }
+      const apartments = await callApi(NAME, () =>
+        api.GET('/apartments', { params: { query: { active: includeArchived ? 'all' : 'true' } } }),
+      );
+      if (!apartments.ok) return apartments.result;
+      return toolResult({ apartments: apartments.data.map(toApartmentSummary) });
     },
   );
 }
