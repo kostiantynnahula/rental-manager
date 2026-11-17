@@ -22,6 +22,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/apartments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description API key scope: apartments:read */
+        get: operations["ApartmentsController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/apartments/{apartmentId}/meters": {
         parameters: {
             query?: never;
@@ -48,6 +65,23 @@ export interface paths {
         };
         /** @description API key scope: meters:read */
         get: operations["MetersController_listActive"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/meters/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description API key scope: meters:read */
+        get: operations["MetersController_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -142,6 +176,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/meters/{meterId}/readings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description API key scope: readings:read */
+        get: operations["MeterReadingsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/meters/{meterId}/draft-values": {
         parameters: {
             query?: never;
@@ -153,6 +204,40 @@ export interface paths {
         put?: never;
         /** @description API key scope: readings:create-draft (keys only). Adds the zone to the key user's open DRAFT of the meter and period (never a human draft), or creates one. An existing draft keeps its readingDate; note is appended. Same zone from the same photo → 200, no change (job retry). An inbox photo (no apartment) gets the meter's apartment. */
         post: operations["MeterDraftValuesController_add"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/apartments/{apartmentId}/readings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description API key scope: readings:read */
+        get: operations["ApartmentReadingsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/apartments/{apartmentId}/readings/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description API key scope: readings:read */
+        get: operations["ApartmentReadingsController_history"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -244,6 +329,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tariffs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description API key scope: tariffs:read */
+        get: operations["TariffsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tariffs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description API key scope: tariffs:read */
+        get: operations["TariffsController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/apartments/{apartmentId}/tariffs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description API key scope: tariffs:read */
+        get: operations["ApartmentTariffsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/apartments/{apartmentId}/statements/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description API key scope: statements:preview */
+        post: operations["ApartmentStatementsController_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/apartments/{apartmentId}/statements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description API key scope: statements:read */
+        get: operations["ApartmentStatementsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/statements/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description API key scope: statements:read */
+        get: operations["StatementsController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -281,7 +468,7 @@ export interface components {
              */
             monthlyRent: number;
             notes: string | null;
-            /** @description PRIMARY first */
+            /** @description PRIMARY first; always empty for API keys (tenant data is human-only) */
             tenants: components["schemas"]["LeaseTenantResponseDto"][];
             /** Format: date-time */
             createdAt: string;
@@ -562,11 +749,83 @@ export interface components {
             /** @description Appended to the draft's note */
             note?: string;
         };
+        MeterSummaryResponseDto: {
+            /** Format: uuid */
+            id: string;
+            utility: components["schemas"]["UtilityType"];
+            zoneScheme: components["schemas"]["ZoneScheme"];
+            label: string | null;
+            serialNumber: string | null;
+        };
+        /**
+         * @description MISSING = no reading for this period yet
+         * @enum {string}
+         */
+        PeriodReadingStatus: "MISSING" | "DRAFT" | "CONFIRMED";
+        ApartmentMeterReadingResponseDto: {
+            meter: components["schemas"]["MeterSummaryResponseDto"];
+            /** @description MISSING = no reading for this period yet */
+            status: components["schemas"]["PeriodReadingStatus"];
+            reading: components["schemas"]["ReadingResponseDto"] | null;
+        };
+        ReadingHistoryMeterResponseDto: {
+            /** Format: uuid */
+            id: string;
+            utility: components["schemas"]["UtilityType"];
+            label: string | null;
+            serialNumber: string | null;
+            /** @description The meter has been removed (replaced or taken out) */
+            removed: boolean;
+        };
         /**
          * @description Shared consumption rule (limit per month × months since the previous reading; zero electricity while a lease covers the period); empty = fine
          * @enum {string}
          */
         ConsumptionWarningReason: "ABOVE_LIMIT" | "ZERO_CONSUMPTION";
+        ReadingHistoryValueResponseDto: {
+            zone: components["schemas"]["Zone"];
+            /**
+             * @description Decimal string with 3 decimals
+             * @example 1520.350
+             */
+            value: string;
+            /**
+             * @description Since the previous confirmed reading of the meter and zone; null if there is none
+             * @example 120.000
+             */
+            consumption: string | null;
+            source: components["schemas"]["ReadingSource"];
+            /**
+             * Format: uuid
+             * @description Photo the value was read from (source PHOTO)
+             */
+            photoId: string | null;
+            /** @description Shared consumption rule (limit per month × months since the previous reading; zero electricity while a lease covers the period); empty = fine */
+            warnings: components["schemas"]["ConsumptionWarningReason"][];
+        };
+        ReadingHistoryItemResponseDto: {
+            /** Format: uuid */
+            id: string;
+            meter: components["schemas"]["ReadingHistoryMeterResponseDto"];
+            /** @example 2026-10 */
+            period: string;
+            /**
+             * Format: date
+             * @example 2026-10-28
+             */
+            readingDate: string;
+            kind: components["schemas"]["ReadingKind"];
+            /** @description Each value carries its own photo (a two-zone reading may link two photos) */
+            values: components["schemas"]["ReadingHistoryValueResponseDto"][];
+        };
+        ReadingHistoryPageResponseDto: {
+            items: components["schemas"]["ReadingHistoryItemResponseDto"][];
+            /** @description Readings matching the filters (all pages) */
+            total: number;
+            /** @description 1-based */
+            page: number;
+            pageSize: number;
+        };
         CancelReadingDto: {
             /**
              * @description Stored in the reading note
@@ -687,6 +946,287 @@ export interface components {
             /** @description canConfirm readings the confirm rules refused. Not confirmable ones (partial, not a DRAFT) are in neither list */
             refused: components["schemas"]["PhotoBatchRefusalResponseDto"][];
         };
+        /** @enum {string} */
+        TariffKind: "METERED" | "FIXED" | "MANUAL";
+        TariffPriceResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description First month the price applies to
+             * @example 2026-11
+             */
+            effectiveFrom: string;
+            zone: components["schemas"]["Zone"];
+            /**
+             * @description UAH, decimal string with 4 decimals
+             * @example 4.3200
+             */
+            price: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        TariffResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example Електроенергія */
+            name: string;
+            kind: components["schemas"]["TariffKind"];
+            utilities: components["schemas"]["UtilityType"][];
+            notes: string | null;
+            /** @description false = archived */
+            isActive: boolean;
+            /** @description Attached to at least one apartment: kind/utilities are fixed and the tariff can only be archived, not deleted */
+            inUse: boolean;
+            /** @description Apartments it is attached to now (attachments not ended before this month) — >1 = a shared tariff */
+            apartmentCount: number;
+            /** @description Prices in effect this month, one per zone with its own price (empty if all start later) */
+            currentPrices: components["schemas"]["TariffPriceResponseDto"][];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        TariffPageResponseDto: {
+            items: components["schemas"]["TariffResponseDto"][];
+            /** @description Tariffs matching the filters (all pages) */
+            total: number;
+            /** @description 1-based */
+            page: number;
+            pageSize: number;
+        };
+        TariffApartmentResponseDto: {
+            /**
+             * Format: uuid
+             * @description Attachment id
+             */
+            id: string;
+            /** Format: uuid */
+            apartmentId: string;
+            /** @example Shevchenka 12/5 */
+            apartmentName: string;
+            /**
+             * @description First billed month
+             * @example 2026-11
+             */
+            activeFrom: string;
+            /**
+             * @description Last billed month (inclusive); null = ongoing
+             * @example null
+             */
+            activeTo: string | null;
+            /** @description Not ended before this month (planned ones count too) */
+            isCurrent: boolean;
+        };
+        TariffDetailResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example Електроенергія */
+            name: string;
+            kind: components["schemas"]["TariffKind"];
+            utilities: components["schemas"]["UtilityType"][];
+            notes: string | null;
+            /** @description false = archived */
+            isActive: boolean;
+            /** @description Attached to at least one apartment: kind/utilities are fixed and the tariff can only be archived, not deleted */
+            inUse: boolean;
+            /** @description Apartments it is attached to now (attachments not ended before this month) — >1 = a shared tariff */
+            apartmentCount: number;
+            /** @description Prices in effect this month, one per zone with its own price (empty if all start later) */
+            currentPrices: components["schemas"]["TariffPriceResponseDto"][];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** @description Full price history: effectiveFrom DESC, then zone */
+            prices: components["schemas"]["TariffPriceResponseDto"][];
+            /** @description All attachments, current and ended: activeFrom DESC */
+            apartments: components["schemas"]["TariffApartmentResponseDto"][];
+        };
+        ApartmentTariffResponseDto: {
+            /**
+             * Format: uuid
+             * @description Attachment id
+             */
+            id: string;
+            /**
+             * @description First billed month
+             * @example 2026-11
+             */
+            activeFrom: string;
+            /**
+             * @description Last billed month (inclusive); null = ongoing
+             * @example null
+             */
+            activeTo: string | null;
+            /** @description Not ended before this month (planned ones count too) */
+            isCurrent: boolean;
+            tariff: components["schemas"]["TariffResponseDto"];
+        };
+        StatementPreviewDto: {
+            /**
+             * @description YYYY-MM
+             * @example 2026-10
+             */
+            period: string;
+            /**
+             * @description Integer kopiyky per MANUAL tariff id, entered from the bill. Only active MANUAL tariffs of the apartment (else 400); a missing one → MISSING_MANUAL_AMOUNT
+             * @example {
+             *       "3f1c2b4e-8d7a-4c1e-9b2a-5e6f7a8b9c0d": 12300
+             *     }
+             */
+            manualAmounts?: {
+                [key: string]: number;
+            };
+        };
+        /** @enum {string} */
+        StatementLineType: "RENT" | "FIXED" | "METERED" | "MANUAL";
+        StatementLineMeterResponseDto: {
+            /** Format: uuid */
+            meterId: string;
+            utility: components["schemas"]["UtilityType"];
+            /** @example кухня */
+            label: string | null;
+            serialNumber: string | null;
+            /**
+             * @description Decimal string with 3 decimals
+             * @example 12.350
+             */
+            consumption: string;
+            /** @description Photos of the readings behind this consumption; empty for statements issued before photo links */
+            photoIds: string[];
+        };
+        StatementLineResponseDto: {
+            type: components["schemas"]["StatementLineType"];
+            /**
+             * Format: uuid
+             * @description All but RENT
+             */
+            tariffId?: string;
+            /** @example Електроенергія */
+            name: string;
+            /** @description METERED only */
+            zone?: components["schemas"]["Zone"];
+            /** @description METERED only */
+            utilities?: components["schemas"]["UtilityType"][];
+            /**
+             * @description Decimal string with 3 decimals; absent for MANUAL (amount only)
+             * @example 200.000
+             */
+            quantity?: string;
+            /**
+             * @description UAH, decimal string with 4 decimals; absent for MANUAL (amount only)
+             * @example 4.3200
+             */
+            unitPrice?: string;
+            /**
+             * @description Integer kopiyky
+             * @example 86400
+             */
+            amount: number;
+            /** @description METERED only: what each meter contributed */
+            meters?: components["schemas"]["StatementLineMeterResponseDto"][];
+        };
+        /**
+         * @description MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details. UNUSUAL_CONSUMPTION: meterId, utility, label, zone, consumption, limit, months, reason. MISSING_MANUAL_AMOUNT: tariffId, tariffName
+         * @enum {string}
+         */
+        StatementWarningCode: "MISSING_READING" | "NO_PRICE" | "NO_METERS" | "MULTIPLE_LEASES" | "UNUSUAL_CONSUMPTION" | "MISSING_MANUAL_AMOUNT";
+        StatementWarningResponseDto: {
+            /** @description MISSING_READING: meterId, utility, label. NO_PRICE: tariffId, tariffName, zone. NO_METERS: tariffId, tariffName. MULTIPLE_LEASES: no details. UNUSUAL_CONSUMPTION: meterId, utility, label, zone, consumption, limit, months, reason. MISSING_MANUAL_AMOUNT: tariffId, tariffName */
+            code: components["schemas"]["StatementWarningCode"];
+            /** Format: uuid */
+            meterId?: string;
+            utility?: components["schemas"]["UtilityType"];
+            label?: string | null;
+            /** Format: uuid */
+            tariffId?: string;
+            tariffName?: string;
+            zone?: components["schemas"]["Zone"];
+            /**
+             * @description Decimal string
+             * @example 340.5
+             */
+            consumption?: string;
+            /** @description Usual consumption per month */
+            limit?: number;
+            /** @description Months since the previous reading (>= 1) */
+            months?: number;
+            reason?: components["schemas"]["ConsumptionWarningReason"];
+        };
+        StatementPreviewResponseDto: {
+            /** @example 2026-10 */
+            period: string;
+            /**
+             * @description Integer kopiyky: the sum of the line amounts
+             * @example 1586400
+             */
+            total: number;
+            /** @description Rent, then metered by utility and zone (DAY, NIGHT, TOTAL), then fixed by name, then manual by name */
+            lines: components["schemas"]["StatementLineResponseDto"][];
+            /** @description What the total is missing: skipped lines and meters without a reading */
+            warnings: components["schemas"]["StatementWarningResponseDto"][];
+        };
+        /** @enum {string} */
+        StatementStatus: "ISSUED" | "CANCELLED";
+        StatementListItemResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example 2026-10 */
+            period: string;
+            status: components["schemas"]["StatementStatus"];
+            /**
+             * @description Integer kopiyky
+             * @example 1586400
+             */
+            totalAmount: number;
+            /** @example 0 */
+            warningsCount: number;
+            /** Format: date-time */
+            issuedAt: string;
+        };
+        StatementPageResponseDto: {
+            items: components["schemas"]["StatementListItemResponseDto"][];
+            /** @description The apartment's statements (all pages), cancelled included */
+            total: number;
+            /** @description 1-based */
+            page: number;
+            pageSize: number;
+        };
+        StatementLeaseSummaryResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** @description The tenant's current name, not a snapshot; always null for API keys */
+            primaryTenantName: string | null;
+        };
+        StatementResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            apartmentId: string;
+            /** @example 2026-10 */
+            period: string;
+            status: components["schemas"]["StatementStatus"];
+            /**
+             * @description Integer kopiyky: the sum of the line amounts
+             * @example 1586400
+             */
+            totalAmount: number;
+            /** @description As of issue time */
+            warnings: components["schemas"]["StatementWarningResponseDto"][];
+            /** @description In display order */
+            lines: components["schemas"]["StatementLineResponseDto"][];
+            /** @description The lease used for the rent line */
+            lease: components["schemas"]["StatementLeaseSummaryResponseDto"] | null;
+            /** Format: date-time */
+            issuedAt: string;
+            /** Format: uuid */
+            issuedById: string;
+            /** Format: date-time */
+            cancelledAt: string | null;
+            /** Format: uuid */
+            cancelledById: string | null;
+            cancelNote: string | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -717,6 +1257,47 @@ export interface operations {
                 };
             };
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApartmentsController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApartmentDetailResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without apartments:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Apartment not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -795,6 +1376,47 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without meters:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Meter not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MetersController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeterResponseDto"];
+                };
             };
             401: {
                 headers: {
@@ -1096,6 +1718,61 @@ export interface operations {
             };
         };
     };
+    MeterReadingsController_list: {
+        parameters: {
+            query?: {
+                /** @description First period (inclusive) */
+                from?: string;
+                /** @description Last period (inclusive) */
+                to?: string;
+                includeCancelled?: "true" | "false";
+            };
+            header?: never;
+            path: {
+                meterId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description All kinds, newest first, each with consumption since the previous confirmed one */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadingResponseDto"][];
+                };
+            };
+            /** @description Invalid period, or from after to */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without readings:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Meter not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     MeterDraftValuesController_add: {
         parameters: {
             query?: never;
@@ -1158,6 +1835,113 @@ export interface operations {
             };
             /** @description Meter removed; apartment archived; zone already filled from another photo (body has readingId) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApartmentReadingsController_list: {
+        parameters: {
+            query: {
+                period: string;
+            };
+            header?: never;
+            path: {
+                apartmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApartmentMeterReadingResponseDto"][];
+                };
+            };
+            /** @description Missing or invalid period */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without readings:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Apartment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApartmentReadingsController_history: {
+        parameters: {
+            query?: {
+                /** @description First period (inclusive) */
+                from?: string;
+                /** @description Last period (inclusive) */
+                to?: string;
+                /** @description Only these meters (repeat the param: ?meterIds=a&meterIds=b) */
+                meterIds?: string[];
+                page?: number;
+                pageSize?: 10 | 20 | 50;
+            };
+            header?: never;
+            path: {
+                apartmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadingHistoryPageResponseDto"];
+                };
+            };
+            /** @description Invalid filters (period format, from after to, page size, meter ids) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without readings:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Apartment not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1381,6 +2165,302 @@ export interface operations {
                 content?: never;
             };
             /** @description No photo has this batchId */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TariffsController_list: {
+        parameters: {
+            query?: {
+                /** @description Substring of the name (case-insensitive) */
+                search?: string;
+                kind?: components["schemas"]["TariffKind"];
+                /** @description Tariffs billing this utility */
+                utility?: components["schemas"]["UtilityType"];
+                active?: "true" | "false" | "all";
+                page?: number;
+                pageSize?: 10 | 20 | 50;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ordered by name */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TariffPageResponseDto"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without tariffs:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TariffsController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description With the full price history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TariffDetailResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without tariffs:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tariff not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApartmentTariffsController_list: {
+        parameters: {
+            query?: {
+                /** @description current = not ended before this month (planned included); all = also ended */
+                scope?: "current" | "all";
+            };
+            header?: never;
+            path: {
+                apartmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ordered by tariff name, then newest attachment first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApartmentTariffResponseDto"][];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without tariffs:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Apartment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApartmentStatementsController_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                apartmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatementPreviewDto"];
+            };
+        };
+        responses: {
+            /** @description Calculated on the fly from confirmed readings and the manual amounts; nothing is saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementPreviewResponseDto"];
+                };
+            };
+            /** @description Invalid body, or a manual amount for a tariff that is not an active MANUAL tariff of the apartment */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without statements:preview */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Apartment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApartmentStatementsController_list: {
+        parameters: {
+            query?: {
+                /** @description Only this month (YYYY-MM) */
+                period?: string;
+                page?: number;
+                pageSize?: 10 | 20 | 50;
+            };
+            header?: never;
+            path: {
+                apartmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Newest period first, cancelled included */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementPageResponseDto"];
+                };
+            };
+            /** @description Invalid page or pageSize */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without statements:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Apartment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    StatementsController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementResponseDto"];
+                };
+            };
+            /** @description Invalid id */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without statements:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Statement not found */
             404: {
                 headers: {
                     [name: string]: unknown;
