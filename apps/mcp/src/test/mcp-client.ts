@@ -6,7 +6,9 @@ import type { paths } from '../api/schema.js';
 import { createServer } from '../server.js';
 
 // The real MCP server and an SDK client, linked in memory; the API side is fakeApi (the real openapi-fetch client).
+// stderr is muted (every tool call is logged there); captureStderr() to assert it.
 export async function connect(routes: Routes) {
+  if (!vi.isMockFunction(process.stderr.write)) captureStderr();
   const { api, requests } = fakeApi<paths>(routes);
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   const client = new Client({ name: 'test', version: '0' });
@@ -18,9 +20,10 @@ export async function connect(routes: Routes) {
   return { client, requests, call };
 }
 
-// Mutes stderr (apiError logs there) and returns everything written to it.
+// Mutes stderr (the tool call log goes there) and returns everything written to it from now on.
 export function captureStderr(): () => string {
   const spy = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+  spy.mockClear();
   return () => spy.mock.calls.map(([chunk]) => String(chunk)).join('');
 }
 

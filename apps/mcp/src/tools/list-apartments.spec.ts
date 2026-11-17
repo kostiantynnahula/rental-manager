@@ -63,6 +63,6 @@ describe('list_apartments', () => {
     expect(result.content).toEqual([
       { type: 'text', text: 'list_apartments failed: API responded 500' },
     ]);
-    expect(stderr()).toBe('[rental-mcp] list_apartments: API responded 500\n');
+    expect(stderr()).toMatch(/^\[rental-mcp\] tool list_apartments \{\} → error 500 \d+ms\n$/);
   });
 });

@@ -1,5 +1,4 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import { log } from '../logger.js';
 
 // The structured result, plus the same JSON as text for clients that ignore structuredContent.
 export function toolResult(structured: Record<string, unknown>): CallToolResult {
@@ -7,6 +6,18 @@ export function toolResult(structured: Record<string, unknown>): CallToolResult 
     content: [{ type: 'text', text: JSON.stringify(structured) }],
     structuredContent: structured,
   };
+}
+export interface FailureInfo {
+  status?: number;
+  message?: string;
+  cause?: string;
+}
+
+// Why a tool error happened, for the call log only: kept beside the result, never sent to the client.
+const failures = new WeakMap<CallToolResult, FailureInfo>();
+
+export function failureOf(result: CallToolResult): FailureInfo | undefined {
+  return failures.get(result);
 }
 
 interface Failure {
@@ -19,13 +30,18 @@ interface Failure {
 
 // A failed API call → a tool error. A 4xx carries the API's `message` (e.g. "Apartment not found", a validation
 // message: API messages never contain row data) so the model can correct its call; anything else only the status.
-// stderr gets the status and the thrown error, never the body or request headers.
+// The call log (`logToolCalls`) gets the status, that message and the thrown error, never the body or headers.
 export function apiError(tool: string, { response, body, error }: Failure): CallToolResult {
   const reason = response ? `API responded ${response.status}` : 'API unreachable';
-  log(`${tool}: ${reason}${error instanceof Error ? ` (${error.message})` : ''}`);
   const message = response && response.status < 500 ? apiMessage(body) : undefined;
   const text = `${tool} failed: ${reason}${message ? `: ${message}` : ''}`;
-  return { content: [{ type: 'text', text }], isError: true };
+  const result: CallToolResult = { content: [{ type: 'text', text }], isError: true };
+  failures.set(result, {
+    status: response?.status,
+    message,
+    cause: error instanceof Error ? error.message : undefined,
+  });
+  return result;
 }
 
 // Nest error bodies: { message: string | string[] }.
