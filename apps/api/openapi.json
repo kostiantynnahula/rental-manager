@@ -241,6 +241,7 @@
     },
     "/apartments/{id}": {
       "get": {
+        "description": "API key scope: apartments:read",
         "operationId": "ApartmentsController_get",
         "parameters": [
           {
@@ -266,6 +267,9 @@
           "401": {
             "description": ""
           },
+          "403": {
+            "description": "API key without apartments:read"
+          },
           "404": {
             "description": "Apartment not found"
           }
@@ -273,8 +277,12 @@
         "security": [
           {
             "cookie": []
+          },
+          {
+            "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "apartments"
         ]
@@ -1152,6 +1160,7 @@
     },
     "/meters/{id}": {
       "get": {
+        "description": "API key scope: meters:read",
         "operationId": "MetersController_get",
         "parameters": [
           {
@@ -1177,6 +1186,9 @@
           "401": {
             "description": ""
           },
+          "403": {
+            "description": "API key without meters:read"
+          },
           "404": {
             "description": "Meter not found"
           }
@@ -1184,8 +1196,12 @@
         "security": [
           {
             "cookie": []
+          },
+          {
+            "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "meters"
         ]
@@ -1984,6 +2000,7 @@
     },
     "/meters/{meterId}/readings": {
       "get": {
+        "description": "API key scope: readings:read",
         "operationId": "MeterReadingsController_list",
         "parameters": [
           {
@@ -2048,6 +2065,9 @@
           "401": {
             "description": ""
           },
+          "403": {
+            "description": "API key without readings:read"
+          },
           "404": {
             "description": "Meter not found"
           }
@@ -2055,8 +2075,12 @@
         "security": [
           {
             "cookie": []
+          },
+          {
+            "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "readings"
         ]
@@ -2196,6 +2220,7 @@
     },
     "/apartments/{apartmentId}/readings": {
       "get": {
+        "description": "API key scope: readings:read",
         "operationId": "ApartmentReadingsController_list",
         "parameters": [
           {
@@ -2236,6 +2261,9 @@
           "401": {
             "description": ""
           },
+          "403": {
+            "description": "API key without readings:read"
+          },
           "404": {
             "description": "Apartment not found"
           }
@@ -2243,8 +2271,12 @@
         "security": [
           {
             "cookie": []
+          },
+          {
+            "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "readings"
         ]
@@ -2252,6 +2284,7 @@
     },
     "/apartments/{apartmentId}/readings/history": {
       "get": {
+        "description": "API key scope: readings:read",
         "operationId": "ApartmentReadingsController_history",
         "parameters": [
           {
@@ -2337,6 +2370,9 @@
           "401": {
             "description": ""
           },
+          "403": {
+            "description": "API key without readings:read"
+          },
           "404": {
             "description": "Apartment not found"
           }
@@ -2344,8 +2380,12 @@
         "security": [
           {
             "cookie": []
+          },
+          {
+            "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "readings"
         ]
@@ -2704,6 +2744,7 @@
     },
     "/tariffs": {
       "get": {
+        "description": "API key scope: tariffs:read",
         "operationId": "TariffsController_list",
         "parameters": [
           {
@@ -2787,13 +2828,20 @@
           },
           "401": {
             "description": ""
+          },
+          "403": {
+            "description": "API key without tariffs:read"
           }
         },
         "security": [
           {
             "cookie": []
+          },
+          {
+            "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "tariffs"
         ]
@@ -2844,6 +2892,7 @@
     },
     "/tariffs/{id}": {
       "get": {
+        "description": "API key scope: tariffs:read",
         "operationId": "TariffsController_get",
         "parameters": [
           {
@@ -2869,6 +2918,9 @@
           "401": {
             "description": ""
           },
+          "403": {
+            "description": "API key without tariffs:read"
+          },
           "404": {
             "description": "Tariff not found"
           }
@@ -2876,8 +2928,12 @@
         "security": [
           {
             "cookie": []
+          },
+          {
+            "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "tariffs"
         ]
@@ -3222,6 +3278,7 @@
     },
     "/apartments/{apartmentId}/tariffs": {
       "get": {
+        "description": "API key scope: tariffs:read",
         "operationId": "ApartmentTariffsController_list",
         "parameters": [
           {
@@ -3267,6 +3324,9 @@
           "401": {
             "description": ""
           },
+          "403": {
+            "description": "API key without tariffs:read"
+          },
           "404": {
             "description": "Apartment not found"
           }
@@ -3274,8 +3334,12 @@
         "security": [
           {
             "cookie": []
+          },
+          {
+            "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "tariffs"
         ]
@@ -3508,6 +3572,7 @@
     },
     "/apartments/{apartmentId}/statements/preview": {
       "post": {
+        "description": "API key scope: statements:preview",
         "operationId": "ApartmentStatementsController_preview",
         "parameters": [
           {
@@ -3546,6 +3611,9 @@
           "401": {
             "description": ""
           },
+          "403": {
+            "description": "API key without statements:preview"
+          },
           "404": {
             "description": "Apartment not found"
           }
@@ -3553,8 +3621,12 @@
         "security": [
           {
             "cookie": []
+          },
+          {
+            "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "statements"
         ]
@@ -3562,6 +3634,7 @@
     },
     "/apartments/{apartmentId}/statements": {
       "get": {
+        "description": "API key scope: statements:read",
         "operationId": "ApartmentStatementsController_list",
         "parameters": [
           {
@@ -3624,6 +3697,9 @@
           "401": {
             "description": ""
           },
+          "403": {
+            "description": "API key without statements:read"
+          },
           "404": {
             "description": "Apartment not found"
           }
@@ -3631,8 +3707,12 @@
         "security": [
           {
             "cookie": []
+          },
+          {
+            "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "statements"
         ]
@@ -3712,6 +3792,7 @@
     },
     "/statements/{id}": {
       "get": {
+        "description": "API key scope: statements:read",
         "operationId": "StatementsController_findOne",
         "parameters": [
           {
@@ -3740,6 +3821,9 @@
           "401": {
             "description": ""
           },
+          "403": {
+            "description": "API key without statements:read"
+          },
           "404": {
             "description": "Statement not found"
           }
@@ -3747,8 +3831,12 @@
         "security": [
           {
             "cookie": []
+          },
+          {
+            "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "statements"
         ]
@@ -3965,7 +4053,7 @@
             "nullable": true
           },
           "tenants": {
-            "description": "PRIMARY first",
+            "description": "PRIMARY first; always empty for API keys (tenant data is human-only)",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/LeaseTenantResponseDto"
@@ -7152,7 +7240,7 @@
           "primaryTenantName": {
             "type": "string",
             "nullable": true,
-            "description": "The tenant's current name, not a snapshot"
+            "description": "The tenant's current name, not a snapshot; always null for API keys"
           }
         },
         "required": [

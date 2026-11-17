@@ -13,15 +13,19 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCookieAuth,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Scopes } from '../auth/scopes.decorator.js';
 import { todayDateOnly } from '../common/helpers/date-only.js';
 import { periodOfDate } from '../common/helpers/period.js';
 import { ApartmentTariffsService } from './apartment-tariffs.service.js';
@@ -40,6 +44,11 @@ export class ApartmentTariffsController {
   constructor(private readonly attachments: ApartmentTariffsService) {}
 
   @Get()
+  // MCP server: an apartment's tariffs.
+  @Scopes('tariffs:read')
+  @ApiBearerAuth()
+  @ApiOperation({ description: 'API key scope: tariffs:read' })
+  @ApiForbiddenResponse({ description: 'API key without tariffs:read' })
   @ApiOkResponse({
     type: [ApartmentTariffResponseDto],
     description: 'Ordered by tariff name, then newest attachment first',

@@ -40,6 +40,16 @@ paths:
     `POST /photo-batches/:batchId/confirm` (all confirmable readings of a batch), `readings:cancel` →
     `POST /readings/:id/cancel`; `photos:read` + `readings:read` (both) → `GET /photo-batches/:batchId` (the batch
     summary, see `api-photo-batches.md`).
+    The MCP server's reads (all read-only): `apartments:read` → `GET /apartments/:id`; `meters:read` →
+    `GET /meters/:id`; `readings:read` → `GET /apartments/:apartmentId/readings`, `…/readings/history`,
+    `GET /meters/:meterId/readings`; `statements:read` → `GET /apartments/:apartmentId/statements`,
+    `GET /statements/:id`; `tariffs:read` → `GET /tariffs`, `GET /tariffs/:id`, `GET /apartments/:apartmentId/tariffs`;
+    `statements:preview` → `POST /apartments/:apartmentId/statements/preview` (computed, nothing saved). Issuing a
+    statement stays human-only. Test: `src/auth/api-key-scopes.routes.spec.ts` (add a row when opening a route).
+  - **Tenant data is human-only**: tenants and leases routes never get `@Scopes`, and responses that embed tenants
+    strip them for keys — `currentLease.tenants` is `[]`, `lease.primaryTenantName` is `null` (same schema). Mappers
+    take `TenantDataOptions` (`src/common/interfaces/`); controllers pass `tenantDataOptions(user)`
+    (`helpers/tenant-data-options.ts`). A new key-readable response with tenant data must do the same.
   - **Confirming with a key = on behalf of a human action only**: `readings:confirm` / `readings:cancel` go to a key
     whose every call follows an allowlisted user's tap (the bot's buttons). The worker's key never gets them — a
     parsed value is never used until a human confirmed it. With a key, cancel accepts only a **DRAFT** (409

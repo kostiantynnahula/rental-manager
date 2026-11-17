@@ -98,6 +98,16 @@ pnpm --filter api apikey:create --service telegram-bot --name local \
 
 → `BOT_API_KEY`, then `pnpm dev:bot`. One running process per bot token.
 
+### MCP server (read-only)
+
+The MCP server for Claude Desktop reads data with its own key: read scopes plus `statements:preview`, which
+calculates a statement without saving it. API keys never see tenant data.
+
+```bash
+pnpm --filter api apikey:create --service mcp --name "claude-desktop" \
+  --scopes apartments:read,meters:read,readings:read,statements:read,tariffs:read,statements:preview
+```
+
 `pnpm dev` starts everything at once.
 
 ## Commands

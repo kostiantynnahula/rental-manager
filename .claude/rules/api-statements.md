@@ -40,7 +40,7 @@ in the period; the service only loads data. Imports nothing from Prisma but `Pri
 - `GET /apartments/:apartmentId/statements?period&page&pageSize` (period desc, issuedAt desc, cancelled included, no
   lines; `period` = only that month, how the web finds the issued statement of a month);
   `GET /statements/:id` (lines use the preview's `StatementLineResponseDto`, `details` → `meters`; `lease` = id + the
-  primary tenant's current name); `POST /statements/:id/cancel { note? }` (only ISSUED, else 409).
+  primary tenant's current name, `null` for API keys — tenant data is human-only, see `api-auth.md`); `POST /statements/:id/cancel { note? }` (only ISSUED, else 409).
 - Raw-SQL constraints: `statements_period_first_of_month`, `statements_one_issued_per_period` (partial unique),
   `statements_cancel_consistency` (both directions), `statements_total_non_negative`, `statement_lines_tariff_by_type`,
   `statement_lines_non_negative`.

@@ -125,6 +125,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description API key scope: apartments:read */
         get: operations["ApartmentsController_get"];
         put?: never;
         post?: never;
@@ -303,6 +304,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description API key scope: meters:read */
         get: operations["MetersController_get"];
         put?: never;
         post?: never;
@@ -469,6 +471,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description API key scope: readings:read */
         get: operations["MeterReadingsController_list"];
         put?: never;
         /** @description A DRAFT may hold a subset of the meter zones; confirm=true needs all of them. Not for API keys: they add values with POST /meters/{meterId}/draft-values */
@@ -503,6 +506,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description API key scope: readings:read */
         get: operations["ApartmentReadingsController_list"];
         put?: never;
         post?: never;
@@ -519,6 +523,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description API key scope: readings:read */
         get: operations["ApartmentReadingsController_history"];
         put?: never;
         post?: never;
@@ -620,6 +625,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description API key scope: tariffs:read */
         get: operations["TariffsController_list"];
         put?: never;
         post: operations["TariffsController_create"];
@@ -636,6 +642,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description API key scope: tariffs:read */
         get: operations["TariffsController_get"];
         put?: never;
         post?: never;
@@ -716,6 +723,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description API key scope: tariffs:read */
         get: operations["ApartmentTariffsController_list"];
         put?: never;
         post: operations["ApartmentTariffsController_create"];
@@ -766,6 +774,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description API key scope: statements:preview */
         post: operations["ApartmentStatementsController_preview"];
         delete?: never;
         options?: never;
@@ -780,6 +789,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description API key scope: statements:read */
         get: operations["ApartmentStatementsController_list"];
         put?: never;
         post: operations["ApartmentStatementsController_issue"];
@@ -796,6 +806,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description API key scope: statements:read */
         get: operations["StatementsController_findOne"];
         put?: never;
         post?: never;
@@ -879,7 +890,7 @@ export interface components {
              */
             monthlyRent: number;
             notes: string | null;
-            /** @description PRIMARY first */
+            /** @description PRIMARY first; always empty for API keys (tenant data is human-only) */
             tenants: components["schemas"]["LeaseTenantResponseDto"][];
             /** Format: date-time */
             createdAt: string;
@@ -2127,7 +2138,7 @@ export interface components {
         StatementLeaseSummaryResponseDto: {
             /** Format: uuid */
             id: string;
-            /** @description The tenant's current name, not a snapshot */
+            /** @description The tenant's current name, not a snapshot; always null for API keys */
             primaryTenantName: string | null;
         };
         StatementResponseDto: {
@@ -2430,6 +2441,13 @@ export interface operations {
                 };
             };
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without apartments:read */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3233,6 +3251,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description API key without meters:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Meter not found */
             404: {
                 headers: {
@@ -3978,6 +4003,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description API key without readings:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Meter not found */
             404: {
                 headers: {
@@ -4150,6 +4182,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description API key without readings:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Apartment not found */
             404: {
                 headers: {
@@ -4195,6 +4234,13 @@ export interface operations {
                 content?: never;
             };
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without readings:read */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4563,6 +4609,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description API key without tariffs:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     TariffsController_create: {
@@ -4629,6 +4682,13 @@ export interface operations {
                 };
             };
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without tariffs:read */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4986,6 +5046,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description API key without tariffs:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Apartment not found */
             404: {
                 headers: {
@@ -5226,6 +5293,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description API key without statements:preview */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Apartment not found */
             404: {
                 headers: {
@@ -5268,6 +5342,13 @@ export interface operations {
                 content?: never;
             };
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without statements:read */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5372,6 +5453,13 @@ export interface operations {
                 content?: never;
             };
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key without statements:read */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

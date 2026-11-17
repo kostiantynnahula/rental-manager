@@ -11,15 +11,19 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCookieAuth,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
+import { Scopes } from '../auth/scopes.decorator.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { AuthUser } from '../auth/interfaces/auth-user.interface.js';
 import { parsePeriod } from '../common/helpers/period.js';
@@ -42,6 +46,11 @@ export class ApartmentStatementsController {
 
   // POST only because manualAmounts is a map; nothing is saved.
   @Post('preview')
+  // MCP server: a read-only calculation (nothing is saved).
+  @Scopes('statements:preview')
+  @ApiBearerAuth()
+  @ApiOperation({ description: 'API key scope: statements:preview' })
+  @ApiForbiddenResponse({ description: 'API key without statements:preview' })
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({
     type: StatementPreviewResponseDto,
@@ -65,6 +74,11 @@ export class ApartmentStatementsController {
   }
 
   @Get()
+  // MCP server: issued statements.
+  @Scopes('statements:read')
+  @ApiBearerAuth()
+  @ApiOperation({ description: 'API key scope: statements:read' })
+  @ApiForbiddenResponse({ description: 'API key without statements:read' })
   @ApiOkResponse({
     type: StatementPageResponseDto,
     description: 'Newest period first, cancelled included',
@@ -114,6 +128,7 @@ export class ApartmentStatementsController {
         dto.acknowledgeWarnings ?? false,
         user.id,
       ),
+      { withTenants: true },
     );
   }
 }

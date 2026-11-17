@@ -38,7 +38,7 @@ export class LeasesController {
   @Get(':id')
   @ApiOkResponse({ type: LeaseResponseDto })
   async get(@Param('id', ParseUUIDPipe) id: string): Promise<LeaseResponseDto> {
-    return LeaseResponseDto.from(await this.leases.findOrThrow(id));
+    return LeaseResponseDto.from(await this.leases.findOrThrow(id), { withTenants: true });
   }
 
   @Patch(':id')
@@ -49,7 +49,7 @@ export class LeasesController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateLeaseDto,
   ): Promise<LeaseResponseDto> {
-    return LeaseResponseDto.from(await this.leases.update(id, dto));
+    return LeaseResponseDto.from(await this.leases.update(id, dto), { withTenants: true });
   }
 
   @Put(':id/tenants')
@@ -59,7 +59,9 @@ export class LeasesController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ReplaceLeaseTenantsDto,
   ): Promise<LeaseResponseDto> {
-    return LeaseResponseDto.from(await this.leases.replaceTenants(id, dto.tenants));
+    return LeaseResponseDto.from(await this.leases.replaceTenants(id, dto.tenants), {
+      withTenants: true,
+    });
   }
 
   @Post(':id/end')
@@ -71,7 +73,7 @@ export class LeasesController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: EndLeaseDto,
   ): Promise<LeaseResponseDto> {
-    return LeaseResponseDto.from(await this.leases.end(id, dto.endDate));
+    return LeaseResponseDto.from(await this.leases.end(id, dto.endDate), { withTenants: true });
   }
 
   @Delete(':id')

@@ -62,6 +62,11 @@ export class MetersController {
   }
 
   @Get(':id')
+  // MCP server: one meter.
+  @Scopes('meters:read')
+  @ApiBearerAuth()
+  @ApiOperation({ description: 'API key scope: meters:read' })
+  @ApiForbiddenResponse({ description: 'API key without meters:read' })
   @ApiOkResponse({ type: MeterResponseDto })
   async get(@Param('id', ParseUUIDPipe) id: string): Promise<MeterResponseDto> {
     return MeterResponseDto.from(await this.meters.withFlagsOne(await this.meters.findOrThrow(id)));

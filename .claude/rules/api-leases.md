@@ -18,6 +18,7 @@ paths:
 
 - **Apartments list and detail** both return `ApartmentDetailResponseDto` with `currentLease` (lease covering today, Kyiv
   time; helper `apartments/helpers/current-lease-where.ts`). The list loads it in one query via `include`.
+  For API keys `currentLease.tenants` is `[]`: tenant data is human-only (see `api-auth.md`).
 - **Tenants**: phones are Ukrainian only, normalized to `+380XXXXXXXXX` by `@IsUaPhone()` (rule:
   `normalizeUaPhone` in `@rental/shared`, also used by the web); `?search=` matches the name or the phone digits in any
   format (`phoneSearchDigits`). The list returns `TenantListItemResponseDto` (`status` LIVING/FORMER/NONE +
