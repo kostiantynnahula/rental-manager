@@ -38,7 +38,8 @@ export function registerListStatements(server: McpServer, api: ApiClient): void 
       annotations: { readOnlyHint: true },
     },
     async ({ apartmentId, from, to }) => {
-      // The API filters by one exact month only; a range is filtered here ("YYYY-MM" sorts as text).
+      // The API filters by one exact month only; a range is filtered here ("YYYY-MM" sorts as text). Statements
+      // newer than `to` still count toward the page cap; with one statement a month, the cap is ~40 years.
       const period = from && from === to ? from : undefined;
       const pages = await collectPages(
         (page) =>

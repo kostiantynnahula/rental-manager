@@ -55,6 +55,55 @@ describe('get_reading_history', () => {
     expect(JSON.stringify(result)).not.toContain('photo-1');
   });
 
+  it('for a utility, asks for all its meters, the replaced one included', async () => {
+    const OLD = '55555555-5555-4555-8555-555555555555';
+    const meters = [
+      { id: METER_ID, utility: 'GAS', removedAt: null },
+      { id: OLD, utility: 'GAS', removedAt: '2026-08-15' },
+      { id: 'm-el', utility: 'ELECTRICITY', removedAt: null },
+    ];
+    const { call, requests } = await connect({
+      [`GET /apartments/${APARTMENT_ID}/meters?includeRemoved=true`]: json(meters),
+      [`${BASE}?from=2026-06&meterIds=${METER_ID}&meterIds=${OLD}&page=1&pageSize=50`]: json({
+        items: [item('2026-11')],
+        total: 1,
+        page: 1,
+        pageSize: 50,
+      }),
+    });
+    const result = await call('get_reading_history', {
+      apartmentId: APARTMENT_ID,
+      from: '2026-06',
+      utility: 'GAS',
+    });
+    expect(requests).toHaveLength(2);
+    expect(result.structuredContent).toMatchObject({ total: 1, truncated: false });
+  });
+
+  it('returns nothing without asking for history when the utility has no meters', async () => {
+    const { call, requests } = await connect({
+      [`GET /apartments/${APARTMENT_ID}/meters?includeRemoved=true`]: json([
+        { id: METER_ID, utility: 'GAS', removedAt: null },
+      ]),
+    });
+    const result = await call('get_reading_history', {
+      apartmentId: APARTMENT_ID,
+      utility: 'HOT_WATER',
+    });
+    expect(requests).toHaveLength(1);
+    expect(result.structuredContent).toEqual({ items: [], total: 0, truncated: false });
+  });
+
+  it('rejects more meter ids than the API accepts', async () => {
+    const { call, requests } = await connect({});
+    const result = await call('get_reading_history', {
+      apartmentId: APARTMENT_ID,
+      meterIds: Array.from({ length: 51 }, () => METER_ID),
+    });
+    expect(result.isError).toBe(true);
+    expect(requests).toEqual([]);
+  });
+
   it(`walks pages and stops after ${MAX_PAGES}, saying it was truncated`, async () => {
     const page = (n: number) =>
       json({ items: [item(`page-${n}`)], total: 1000, page: n, pageSize: 50 });

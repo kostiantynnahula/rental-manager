@@ -5,6 +5,7 @@ import {
   idSchema,
   meterSummary,
   periodSchema,
+  readingKind,
   toMeterSummary,
   zoneValue,
 } from '../helpers/schemas.js';
@@ -30,7 +31,7 @@ export function registerGetMonthReadings(server: McpServer, api: ApiClient): voi
             status: z.enum(['MISSING', 'DRAFT', 'CONFIRMED']),
             reading: z
               .object({
-                kind: z.enum(['REGULAR', 'INITIAL', 'FINAL']),
+                kind: readingKind,
                 status: z.enum(['DRAFT', 'CONFIRMED', 'CANCELLED']),
                 readingDate: z.string().describe('YYYY-MM-DD'),
                 values: z.array(zoneValue.extend({ source: z.enum(['MANUAL', 'PHOTO']) })),

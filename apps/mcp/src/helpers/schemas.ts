@@ -11,8 +11,9 @@ export const periodSchema = z
   .describe('Month, YYYY-MM (e.g. 2026-11)');
 export const idSchema = z.uuid();
 
-const utility = z.enum(['ELECTRICITY', 'COLD_WATER', 'HOT_WATER', 'GAS']);
-const zone = z.enum(['TOTAL', 'DAY', 'NIGHT']);
+export const utility = z.enum(['ELECTRICITY', 'COLD_WATER', 'HOT_WATER', 'GAS']);
+export const zone = z.enum(['TOTAL', 'DAY', 'NIGHT']);
+export const readingKind = z.enum(['REGULAR', 'INITIAL', 'FINAL']);
 const uah = z.string().describe('UAH, e.g. "15864.00"');
 
 export const zoneValue = z.object({ zone, value: z.string() });

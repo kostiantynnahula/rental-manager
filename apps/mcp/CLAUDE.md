@@ -47,7 +47,8 @@ the API with its own key (`--service mcp`, read scopes + `statements:preview`, s
 - `pnpm --filter mcp test` (Vitest, globals). Specs colocated (`foo.ts` → `foo.spec.ts`), excluded from the build.
 - A tool is tested through the protocol: `connect(routes)` (`src/test/mcp-client.ts`, excluded from the build) =
   the real `createServer(api)` and an SDK `Client`, linked by `InMemoryTransport.createLinkedPair()`;
-  `captureStderr()` mutes and records the log. Shared API fixtures also live in `src/test/`. The API is `fakeApi<paths>(routes)` from `@rental/testing` (an unknown
-  route fails the test). Assert `structuredContent`, the text, and the requests sent; give the fake API extra fields
+  `captureStderr()` mutes and records the log. Shared API fixtures also live in `src/test/`. The API is
+  `fakeApi<paths>(routes)` from `@rental/testing` (an unknown route fails the test). Assert `structuredContent`, the text, and the requests sent; give the fake API extra fields
   (notes, lease) and assert they don't come out.
-- Every new tool gets such a spec (listed, happy path, an API error).
+- Every new tool gets such a spec (happy path, an API error) and a row in `src/server.spec.ts` (listed, read-only,
+  required inputs).

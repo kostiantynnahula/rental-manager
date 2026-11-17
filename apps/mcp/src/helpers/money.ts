@@ -7,7 +7,8 @@ export function kopiykyToUah(kopiyky: number): string {
   return `${sign}${Math.trunc(abs / 100)}.${String(abs % 100).padStart(2, '0')}`;
 }
 
-export const UAH_AMOUNT = /^\d+(\.\d{1,2})?$/;
+// At most 9 999 999.99 UAH: the kopiyky stay a safe integer within the API's Int limit.
+export const UAH_AMOUNT = /^\d{1,7}(\.\d{1,2})?$/;
 
 // "123.45" → 12345 (input amounts, e.g. a bill's manual amount). Validate with UAH_AMOUNT first.
 export function uahToKopiyky(uah: string): number {

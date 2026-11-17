@@ -20,7 +20,7 @@ describe('money', () => {
     expect(uahToKopiyky(uah)).toBe(kopiyky);
   });
 
-  it.each(['1.234', '-1', '1,50', '', 'abc'])('rejects %j', (uah) => {
+  it.each(['1.234', '-1', '1,50', '', 'abc', '99999999999999999'])('rejects %j', (uah) => {
     expect(() => uahToKopiyky(uah)).toThrow();
   });
 
