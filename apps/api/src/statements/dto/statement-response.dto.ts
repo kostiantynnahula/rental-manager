@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { formatPeriod } from '../../common/helpers/period.js';
 import { StatementStatus } from '../../generated/prisma/enums.js';
+import type { TenantDataOptions } from '../../common/interfaces/tenant-data-options.interface.js';
 import type { StatementWithDetails } from '../helpers/statement-with-details.js';
 import type { StatementWarning } from '../interfaces/statement-warning.interface.js';
 import { StatementLeaseSummaryResponseDto } from './statement-lease-summary-response.dto.js';
@@ -54,7 +55,7 @@ export class StatementResponseDto {
   @ApiProperty({ type: String, nullable: true })
   cancelNote: string | null;
 
-  static from(s: StatementWithDetails): StatementResponseDto {
+  static from(s: StatementWithDetails, opts?: TenantDataOptions): StatementResponseDto {
     return {
       id: s.id,
       apartmentId: s.apartmentId,
@@ -65,7 +66,7 @@ export class StatementResponseDto {
         StatementWarningResponseDto.from(w),
       ),
       lines: s.lines.map((l) => StatementLineResponseDto.fromRow(l)),
-      lease: s.lease && StatementLeaseSummaryResponseDto.from(s.lease),
+      lease: s.lease && StatementLeaseSummaryResponseDto.from(s.lease, opts),
       issuedAt: s.issuedAt,
       issuedById: s.issuedById,
       cancelledAt: s.cancelledAt,

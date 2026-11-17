@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import type { TenantDataOptions } from '../../common/interfaces/tenant-data-options.interface.js';
 import { Apartment } from '../../generated/prisma/client.js';
 import { LeaseResponseDto } from '../../leases/dto/lease-response.dto.js';
 import type { LeaseWithTenants } from '../../leases/helpers/lease-with-tenants.js';
@@ -15,10 +16,11 @@ export class ApartmentDetailResponseDto extends ApartmentResponseDto {
   static fromWithLease(
     a: Apartment,
     currentLease: LeaseWithTenants | null,
+    opts?: TenantDataOptions,
   ): ApartmentDetailResponseDto {
     return {
       ...ApartmentResponseDto.from(a),
-      currentLease: currentLease ? LeaseResponseDto.from(currentLease) : null,
+      currentLease: currentLease ? LeaseResponseDto.from(currentLease, opts) : null,
     };
   }
 }

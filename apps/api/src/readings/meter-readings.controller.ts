@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCookieAuth,
   ApiCreatedResponse,
@@ -11,6 +12,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Scopes } from '../auth/scopes.decorator.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { AuthUser } from '../auth/interfaces/auth-user.interface.js';
 import { CreateReadingDto } from './dto/create-reading.dto.js';
@@ -27,6 +29,11 @@ export class MeterReadingsController {
   constructor(private readonly readings: ReadingsService) {}
 
   @Get()
+  // MCP server: one meter's readings.
+  @Scopes('readings:read')
+  @ApiBearerAuth()
+  @ApiOperation({ description: 'API key scope: readings:read' })
+  @ApiForbiddenResponse({ description: 'API key without readings:read' })
   @ApiOkResponse({
     type: [ReadingResponseDto],
     description: 'All kinds, newest first, each with consumption since the previous confirmed one',

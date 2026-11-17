@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { formatDateOnly } from '../../common/helpers/date-only.js';
+import type { TenantDataOptions } from '../../common/interfaces/tenant-data-options.interface.js';
 import type { LeaseWithTenants } from '../helpers/lease-with-tenants.js';
 import { LeaseTenantResponseDto } from './lease-tenant-response.dto.js';
 
@@ -28,7 +29,10 @@ export class LeaseResponseDto {
   @ApiProperty({ type: String, nullable: true })
   notes: string | null;
 
-  @ApiProperty({ type: [LeaseTenantResponseDto], description: 'PRIMARY first' })
+  @ApiProperty({
+    type: [LeaseTenantResponseDto],
+    description: 'PRIMARY first; always empty for API keys (tenant data is human-only)',
+  })
   tenants: LeaseTenantResponseDto[];
 
   @ApiProperty()
@@ -37,7 +41,11 @@ export class LeaseResponseDto {
   @ApiProperty()
   updatedAt: Date;
 
-  static from(lease: LeaseWithTenants): LeaseResponseDto {
+  // withTenants: false for API keys — they never receive tenant data.
+  static from(
+    lease: LeaseWithTenants,
+    { withTenants = true }: TenantDataOptions = {},
+  ): LeaseResponseDto {
     return {
       id: lease.id,
       apartmentId: lease.apartmentId,
@@ -45,7 +53,7 @@ export class LeaseResponseDto {
       endDate: lease.endDate ? formatDateOnly(lease.endDate) : null,
       monthlyRent: lease.monthlyRent,
       notes: lease.notes,
-      tenants: lease.tenants.map((t) => LeaseTenantResponseDto.from(t)),
+      tenants: withTenants ? lease.tenants.map((t) => LeaseTenantResponseDto.from(t)) : [],
       createdAt: lease.createdAt,
       updatedAt: lease.updatedAt,
     };

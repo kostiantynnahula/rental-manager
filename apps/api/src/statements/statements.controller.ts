@@ -10,14 +10,19 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCookieAuth,
+  ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Scopes } from '../auth/scopes.decorator.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
+import { tenantDataOptions } from '../auth/helpers/tenant-data-options.js';
 import type { AuthUser } from '../auth/interfaces/auth-user.interface.js';
 import { CancelStatementDto } from './dto/cancel-statement.dto.js';
 import { StatementResponseDto } from './dto/statement-response.dto.js';
@@ -31,11 +36,22 @@ export class StatementsController {
   constructor(private readonly statements: StatementsService) {}
 
   @Get(':id')
+  // MCP server: one statement (tenant name stripped for API keys).
+  @Scopes('statements:read')
+  @ApiBearerAuth()
+  @ApiOperation({ description: 'API key scope: statements:read' })
+  @ApiForbiddenResponse({ description: 'API key without statements:read' })
   @ApiOkResponse({ type: StatementResponseDto })
   @ApiBadRequestResponse({ description: 'Invalid id' })
   @ApiNotFoundResponse({ description: 'Statement not found' })
-  async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<StatementResponseDto> {
-    return StatementResponseDto.from(await this.statements.findOrThrow(id));
+  async findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<StatementResponseDto> {
+    return StatementResponseDto.from(
+      await this.statements.findOrThrow(id),
+      tenantDataOptions(user),
+    );
   }
 
   @Post(':id/cancel')

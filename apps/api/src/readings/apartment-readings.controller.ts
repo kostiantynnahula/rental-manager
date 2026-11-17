@@ -1,12 +1,16 @@
 import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiCookieAuth,
+  ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Scopes } from '../auth/scopes.decorator.js';
 import { ApartmentMeterReadingResponseDto } from './dto/apartment-meter-reading-response.dto.js';
 import { ApartmentReadingHistoryQueryDto } from './dto/apartment-reading-history-query.dto.js';
 import { ApartmentReadingsQueryDto } from './dto/apartment-readings-query.dto.js';
@@ -22,6 +26,11 @@ export class ApartmentReadingsController {
 
   // "Who hasn't sent readings yet": every meter active in the period, with or without a reading.
   @Get()
+  // MCP server: the readings of a period.
+  @Scopes('readings:read')
+  @ApiBearerAuth()
+  @ApiOperation({ description: 'API key scope: readings:read' })
+  @ApiForbiddenResponse({ description: 'API key without readings:read' })
   @ApiOkResponse({ type: [ApartmentMeterReadingResponseDto] })
   @ApiBadRequestResponse({ description: 'Missing or invalid period' })
   @ApiNotFoundResponse({ description: 'Apartment not found' })
@@ -35,6 +44,11 @@ export class ApartmentReadingsController {
 
   // Confirmed readings with consumption, paginated by reading (a day/night reading is one item).
   @Get('history')
+  // MCP server: consumption history.
+  @Scopes('readings:read')
+  @ApiBearerAuth()
+  @ApiOperation({ description: 'API key scope: readings:read' })
+  @ApiForbiddenResponse({ description: 'API key without readings:read' })
   @ApiOkResponse({ type: ReadingHistoryPageResponseDto })
   @ApiBadRequestResponse({
     description: 'Invalid filters (period format, from after to, page size, meter ids)',

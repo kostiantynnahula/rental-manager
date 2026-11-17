@@ -16,12 +16,16 @@ import {
   ApiConflictResponse,
   ApiCookieAuth,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { CurrentUser } from '../auth/current-user.decorator.js';
+import { tenantDataOptions } from '../auth/helpers/tenant-data-options.js';
+import type { AuthUser } from '../auth/interfaces/auth-user.interface.js';
 import { Scopes } from '../auth/scopes.decorator.js';
 import { ApartmentsService } from './apartments.service.js';
 import { ApartmentDetailResponseDto } from './dto/apartment-detail-response.dto.js';
@@ -44,17 +48,35 @@ export class ApartmentsController {
   @ApiBearerAuth()
   @ApiOperation({ description: 'API key scope: apartments:read' })
   @ApiOkResponse({ type: [ApartmentDetailResponseDto], description: 'Each with its current lease' })
-  async list(@Query() query: ListApartmentsQueryDto): Promise<ApartmentDetailResponseDto[]> {
+  async list(
+    @Query() query: ListApartmentsQueryDto,
+    @CurrentUser() user: AuthUser,
+  ): Promise<ApartmentDetailResponseDto[]> {
     const apartments = await this.apartments.list(query.active);
-    return apartments.map((a) => ApartmentDetailResponseDto.fromWithLease(a, a.leases[0] ?? null));
+    const opts = tenantDataOptions(user);
+    return apartments.map((a) =>
+      ApartmentDetailResponseDto.fromWithLease(a, a.leases[0] ?? null, opts),
+    );
   }
 
   @Get(':id')
+  // MCP server: one apartment with its current lease (tenants stripped for API keys).
+  @Scopes('apartments:read')
+  @ApiBearerAuth()
+  @ApiOperation({ description: 'API key scope: apartments:read' })
+  @ApiForbiddenResponse({ description: 'API key without apartments:read' })
   @ApiOkResponse({ type: ApartmentDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Apartment not found' })
-  async get(@Param('id', ParseUUIDPipe) id: string): Promise<ApartmentDetailResponseDto> {
+  async get(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+  ): Promise<ApartmentDetailResponseDto> {
     const { apartment, currentLease } = await this.apartments.findWithCurrentLease(id);
-    return ApartmentDetailResponseDto.fromWithLease(apartment, currentLease);
+    return ApartmentDetailResponseDto.fromWithLease(
+      apartment,
+      currentLease,
+      tenantDataOptions(user),
+    );
   }
 
   @Post()

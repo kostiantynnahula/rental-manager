@@ -10,6 +10,9 @@ export const API_KEY_SCOPES = [
   'readings:confirm',
   'readings:cancel',
   'photos:upload',
+  'statements:read',
+  'statements:preview',
+  'tariffs:read',
 ] as const;
 
 export type ApiKeyScope = (typeof API_KEY_SCOPES)[number];

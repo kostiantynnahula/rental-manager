@@ -13,15 +13,19 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCookieAuth,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Scopes } from '../auth/scopes.decorator.js';
 import { todayDateOnly } from '../common/helpers/date-only.js';
 import { periodOfDate } from '../common/helpers/period.js';
 import { CreateTariffDto } from './dto/create-tariff.dto.js';
@@ -43,6 +47,11 @@ export class TariffsController {
   constructor(private readonly tariffs: TariffsService) {}
 
   @Get()
+  // MCP server: tariffs with current prices.
+  @Scopes('tariffs:read')
+  @ApiBearerAuth()
+  @ApiOperation({ description: 'API key scope: tariffs:read' })
+  @ApiForbiddenResponse({ description: 'API key without tariffs:read' })
   @ApiOkResponse({ type: TariffPageResponseDto, description: 'Ordered by name' })
   @ApiBadRequestResponse()
   async list(@Query() query: ListTariffsQueryDto): Promise<TariffPageResponseDto> {
@@ -53,6 +62,11 @@ export class TariffsController {
   }
 
   @Get(':id')
+  // MCP server: one tariff with its price history.
+  @Scopes('tariffs:read')
+  @ApiBearerAuth()
+  @ApiOperation({ description: 'API key scope: tariffs:read' })
+  @ApiForbiddenResponse({ description: 'API key without tariffs:read' })
   @ApiOkResponse({ type: TariffDetailResponseDto, description: 'With the full price history' })
   @ApiNotFoundResponse({ description: 'Tariff not found' })
   async get(@Param('id', ParseUUIDPipe) id: string): Promise<TariffDetailResponseDto> {
