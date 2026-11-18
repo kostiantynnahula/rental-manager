@@ -1,5 +1,5 @@
 import type { Prisma } from '../../generated/prisma/client.js';
-import type { Thumbnail } from './thumbnail.interface.js';
+import type { Thumbnail } from '../../images/interfaces/thumbnail.interface.js';
 import type { PreparedPhoto } from './prepared-photo.interface.js';
 
 // A file the request stores as a new photo: the validated file and the row it becomes.

@@ -39,13 +39,9 @@ import { PhotoListItemResponseDto } from './dto/photo-list-item-response.dto.js'
 import { PhotoUploadResultDto } from './dto/photo-upload-result.dto.js';
 import { SetParseResultDto } from './dto/set-parse-result.dto.js';
 import { UploadPhotosBodyDto } from './dto/upload-photos-body.dto.js';
-import type { PhotoFile } from './interfaces/photo-file.interface.js';
+import { FILE_CACHE_CONTROL, toStreamableFile } from '../images/helpers/streamable-file.js';
 import { PhotoUpload } from './photo-upload.decorator.js';
 import { PhotosService } from './photos.service.js';
-
-// Files are immutable (a new upload gets a new id), so the browser may cache them for a day.
-// private: never in shared caches — they're behind auth.
-const FILE_CACHE_CONTROL = 'private, max-age=86400';
 
 @ApiTags('photos')
 @ApiCookieAuth()
@@ -173,12 +169,4 @@ export class PhotosController {
   async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     await this.photos.delete(id);
   }
-}
-
-function toStreamableFile({ body, mimeType, contentLength }: PhotoFile): StreamableFile {
-  return new StreamableFile(body, {
-    type: mimeType,
-    length: contentLength,
-    disposition: 'inline',
-  });
 }

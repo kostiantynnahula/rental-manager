@@ -6,7 +6,7 @@ import { Env } from '../config/env.validation.js';
 import { QueueModule } from '../queue/queue.module.js';
 import { StorageModule } from '../storage/storage.module.js';
 import { ApartmentPhotosController } from './apartment-photos.controller.js';
-import { multerOptionsFromConfig } from './config/upload.config.js';
+import { multerOptionsFromConfig } from '../images/config/upload.config.js';
 import { PhotosController } from './photos.controller.js';
 import { PhotosService } from './photos.service.js';
 
