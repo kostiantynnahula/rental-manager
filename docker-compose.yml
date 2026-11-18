@@ -3,7 +3,9 @@ name: rental-manager
 
 services:
   postgres:
-    image: postgres:18-alpine
+    # Postgres 18 + the pgvector extension (semantic search). Debian-based: switching from the old
+    # postgres:18-alpine image needs a reindex — see README, "Switching to the pgvector image".
+    image: pgvector/pgvector:pg18
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?set in .env}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
