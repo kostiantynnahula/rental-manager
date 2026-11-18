@@ -35,3 +35,6 @@ apps/worker/samples/
 # MCP server log file (MCP_LOG_FILE), e.g. logs/mcp.log
 *.log
 logs/
+
+# Database dumps (real data)
+*.dump
