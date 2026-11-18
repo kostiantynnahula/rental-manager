@@ -75,6 +75,30 @@ pnpm dev:web                  # http://localhost:3000
 
 There is no sign-up: users come from the seed file (`seed-users.json` is gitignored).
 
+### Switching to the pgvector image
+
+Postgres runs on `pgvector/pgvector:pg18` (was `postgres:18-alpine`). The data volume is reused as is, but Alpine
+(musl) and Debian (glibc) sort text differently, so text indexes built under Alpine must be rebuilt. Once per
+existing dev DB (a fresh volume needs none of this):
+
+```bash
+set -a; source .env; set +a   # POSTGRES_USER / POSTGRES_DB for the commands below
+
+# 1. Backup only — while the old container is still running
+docker compose exec postgres pg_dump -U "$POSTGRES_USER" -Fc "$POSTGRES_DB" > backup.dump
+
+# 2. Recreate the container on the new image (same volume)
+pnpm infra:down && pnpm infra:up
+
+# 3. Rebuild indexes, record the new collation version
+docker compose exec postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+  -c "REINDEX DATABASE \"$POSTGRES_DB\";" \
+  -c "ALTER DATABASE \"$POSTGRES_DB\" REFRESH COLLATION VERSION;"
+
+# 4. Apply pending migrations (installs the vector extension)
+pnpm --filter api db:migrate:deploy
+```
+
 ### Photo parsing (worker)
 
 Needs an Anthropic API key and an API key for the worker's service user:

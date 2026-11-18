@@ -75,7 +75,7 @@ pnpm workspaces monorepo:
   `status`). No build: `exports` points at `src/index.ts`, loaded by Vitest only. A devDependency, imported only from
   specs and `src/test/` — never from production code. App-specific builders stay in the app.
 
-Infra in Docker Compose: Postgres, MinIO (S3-compatible photo storage;
+Infra in Docker Compose: Postgres (`pgvector/pgvector` image), MinIO (S3-compatible photo storage;
 community `pgsty/minio` image, since official MinIO images are no longer published), Redis (BullMQ queues,
 AOF persistence).
 

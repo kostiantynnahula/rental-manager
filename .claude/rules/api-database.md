@@ -17,6 +17,16 @@ paths:
   the rule of their area: `api-leases.md`, `api-readings.md`, `api-tariffs.md`, `api-statements.md`. A new one → list it
   there and add its message to `CONSTRAINT_MESSAGES` (see `apps/api/docs/api-conventions.md`, Errors).
 
+## Postgres image & extensions
+
+- Image: `pgvector/pgvector:pg18` (docker-compose.yml) — official Postgres 18 plus pgvector, needed for embeddings
+  (semantic search, #125). `postgres:18-alpine` has no pgvector.
+- Extensions are installed by raw SQL in a migration (`CREATE EXTENSION IF NOT EXISTS …`, see `*_pgvector`), not by
+  Prisma's `postgresqlExtensions` preview feature (deprecated). `schema.prisma` doesn't list them.
+- The image is Debian (glibc), the old one Alpine (musl): text collation differs. After switching an existing volume:
+  `pg_dump` first (backup only), then `REINDEX DATABASE <db>;` + `ALTER DATABASE <db> REFRESH COLLATION VERSION;`
+  (steps: README, "Switching to the pgvector image"). Same after any future libc change of the image.
+
 ## Seeding users
 
 - Users come only from the seed (no sign-up). Data: `prisma/seed-users.json` — **gitignored**, holds real passwords.
