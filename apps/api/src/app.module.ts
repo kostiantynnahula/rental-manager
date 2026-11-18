@@ -9,6 +9,7 @@ import { HealthController } from './health/health.controller.js';
 import { LeasesModule } from './leases/leases.module.js';
 import { MetersModule } from './meters/meters.module.js';
 import { PhotoBatchesModule } from './photo-batches/photo-batches.module.js';
+import { ConditionPhotosModule } from './condition-photos/condition-photos.module.js';
 import { PhotosModule } from './photos/photos.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { ReadingsModule } from './readings/readings.module.js';
@@ -28,6 +29,7 @@ import { UsersModule } from './users/users.module.js';
     LeasesModule,
     MetersModule,
     PhotosModule,
+    ConditionPhotosModule,
     ReadingsModule,
     PhotoBatchesModule,
     TariffsModule,
