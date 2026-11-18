@@ -4200,7 +4200,7 @@ export interface operations {
                     "application/json": components["schemas"]["ConditionPhotoResponseDto"][];
                 };
             };
-            /** @description Invalid event or date */
+            /** @description Invalid event or date, from after to */
             400: {
                 headers: {
                     [name: string]: unknown;

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { parseDateOnly } from '../common/helpers/date-only.js';
 import { ApartmentsService } from '../apartments/apartments.service.js';
+import { currentLeaseWhere } from '../apartments/helpers/current-lease-where.js';
 import type { ConditionPhoto, Prisma } from '../generated/prisma/client.js';
 import { prepareImages } from '../images/helpers/prepare-images.js';
 import { THUMBNAIL_MIME_TYPE } from '../images/helpers/thumbnail.js';
@@ -61,6 +62,10 @@ export class ConditionPhotosService {
   // Sorted by takenOn (newest first), then by upload. An archived apartment's history is still listed.
   async list(apartmentId: string, query: ListConditionPhotosQueryDto): Promise<ConditionPhoto[]> {
     await this.apartments.findOrThrow(apartmentId);
+    // YYYY-MM-DD strings compare as dates.
+    if (query.from && query.to && query.from > query.to) {
+      throw new BadRequestException('from must not be after to');
+    }
     const takenOn: Prisma.DateTimeFilter = {
       ...(query.from && { gte: parseDateOnly(query.from) }),
       ...(query.to && { lte: parseDateOnly(query.to) }),
@@ -82,11 +87,7 @@ export class ConditionPhotosService {
   async findDetailOrThrow(id: string): Promise<ConditionPhotoDetail> {
     const photo = await this.findOrThrow(id);
     const lease = await this.prisma.lease.findFirst({
-      where: {
-        apartmentId: photo.apartmentId,
-        startDate: { lte: photo.takenOn },
-        OR: [{ endDate: null }, { endDate: { gte: photo.takenOn } }],
-      },
+      where: { apartmentId: photo.apartmentId, ...currentLeaseWhere(photo.takenOn) },
       include: leaseWithTenantsInclude,
     });
     return { photo, lease };
@@ -94,6 +95,10 @@ export class ConditionPhotosService {
 
   // Only the user's fields. The index status stays: the searchable text is built from the description.
   async update(id: string, dto: UpdateConditionPhotoDto): Promise<ConditionPhotoDetail> {
+    // Nothing to change: updateMany with an empty `data` writes nothing, so its count can't tell us the row exists.
+    if (dto.event === undefined && dto.takenOn === undefined && dto.note === undefined) {
+      return this.findDetailOrThrow(id);
+    }
     const { count } = await this.prisma.conditionPhoto.updateMany({
       where: { id },
       data: {

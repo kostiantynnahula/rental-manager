@@ -2148,7 +2148,7 @@
             }
           },
           "400": {
-            "description": "Invalid event or date"
+            "description": "Invalid event or date, from after to"
           },
           "401": {
             "description": ""

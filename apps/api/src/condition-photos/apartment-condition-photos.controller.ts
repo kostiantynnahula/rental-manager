@@ -51,7 +51,7 @@ export class ApartmentConditionPhotosController {
 
   @Get()
   @ApiNotFoundResponse({ description: 'Apartment not found' })
-  @ApiBadRequestResponse({ description: 'Invalid event or date' })
+  @ApiBadRequestResponse({ description: 'Invalid event or date, from after to' })
   @ApiOkResponse({
     type: [ConditionPhotoResponseDto],
     description: 'By takenOn (newest first), then by upload (newest first)',

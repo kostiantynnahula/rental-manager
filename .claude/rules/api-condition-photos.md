@@ -12,7 +12,8 @@ Separate from meter `Photo` (`api-photos.md`): no inbox, no parsing, no readings
   next). `event` CHECK_IN | CHECK_OUT | CHANGE; `takenOn` (date) is set by the user — messengers strip EXIF —
   `uploadedAt` is kept separately. `note` ≤ 500 (blank = null). `mimeType`/`size` as meter photos.
 - **Lease is derived, never validated**: detail returns `lease` = the apartment's lease with
-  `startDate ≤ takenOn ≤ endDate ?? ∞` (at most one — leases never overlap), or null. A CHECK_IN photo the day before
+  `startDate ≤ takenOn ≤ endDate ?? ∞` (`currentLeaseWhere(takenOn)`, `src/apartments/helpers/` — at most one, leases
+  never overlap), or null. A CHECK_IN photo the day before
   the lease starts is fine.
 - Upload `POST /apartments/:id/condition-photos`: multipart `files` + `event`, `takenOn`, `note?` for the whole
   request (`UploadConditionPhotosBodyDto`). Unknown **or archived** apartment → **404** (meter photos: 400 for
@@ -25,7 +26,7 @@ Separate from meter `Photo` (`api-photos.md`): no inbox, no parsing, no readings
   apartment → 409.
 - Keys: `condition-photos/YYYY/MM/<id>.<ext>`, `condition-thumbnails/YYYY/MM/<id>.webp`; month = upload day (Kyiv),
   not `takenOn` (it can be edited).
-- List `GET /apartments/:id/condition-photos?event=&from=&to=` (all optional, dates inclusive on `takenOn`), sorted
+- List `GET /apartments/:id/condition-photos?event=&from=&to=` (all optional, dates inclusive on `takenOn`; from > to → 400), sorted
   `takenOn desc, uploadedAt desc, id desc`.
 - `PATCH /condition-photos/:id` — `event`, `takenOn`, `note` (null clears; event/takenOn can't be null). Doesn't
   touch `indexStatus`: the searchable text is built from the description, not from these fields.
