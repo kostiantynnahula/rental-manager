@@ -5,7 +5,8 @@ services:
   postgres:
     # Postgres 18 + the pgvector extension (semantic search). Debian-based: switching from the old
     # postgres:18-alpine image needs a reindex — see README, "Switching to the pgvector image".
-    image: pgvector/pgvector:pg18
+    # Pinned (pgvector version + Debian release): a new libc means reindexing again, so change it on purpose.
+    image: pgvector/pgvector:0.8.7-pg18-bookworm
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?set in .env}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}

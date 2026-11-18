@@ -77,23 +77,31 @@ There is no sign-up: users come from the seed file (`seed-users.json` is gitigno
 
 ### Switching to the pgvector image
 
-Postgres runs on `pgvector/pgvector:pg18` (was `postgres:18-alpine`). The data volume is reused as is, but Alpine
-(musl) and Debian (glibc) sort text differently, so text indexes built under Alpine must be rebuilt. Once per
-existing dev DB (a fresh volume needs none of this):
+Postgres runs on `pgvector/pgvector` (pinned in `docker-compose.yml`; was `postgres:18-alpine`). The data volume is
+reused as is, but Alpine (musl) and Debian (glibc) sort text differently, so text indexes built under Alpine must be
+rebuilt — in every database, including `postgres` and `template1` (new databases, e.g. Prisma's shadow DB, are copied
+from it). Once per existing dev DB (a fresh volume needs none of this):
 
 ```bash
 set -a; source .env; set +a   # POSTGRES_USER / POSTGRES_DB for the commands below
 
-# 1. Backup only — while the old container is still running
-docker compose exec postgres pg_dump -U "$POSTGRES_USER" -Fc "$POSTGRES_DB" > backup.dump
+# 1. Backup only — while the old container is still running. -T: no TTY (it would corrupt the binary dump).
+#    Outside the repo: the dump holds real data.
+docker compose exec -T postgres pg_dump -U "$POSTGRES_USER" -Fc "$POSTGRES_DB" > ~/rental-backup.dump
 
-# 2. Recreate the container on the new image (same volume)
-pnpm infra:down && pnpm infra:up
+# 2. Recreate the container on the new image (same volume), wait until it is healthy
+pnpm infra:down && docker compose up -d --wait
 
-# 3. Rebuild indexes, record the new collation version
-docker compose exec postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
-  -c "REINDEX DATABASE \"$POSTGRES_DB\";" \
-  -c "ALTER DATABASE \"$POSTGRES_DB\" REFRESH COLLATION VERSION;"
+# 3. In every database that accepts connections: rebuild indexes; refresh the recorded collation version where
+#    there is one (Alpine records none — NULL — so after this switch only REINDEX runs; there is no warning to clear)
+for db in $(docker compose exec -T postgres psql -U "$POSTGRES_USER" -d postgres -Atc \
+  "SELECT datname FROM pg_database WHERE datallowconn"); do
+  docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$db" -v ON_ERROR_STOP=1 <<'SQL'
+SELECT format('REINDEX DATABASE %I', current_database()) \gexec
+SELECT format('ALTER DATABASE %I REFRESH COLLATION VERSION', current_database())
+  FROM pg_database WHERE datname = current_database() AND datcollversion IS NOT NULL \gexec
+SQL
+done
 
 # 4. Apply pending migrations (installs the vector extension)
 pnpm --filter api db:migrate:deploy
