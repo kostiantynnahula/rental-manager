@@ -1,5 +1,5 @@
-// BullMQ contracts: apps/api → apps/worker (photo jobs) and apps/api → apps/bot (notifications). Not part of the
-// HTTP API.
+// BullMQ contracts: apps/api → apps/worker (meter and condition photo jobs) and apps/api → apps/bot
+// (notifications). Not part of the HTTP API.
 
 // Queue for photo processing jobs.
 export const PHOTO_QUEUE = 'photos';
@@ -24,4 +24,15 @@ export interface BatchParsedJobData {
   batchId: string;
   // Opaque, as the client sent it on upload (the bot: chatId:messageId).
   replyTo: string;
+}
+
+// Queue for condition-photo jobs (its own: a 40-photo check-in must not delay meter parsing).
+export const CONDITION_PHOTO_QUEUE = 'condition-photos';
+
+// Describe a condition photo (vision → structured text, in Ukrainian) for the search index. On upload
+// jobId = photoId. The worker reads data.photoId only.
+export const DESCRIBE_CONDITION_PHOTO_JOB = 'describe-condition-photo';
+
+export interface DescribeConditionPhotoJobData {
+  photoId: string;
 }

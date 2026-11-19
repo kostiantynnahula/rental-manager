@@ -1,21 +1,26 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { parseDateOnly } from '../common/helpers/date-only.js';
 import { ApartmentsService } from '../apartments/apartments.service.js';
 import { currentLeaseWhere } from '../apartments/helpers/current-lease-where.js';
+import type { AuthUser } from '../auth/interfaces/auth-user.interface.js';
 import type { ConditionPhoto, Prisma } from '../generated/prisma/client.js';
+import { ConditionPhotoIndexStatus } from '../generated/prisma/enums.js';
 import { prepareImages } from '../images/helpers/prepare-images.js';
 import { THUMBNAIL_MIME_TYPE } from '../images/helpers/thumbnail.js';
 import type { ImageFile } from '../images/interfaces/image-file.interface.js';
 import type { PreparedImage } from '../images/interfaces/prepared-image.interface.js';
 import { leaseWithTenantsInclude } from '../leases/helpers/lease-with-tenants.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { ConditionPhotoJobsService } from '../queue/condition-photo-jobs.service.js';
 import { StorageService } from '../storage/storage.service.js';
 import { ListConditionPhotosQueryDto } from './dto/list-condition-photos-query.dto.js';
+import { SetConditionPhotoDescriptionDto } from './dto/set-condition-photo-description.dto.js';
 import { UpdateConditionPhotoDto } from './dto/update-condition-photo.dto.js';
 import { UploadConditionPhotosBodyDto } from './dto/upload-condition-photos-body.dto.js';
 import { assertSameApartment } from './helpers/assert-same-apartment.js';
@@ -31,6 +36,7 @@ export class ConditionPhotosService {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly apartments: ApartmentsService,
+    private readonly jobs: ConditionPhotoJobsService,
   ) {}
 
   // One event/takenOn/note for the whole request. All or nothing, as meter photos: every file is validated first,
@@ -56,6 +62,10 @@ export class ConditionPhotosService {
       }),
       apartmentId,
     );
+    // Jobs only after the commit, so none points at a rolled-back photo. A duplicate (or a lost race) has its job.
+    for (const { photo, duplicate } of stored.values()) {
+      if (!duplicate) await this.jobs.enqueueDescribe(photo.id);
+    }
     return uploadAnswers(prepared, stored);
   }
 
@@ -109,6 +119,28 @@ export class ConditionPhotosService {
     });
     if (count === 0) throw new NotFoundException('Condition photo not found');
     return this.findDetailOrThrow(id);
+  }
+
+  // The worker's result (API keys only). Idempotent: a retry overwrites. A failure keeps an earlier description.
+  async setDescription(
+    id: string,
+    dto: SetConditionPhotoDescriptionDto,
+    user: AuthUser,
+  ): Promise<void> {
+    if (!user.apiKeyId) throw new ForbiddenException('Only API keys can set the description');
+    if (dto.description !== undefined && dto.error !== undefined) {
+      throw new BadRequestException('Send either description or error, not both');
+    }
+    const data: Prisma.ConditionPhotoUpdateManyMutationInput = dto.description
+      ? {
+          indexStatus: ConditionPhotoIndexStatus.DESCRIBED,
+          // A plain object (class instances → JSON) for the Json column.
+          description: JSON.parse(JSON.stringify(dto.description)) as Prisma.InputJsonObject,
+          indexNote: null,
+        }
+      : { indexStatus: ConditionPhotoIndexStatus.FAILED, indexNote: dto.error };
+    const { count } = await this.prisma.conditionPhoto.updateMany({ where: { id }, data });
+    if (count === 0) throw new NotFoundException('Condition photo not found');
   }
 
   async openFile(id: string, variant: 'original' | 'thumbnail'): Promise<ImageFile> {
