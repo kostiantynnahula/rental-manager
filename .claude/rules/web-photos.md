@@ -31,6 +31,8 @@ paths:
 - 📷 elsewhere (history — one per distinct photo of the values, `HistoryPhotoLinks`; statement meters):
   `PhotoLinkButton({ photoId, label })` — loads the photo on tap and
   opens `PhotoFullscreen` (the same zoom dialog the review screen uses); 404 → "Фото видалено".
+  `PhotoFullscreen` also takes a `footer` (overlaid at the bottom) and resets zoom per `src`; condition photos use it
+  as a gallery (`web-condition-photos.md`).
 - **«Вхідні»** (`/inbox`, nav item; `InboxPage` + `InboxPhotoCard`): photos without an apartment
   (`useInboxPhotos` → `GET /photos?inbox=true`, key `photoKeys.inbox()` under `lists()`, polls every 5 s while one is
   PENDING). Upload = `UploadPhotosButton apartmentId={null}` → `POST /photos`. A photo the worker matched by serial
