@@ -1,4 +1,4 @@
-export interface PhotoKeys {
+export interface ImageKeys {
   storageKey: string;
   thumbnailKey: string;
 }

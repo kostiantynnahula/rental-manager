@@ -82,19 +82,20 @@ model Session {
 
 // Archived via isActive, never deleted (leases reference it with onDelete: Restrict).
 model Apartment {
-  id         String            @id @default(uuid()) @db.Uuid
+  id              String            @id @default(uuid()) @db.Uuid
   // Short label, e.g. "Shevchenka 12/5".
-  name       String            @unique
-  address    String
-  notes      String?
-  isActive   Boolean           @default(true)
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
-  leases     Lease[]
-  meters     Meter[]
-  photos     Photo[]
-  tariffs    ApartmentTariff[]
-  statements Statement[]
+  name            String            @unique
+  address         String
+  notes           String?
+  isActive        Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  leases          Lease[]
+  meters          Meter[]
+  photos          Photo[]
+  conditionPhotos ConditionPhoto[]
+  tariffs         ApartmentTariff[]
+  statements      Statement[]
 
   @@map("apartments")
 }
@@ -274,6 +275,57 @@ enum PhotoParseStatus {
   FAILED
 
   @@map("photo_parse_status")
+}
+
+// Condition photos: the apartment's state at check-in, check-out, or when something changes during a lease.
+enum ConditionPhotoEvent {
+  CHECK_IN
+  CHECK_OUT
+  CHANGE
+
+  @@map("condition_photo_event")
+}
+
+// The indexing pipeline (#129/#130): PENDING on upload → DESCRIBED (worker) → INDEXED (embedded), or FAILED.
+enum ConditionPhotoIndexStatus {
+  PENDING
+  DESCRIBED
+  INDEXED
+  FAILED
+
+  @@map("condition_photo_index_status")
+}
+
+// A photo of an apartment's condition. Belongs to the apartment, not to a lease: the lease is derived from takenOn
+// (leases never overlap). Separate from meter Photo: no inbox, no parsing, no readings.
+model ConditionPhoto {
+  id           String                    @id @default(uuid()) @db.Uuid
+  apartmentId  String                    @db.Uuid
+  apartment    Apartment                 @relation(fields: [apartmentId], references: [id], onDelete: Restrict)
+  event        ConditionPhotoEvent
+  // Set by the user (messengers strip EXIF), not the upload day.
+  takenOn      DateTime                  @db.Date
+  note         String?                   @db.VarChar(500)
+  uploadedAt   DateTime                  @default(now())
+  // condition-photos/YYYY/MM/<id>.<ext> — never derived from the original filename.
+  storageKey   String                    @unique
+  // condition-thumbnails/YYYY/MM/<id>.webp
+  thumbnailKey String                    @unique
+  // Detected from the file content, not from the client's header.
+  mimeType     String
+  size         Int
+  // Lowercase hex; dedup key (its own space: the same bytes as a meter Photo don't conflict).
+  sha256       String                    @unique
+  width        Int
+  height       Int
+  indexStatus  ConditionPhotoIndexStatus @default(PENDING)
+  // The worker's structured description (#129).
+  description  Json?
+  // Why indexing failed (the worker's or the API's text).
+  indexNote    String?
+
+  @@index([apartmentId, takenOn])
+  @@map("condition_photos")
 }
 
 model Photo {

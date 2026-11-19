@@ -35,6 +35,9 @@ consumption × tariff per utility + fixed fees.
 - **Photo** — a meter photo (the original is kept unchanged forever). Belongs to an Apartment, or is in the **inbox**
   (`apartmentId` null: uploaded without an apartment, e.g. by the bot) until one is assigned. Photos stored by one
   upload request share a `batchId` (a batch); the bot's upload also sets `replyTo` (where to answer, opaque).
+- **Condition photo** — a photo of an Apartment's condition (separate from meter photos): `event` CHECK_IN |
+  CHECK_OUT | CHANGE, `takenOn` (set by me — messengers strip EXIF), optional note. Belongs to the apartment, not to
+  a lease; the lease is derived from `takenOn`. Later described by the worker and searchable (epic #125).
 - **Meter replacement** — the old meter gets a FINAL reading and `removedAt`; the new one gets `installedAt` and
   an INITIAL reading. That month's consumption = (FINAL old − previous old) + (current new − INITIAL new).
 - **Tariff** — price per unit, versioned by effective date.

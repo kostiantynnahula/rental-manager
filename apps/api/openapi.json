@@ -1998,6 +1998,368 @@
         ]
       }
     },
+    "/apartments/{apartmentId}/condition-photos": {
+      "post": {
+        "operationId": "ApartmentConditionPhotosController_upload",
+        "parameters": [
+          {
+            "name": "apartmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "files",
+                  "event",
+                  "takenOn"
+                ],
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  },
+                  "event": {
+                    "type": "string",
+                    "enum": [
+                      "CHECK_IN",
+                      "CHECK_OUT",
+                      "CHANGE"
+                    ]
+                  },
+                  "takenOn": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2026-11-01"
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "In the order sent. duplicate = already a photo of this apartment (existing record returned)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConditionPhotoUploadResultDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No files, too many files, unsupported type (JPEG/PNG/WebP only), invalid event/takenOn/note"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found or archived"
+          },
+          "409": {
+            "description": "The same photo was uploaded for another apartment"
+          },
+          "413": {
+            "description": "A file is over the size limit"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "condition-photos"
+        ]
+      },
+      "get": {
+        "operationId": "ApartmentConditionPhotosController_list",
+        "parameters": [
+          {
+            "name": "apartmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "event",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ConditionPhotoEvent"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "takenOn ≥ from",
+            "schema": {
+              "format": "date",
+              "example": "2026-01-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "takenOn ≤ to",
+            "schema": {
+              "format": "date",
+              "example": "2026-12-31",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "By takenOn (newest first), then by upload (newest first)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConditionPhotoResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid event or date, from after to"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "condition-photos"
+        ]
+      }
+    },
+    "/condition-photos/{id}": {
+      "get": {
+        "operationId": "ConditionPhotosController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConditionPhotoDetailResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Condition photo not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "condition-photos"
+        ]
+      },
+      "patch": {
+        "operationId": "ConditionPhotosController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateConditionPhotoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConditionPhotoDetailResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Condition photo not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "condition-photos"
+        ]
+      },
+      "delete": {
+        "operationId": "ConditionPhotosController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Row and stored objects deleted"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Condition photo not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "condition-photos"
+        ]
+      }
+    },
+    "/condition-photos/{id}/file": {
+      "get": {
+        "operationId": "ConditionPhotosController_file",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The original, unchanged"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Condition photo not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "condition-photos"
+        ]
+      }
+    },
+    "/condition-photos/{id}/thumbnail": {
+      "get": {
+        "operationId": "ConditionPhotosController_thumbnail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "WebP, max 400px"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Condition photo not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "condition-photos"
+        ]
+      }
+    },
     "/meters/{meterId}/readings": {
       "get": {
         "description": "API key scope: readings:read",
@@ -5517,6 +5879,359 @@
         "required": [
           "status"
         ]
+      },
+      "ConditionPhotoEvent": {
+        "type": "string",
+        "enum": [
+          "CHECK_IN",
+          "CHECK_OUT",
+          "CHANGE"
+        ]
+      },
+      "ConditionPhotoIndexStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "DESCRIBED",
+          "INDEXED",
+          "FAILED"
+        ],
+        "description": "PENDING on upload → DESCRIBED → INDEXED (searchable), or FAILED"
+      },
+      "ConditionPhotoUploadResultDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "apartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "event": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionPhotoEvent"
+              }
+            ]
+          },
+          "takenOn": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-11-01"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "uploadedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string",
+            "example": "image/jpeg",
+            "description": "Detected from the file content"
+          },
+          "size": {
+            "type": "number",
+            "description": "Bytes"
+          },
+          "sha256": {
+            "type": "string",
+            "example": "e3b0c442…",
+            "description": "SHA-256 of the original (hex)"
+          },
+          "width": {
+            "type": "number",
+            "description": "As displayed (EXIF orientation applied)"
+          },
+          "height": {
+            "type": "number"
+          },
+          "indexStatus": {
+            "description": "PENDING on upload → DESCRIBED → INDEXED (searchable), or FAILED",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionPhotoIndexStatus"
+              }
+            ]
+          },
+          "description": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true,
+            "description": "The worker's structured description; null until DESCRIBED"
+          },
+          "indexNote": {
+            "type": "string",
+            "nullable": true,
+            "description": "Why indexing failed"
+          },
+          "fileUrl": {
+            "type": "string",
+            "example": "/api/condition-photos/3f1c…/file"
+          },
+          "thumbnailUrl": {
+            "type": "string",
+            "example": "/api/condition-photos/3f1c…/thumbnail"
+          },
+          "duplicate": {
+            "type": "boolean",
+            "description": "true = the same file (by SHA-256) is already a photo of this apartment; existing record, its own event/takenOn/note kept"
+          }
+        },
+        "required": [
+          "id",
+          "apartmentId",
+          "event",
+          "takenOn",
+          "note",
+          "uploadedAt",
+          "mimeType",
+          "size",
+          "sha256",
+          "width",
+          "height",
+          "indexStatus",
+          "description",
+          "indexNote",
+          "fileUrl",
+          "thumbnailUrl",
+          "duplicate"
+        ]
+      },
+      "ConditionPhotoResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "apartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "event": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionPhotoEvent"
+              }
+            ]
+          },
+          "takenOn": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-11-01"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "uploadedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string",
+            "example": "image/jpeg",
+            "description": "Detected from the file content"
+          },
+          "size": {
+            "type": "number",
+            "description": "Bytes"
+          },
+          "sha256": {
+            "type": "string",
+            "example": "e3b0c442…",
+            "description": "SHA-256 of the original (hex)"
+          },
+          "width": {
+            "type": "number",
+            "description": "As displayed (EXIF orientation applied)"
+          },
+          "height": {
+            "type": "number"
+          },
+          "indexStatus": {
+            "description": "PENDING on upload → DESCRIBED → INDEXED (searchable), or FAILED",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionPhotoIndexStatus"
+              }
+            ]
+          },
+          "description": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true,
+            "description": "The worker's structured description; null until DESCRIBED"
+          },
+          "indexNote": {
+            "type": "string",
+            "nullable": true,
+            "description": "Why indexing failed"
+          },
+          "fileUrl": {
+            "type": "string",
+            "example": "/api/condition-photos/3f1c…/file"
+          },
+          "thumbnailUrl": {
+            "type": "string",
+            "example": "/api/condition-photos/3f1c…/thumbnail"
+          }
+        },
+        "required": [
+          "id",
+          "apartmentId",
+          "event",
+          "takenOn",
+          "note",
+          "uploadedAt",
+          "mimeType",
+          "size",
+          "sha256",
+          "width",
+          "height",
+          "indexStatus",
+          "description",
+          "indexNote",
+          "fileUrl",
+          "thumbnailUrl"
+        ]
+      },
+      "ConditionPhotoDetailResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "apartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "event": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionPhotoEvent"
+              }
+            ]
+          },
+          "takenOn": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-11-01"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "uploadedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string",
+            "example": "image/jpeg",
+            "description": "Detected from the file content"
+          },
+          "size": {
+            "type": "number",
+            "description": "Bytes"
+          },
+          "sha256": {
+            "type": "string",
+            "example": "e3b0c442…",
+            "description": "SHA-256 of the original (hex)"
+          },
+          "width": {
+            "type": "number",
+            "description": "As displayed (EXIF orientation applied)"
+          },
+          "height": {
+            "type": "number"
+          },
+          "indexStatus": {
+            "description": "PENDING on upload → DESCRIBED → INDEXED (searchable), or FAILED",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionPhotoIndexStatus"
+              }
+            ]
+          },
+          "description": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true,
+            "description": "The worker's structured description; null until DESCRIBED"
+          },
+          "indexNote": {
+            "type": "string",
+            "nullable": true,
+            "description": "Why indexing failed"
+          },
+          "fileUrl": {
+            "type": "string",
+            "example": "/api/condition-photos/3f1c…/file"
+          },
+          "thumbnailUrl": {
+            "type": "string",
+            "example": "/api/condition-photos/3f1c…/thumbnail"
+          },
+          "lease": {
+            "nullable": true,
+            "description": "The apartment's lease covering takenOn (leases never overlap), or null. Derived, never validated",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LeaseResponseDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "apartmentId",
+          "event",
+          "takenOn",
+          "note",
+          "uploadedAt",
+          "mimeType",
+          "size",
+          "sha256",
+          "width",
+          "height",
+          "indexStatus",
+          "description",
+          "indexNote",
+          "fileUrl",
+          "thumbnailUrl",
+          "lease"
+        ]
+      },
+      "UpdateConditionPhotoDto": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionPhotoEvent"
+              }
+            ]
+          },
+          "takenOn": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-11-01"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500
+          }
+        }
       },
       "ReadingSource": {
         "type": "string",

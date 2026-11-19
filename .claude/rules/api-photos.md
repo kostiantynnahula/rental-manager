@@ -1,11 +1,15 @@
 ---
 paths:
-  - 'apps/api/src/{photos,storage,queue}/**'
+  - 'apps/api/src/{photos,storage,queue,images}/**'
 ---
 
 # Photos (API)
 
 ## Photos (`src/photos/`, storage in `src/storage/`)
+
+- Shared with condition photos (`api-condition-photos.md`): `src/images/` — type detection, thumbnail, sha256, the
+  validation pass `prepareImages(files, findExisting)`, `imageKeys`, Multer config, `toStreamableFile`; and
+  `StorageService.putAll` (all or nothing) / `deleteAll` (logs orphans, never throws). A change there changes both.
 
 - Storage: `StorageService` (`put` / `getStream` / `delete`) over `@aws-sdk/client-s3`; MinIO in dev. Config:
   `S3_ENDPOINT` (omit for real S3), `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`,

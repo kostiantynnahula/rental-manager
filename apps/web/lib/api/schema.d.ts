@@ -464,6 +464,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/apartments/{apartmentId}/condition-photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ApartmentConditionPhotosController_list"];
+        put?: never;
+        post: operations["ApartmentConditionPhotosController_upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/condition-photos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ConditionPhotosController_findOne"];
+        put?: never;
+        post?: never;
+        delete: operations["ConditionPhotosController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["ConditionPhotosController_update"];
+        trace?: never;
+    };
+    "/condition-photos/{id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ConditionPhotosController_file"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/condition-photos/{id}/thumbnail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ConditionPhotosController_thumbnail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/meters/{meterId}/readings": {
         parameters: {
             query?: never;
@@ -1451,6 +1515,152 @@ export interface components {
             status: components["schemas"]["PhotoParseResult"];
             /** @description Why nothing was matched, or the error */
             note?: string;
+        };
+        /** @enum {string} */
+        ConditionPhotoEvent: "CHECK_IN" | "CHECK_OUT" | "CHANGE";
+        /**
+         * @description PENDING on upload → DESCRIBED → INDEXED (searchable), or FAILED
+         * @enum {string}
+         */
+        ConditionPhotoIndexStatus: "PENDING" | "DESCRIBED" | "INDEXED" | "FAILED";
+        ConditionPhotoUploadResultDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            apartmentId: string;
+            event: components["schemas"]["ConditionPhotoEvent"];
+            /**
+             * Format: date
+             * @example 2026-11-01
+             */
+            takenOn: string;
+            note: string | null;
+            /** Format: date-time */
+            uploadedAt: string;
+            /**
+             * @description Detected from the file content
+             * @example image/jpeg
+             */
+            mimeType: string;
+            /** @description Bytes */
+            size: number;
+            /**
+             * @description SHA-256 of the original (hex)
+             * @example e3b0c442…
+             */
+            sha256: string;
+            /** @description As displayed (EXIF orientation applied) */
+            width: number;
+            height: number;
+            /** @description PENDING on upload → DESCRIBED → INDEXED (searchable), or FAILED */
+            indexStatus: components["schemas"]["ConditionPhotoIndexStatus"];
+            /** @description The worker's structured description; null until DESCRIBED */
+            description: {
+                [key: string]: unknown;
+            } | null;
+            /** @description Why indexing failed */
+            indexNote: string | null;
+            /** @example /api/condition-photos/3f1c…/file */
+            fileUrl: string;
+            /** @example /api/condition-photos/3f1c…/thumbnail */
+            thumbnailUrl: string;
+            /** @description true = the same file (by SHA-256) is already a photo of this apartment; existing record, its own event/takenOn/note kept */
+            duplicate: boolean;
+        };
+        ConditionPhotoResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            apartmentId: string;
+            event: components["schemas"]["ConditionPhotoEvent"];
+            /**
+             * Format: date
+             * @example 2026-11-01
+             */
+            takenOn: string;
+            note: string | null;
+            /** Format: date-time */
+            uploadedAt: string;
+            /**
+             * @description Detected from the file content
+             * @example image/jpeg
+             */
+            mimeType: string;
+            /** @description Bytes */
+            size: number;
+            /**
+             * @description SHA-256 of the original (hex)
+             * @example e3b0c442…
+             */
+            sha256: string;
+            /** @description As displayed (EXIF orientation applied) */
+            width: number;
+            height: number;
+            /** @description PENDING on upload → DESCRIBED → INDEXED (searchable), or FAILED */
+            indexStatus: components["schemas"]["ConditionPhotoIndexStatus"];
+            /** @description The worker's structured description; null until DESCRIBED */
+            description: {
+                [key: string]: unknown;
+            } | null;
+            /** @description Why indexing failed */
+            indexNote: string | null;
+            /** @example /api/condition-photos/3f1c…/file */
+            fileUrl: string;
+            /** @example /api/condition-photos/3f1c…/thumbnail */
+            thumbnailUrl: string;
+        };
+        ConditionPhotoDetailResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            apartmentId: string;
+            event: components["schemas"]["ConditionPhotoEvent"];
+            /**
+             * Format: date
+             * @example 2026-11-01
+             */
+            takenOn: string;
+            note: string | null;
+            /** Format: date-time */
+            uploadedAt: string;
+            /**
+             * @description Detected from the file content
+             * @example image/jpeg
+             */
+            mimeType: string;
+            /** @description Bytes */
+            size: number;
+            /**
+             * @description SHA-256 of the original (hex)
+             * @example e3b0c442…
+             */
+            sha256: string;
+            /** @description As displayed (EXIF orientation applied) */
+            width: number;
+            height: number;
+            /** @description PENDING on upload → DESCRIBED → INDEXED (searchable), or FAILED */
+            indexStatus: components["schemas"]["ConditionPhotoIndexStatus"];
+            /** @description The worker's structured description; null until DESCRIBED */
+            description: {
+                [key: string]: unknown;
+            } | null;
+            /** @description Why indexing failed */
+            indexNote: string | null;
+            /** @example /api/condition-photos/3f1c…/file */
+            fileUrl: string;
+            /** @example /api/condition-photos/3f1c…/thumbnail */
+            thumbnailUrl: string;
+            /** @description The apartment's lease covering takenOn (leases never overlap), or null. Derived, never validated */
+            lease: components["schemas"]["LeaseResponseDto"] | null;
+        };
+        UpdateConditionPhotoDto: {
+            event?: components["schemas"]["ConditionPhotoEvent"];
+            /**
+             * Format: date
+             * @example 2026-11-01
+             */
+            takenOn?: string;
+            note?: string | null;
         };
         /** @enum {string} */
         ReadingSource: "MANUAL" | "PHOTO";
@@ -3956,6 +4166,302 @@ export interface operations {
                 content?: never;
             };
             /** @description Photo not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApartmentConditionPhotosController_list: {
+        parameters: {
+            query?: {
+                event?: components["schemas"]["ConditionPhotoEvent"];
+                /** @description takenOn ≥ from */
+                from?: string;
+                /** @description takenOn ≤ to */
+                to?: string;
+            };
+            header?: never;
+            path: {
+                apartmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description By takenOn (newest first), then by upload (newest first) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConditionPhotoResponseDto"][];
+                };
+            };
+            /** @description Invalid event or date, from after to */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Apartment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApartmentConditionPhotosController_upload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                apartmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    files: string[];
+                    /** @enum {string} */
+                    event: "CHECK_IN" | "CHECK_OUT" | "CHANGE";
+                    /**
+                     * Format: date
+                     * @example 2026-11-01
+                     */
+                    takenOn: string;
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description In the order sent. duplicate = already a photo of this apartment (existing record returned) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConditionPhotoUploadResultDto"][];
+                };
+            };
+            /** @description No files, too many files, unsupported type (JPEG/PNG/WebP only), invalid event/takenOn/note */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Apartment not found or archived */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The same photo was uploaded for another apartment */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A file is over the size limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConditionPhotosController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConditionPhotoDetailResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Condition photo not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConditionPhotosController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Row and stored objects deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Condition photo not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConditionPhotosController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateConditionPhotoDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConditionPhotoDetailResponseDto"];
+                };
+            };
+            /** @description Invalid body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Condition photo not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConditionPhotosController_file: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The original, unchanged */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Condition photo not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConditionPhotosController_thumbnail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description WebP, max 400px */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Condition photo not found */
             404: {
                 headers: {
                     [name: string]: unknown;
