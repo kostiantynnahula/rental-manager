@@ -2294,6 +2294,7 @@
     },
     "/condition-photos/{id}/file": {
       "get": {
+        "description": "API key scope: condition-photos:read",
         "operationId": "ConditionPhotosController_file",
         "parameters": [
           {
@@ -2312,6 +2313,9 @@
           "401": {
             "description": ""
           },
+          "403": {
+            "description": "API key without condition-photos:read"
+          },
           "404": {
             "description": "Condition photo not found"
           }
@@ -2319,8 +2323,12 @@
         "security": [
           {
             "cookie": []
+          },
+          {
+            "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "condition-photos"
         ]
@@ -2355,6 +2363,61 @@
             "cookie": []
           }
         ],
+        "tags": [
+          "condition-photos"
+        ]
+      }
+    },
+    "/condition-photos/{id}/description": {
+      "put": {
+        "description": "description → DESCRIBED, error → FAILED (+ indexNote). Idempotent. API key scope: condition-photos:describe (keys only)",
+        "operationId": "ConditionPhotosController_setDescription",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetConditionPhotoDescriptionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "indexStatus, description / indexNote set"
+          },
+          "400": {
+            "description": "Invalid body, or both description and error"
+          },
+          "401": {
+            "description": ""
+          },
+          "403": {
+            "description": "Not an API key, or a key without condition-photos:describe"
+          },
+          "404": {
+            "description": "Condition photo not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
         "tags": [
           "condition-photos"
         ]
@@ -6230,6 +6293,83 @@
             "type": "string",
             "nullable": true,
             "maxLength": 500
+          }
+        }
+      },
+      "ConditionPhotoRoom": {
+        "type": "string",
+        "enum": [
+          "KITCHEN",
+          "BATHROOM",
+          "BEDROOM",
+          "LIVING",
+          "HALL",
+          "BALCONY",
+          "OTHER"
+        ]
+      },
+      "ConditionPhotoItemDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "холодильник",
+            "maxLength": 200
+          },
+          "count": {
+            "type": "number",
+            "minimum": 1,
+            "description": "Only when more than one is visible"
+          },
+          "condition": {
+            "type": "string",
+            "example": "подряпина на дверцятах",
+            "maxLength": 500,
+            "description": "Visible condition, damage or wear"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "ConditionPhotoDescriptionDto": {
+        "type": "object",
+        "properties": {
+          "room": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionPhotoRoom"
+              }
+            ]
+          },
+          "items": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConditionPhotoItemDto"
+            }
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "room",
+          "items",
+          "summary"
+        ]
+      },
+      "SetConditionPhotoDescriptionDto": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "$ref": "#/components/schemas/ConditionPhotoDescriptionDto"
+          },
+          "error": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Why the photo could not be described"
           }
         }
       },

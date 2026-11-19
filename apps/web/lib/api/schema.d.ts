@@ -503,6 +503,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description API key scope: condition-photos:read */
         get: operations["ConditionPhotosController_file"];
         put?: never;
         post?: never;
@@ -521,6 +522,23 @@ export interface paths {
         };
         get: operations["ConditionPhotosController_thumbnail"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/condition-photos/{id}/description": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description description → DESCRIBED, error → FAILED (+ indexNote). Idempotent. API key scope: condition-photos:describe (keys only) */
+        put: operations["ConditionPhotosController_setDescription"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1661,6 +1679,29 @@ export interface components {
              */
             takenOn?: string;
             note?: string | null;
+        };
+        /** @enum {string} */
+        ConditionPhotoRoom: "KITCHEN" | "BATHROOM" | "BEDROOM" | "LIVING" | "HALL" | "BALCONY" | "OTHER";
+        ConditionPhotoItemDto: {
+            /** @example холодильник */
+            name: string;
+            /** @description Only when more than one is visible */
+            count?: number;
+            /**
+             * @description Visible condition, damage or wear
+             * @example подряпина на дверцятах
+             */
+            condition?: string;
+        };
+        ConditionPhotoDescriptionDto: {
+            room: components["schemas"]["ConditionPhotoRoom"];
+            items: components["schemas"]["ConditionPhotoItemDto"][];
+            summary: string;
+        };
+        SetConditionPhotoDescriptionDto: {
+            description?: components["schemas"]["ConditionPhotoDescriptionDto"];
+            /** @description Why the photo could not be described */
+            error?: string;
         };
         /** @enum {string} */
         ReadingSource: "MANUAL" | "PHOTO";
@@ -4428,6 +4469,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description API key without condition-photos:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Condition photo not found */
             404: {
                 headers: {
@@ -4456,6 +4504,57 @@ export interface operations {
                 content?: never;
             };
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Condition photo not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConditionPhotosController_setDescription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetConditionPhotoDescriptionDto"];
+            };
+        };
+        responses: {
+            /** @description indexStatus, description / indexNote set */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid body, or both description and error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an API key, or a key without condition-photos:describe */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
