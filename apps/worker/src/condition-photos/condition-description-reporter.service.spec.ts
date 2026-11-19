@@ -24,6 +24,14 @@ describe('ConditionDescriptionReporter.reportFailure', () => {
     expect(error.endsWith('…')).toBe(true);
   });
 
+  it('sends a fixed text for an empty error (the API rejects an empty one)', async () => {
+    const { reporter, requests } = conditionPhotoServices({
+      routes: { [DESCRIPTION]: noContent() },
+    });
+    await reporter.reportFailure('photo-1', '  ');
+    expect(requests.map((r) => r.body)).toEqual([{ error: 'Unknown error' }]);
+  });
+
   it('logs a refusal with the scope hint instead of throwing', async () => {
     const { reporter, logs } = conditionPhotoServices({ routes: { [DESCRIPTION]: status(403) } });
     await expect(reporter.reportFailure('photo-1', 'boom')).resolves.toBeUndefined();

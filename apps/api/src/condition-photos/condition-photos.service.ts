@@ -63,9 +63,12 @@ export class ConditionPhotosService {
       apartmentId,
     );
     // Jobs only after the commit, so none points at a rolled-back photo. A duplicate (or a lost race) has its job.
-    for (const { photo, duplicate } of stored.values()) {
-      if (!duplicate) await this.jobs.enqueueDescribe(photo.id);
-    }
+    // In parallel: with Redis down each add waits for its timeout, and a 40-photo check-in must not wait 40 times.
+    await Promise.all(
+      [...stored.values()]
+        .filter(({ duplicate }) => !duplicate)
+        .map(({ photo }) => this.jobs.enqueueDescribe(photo.id)),
+    );
     return uploadAnswers(prepared, stored);
   }
 
@@ -121,7 +124,9 @@ export class ConditionPhotosService {
     return this.findDetailOrThrow(id);
   }
 
-  // The worker's result (API keys only). Idempotent: a retry overwrites. A failure keeps an earlier description.
+  // The worker's result (API keys only). Idempotent: a retry overwrites. An error never overwrites a usable
+  // description: a photo already DESCRIBED/INDEXED stays so (e.g. the worker lost the answer to a successful PUT and
+  // then failed its retries) — a no-op 204.
   async setDescription(
     id: string,
     dto: SetConditionPhotoDescriptionDto,
@@ -139,8 +144,17 @@ export class ConditionPhotosService {
           indexNote: null,
         }
       : { indexStatus: ConditionPhotoIndexStatus.FAILED, indexNote: dto.error };
-    const { count } = await this.prisma.conditionPhoto.updateMany({ where: { id }, data });
-    if (count === 0) throw new NotFoundException('Condition photo not found');
+    const where: Prisma.ConditionPhotoWhereInput = dto.description
+      ? { id }
+      : {
+          id,
+          indexStatus: {
+            notIn: [ConditionPhotoIndexStatus.DESCRIBED, ConditionPhotoIndexStatus.INDEXED],
+          },
+        };
+    const { count } = await this.prisma.conditionPhoto.updateMany({ where, data });
+    // Nothing updated: unknown photo → 404; an error for a described one → skipped on purpose.
+    if (count === 0) await this.findOrThrow(id);
   }
 
   async openFile(id: string, variant: 'original' | 'thumbnail'): Promise<ImageFile> {

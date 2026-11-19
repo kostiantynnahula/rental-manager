@@ -2,6 +2,7 @@
 paths:
   - 'apps/worker/src/extraction/**'
   - 'apps/worker/src/scripts/**'
+  - 'apps/worker/src/llm/**'
 ---
 
 # Photo extraction (worker, `src/extraction/`)
@@ -12,6 +13,10 @@ paths:
 - Structured output via `withStructuredOutput(schema, { method: 'jsonSchema' })` (native `output_config.format`).
   **Never `functionCalling`**: it forces `tool_choice`, which current Claude models reject with a 400. No `thinking` /
   `temperature`: current models think adaptively, `outputConfig.effort` sets the depth.
+- The model is built by `chatModel(config, { model, maxTokens, effort? })` (`src/llm/chat-model.ts`), shared with the
+  condition photo describer (`worker-condition-photos.md`): provider switch on `EXTRACTION_PROVIDER`, no
+  `ANTHROPIC_API_KEY` → `ExtractionNotConfiguredError` before anything is built. Extraction passes
+  `EXTRACTION_MODEL` + `EXTRACTION_EFFORT`.
 - The SDK turns JSON-schema `enum` into a description hint (not enforced by the API), so `meterId` is a plain string
   and `normalizeExtraction()` (pure, `helpers/`) enforces the candidates: unknown id → null + issue; also comma → dot,
   leading zeros dropped (`00532.20` → `532.20`), serial → digits, value not a meter number / zone not on the meter →

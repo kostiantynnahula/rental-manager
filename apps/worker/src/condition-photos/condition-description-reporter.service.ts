@@ -15,7 +15,8 @@ export class ConditionDescriptionReporter {
   async reportFailure(photoId: string, error: string): Promise<void> {
     try {
       const res = await this.api.putConditionPhotoDescription(photoId, {
-        error: truncate(error),
+        // The API rejects an empty error (the photo would stay PENDING).
+        error: truncate(error.trim() || 'Unknown error'),
       });
       if (res.ok) return;
       const hint =
