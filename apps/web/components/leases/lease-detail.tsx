@@ -4,7 +4,6 @@ import { ChevronLeft, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ConditionPhotoTimeline } from '@/components/condition-photos/condition-photo-timeline';
-import { defaultEvent } from '@/components/condition-photos/helpers/default-event';
 import { NotFoundState } from '@/components/not-found-state';
 import { QueryError } from '@/components/query-error';
 import { Button } from '@/components/ui/button';
@@ -137,12 +136,12 @@ export function LeaseDetail() {
           <CardTitle>Стан квартири</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Photos with takenOn within the lease (the API derives the lease from takenOn the same way). */}
+          {/* Upload is hidden only once the apartment is known to be archived; while it loads (or if it
+              failed) the button shows and the API has the last word. */}
           <ConditionPhotoTimeline
             apartmentId={data.apartmentId}
-            range={{ from: data.startDate, to: data.endDate ?? undefined }}
-            canUpload={apartment.data?.isActive === true}
-            defaultEvent={defaultEvent(data)}
+            lease={data}
+            canUpload={apartment.data?.isActive !== false}
             emptyText="За час договору фото стану немає"
           />
         </CardContent>

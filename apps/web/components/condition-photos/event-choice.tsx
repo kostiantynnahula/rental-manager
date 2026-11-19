@@ -10,11 +10,12 @@ interface EventChoiceProps {
   labelId: string;
 }
 
-// Three options → a segmented control (one tap) rather than a select.
+// Three options → a segmented control (one tap) rather than a select. Toggle buttons (aria-pressed), like the
+// photo filter: a radiogroup role would also promise roving focus and arrow keys.
 export function EventChoice({ value, onChange, labelId }: EventChoiceProps) {
   return (
     <div
-      role="radiogroup"
+      role="group"
       aria-labelledby={labelId}
       className="grid grid-cols-3 rounded-lg bg-muted p-1"
     >
@@ -22,8 +23,7 @@ export function EventChoice({ value, onChange, labelId }: EventChoiceProps) {
         <button
           key={event}
           type="button"
-          role="radio"
-          aria-checked={value === event}
+          aria-pressed={value === event}
           onClick={() => onChange(event)}
           className={cn(
             'h-10 rounded-md px-2 text-sm font-medium text-muted-foreground transition-colors md:h-8',

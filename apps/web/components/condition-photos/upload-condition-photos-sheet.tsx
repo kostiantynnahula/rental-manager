@@ -7,22 +7,23 @@ import { FormSheet } from '@/components/form-sheet';
 import { Button } from '@/components/ui/button';
 import {
   useUploadConditionPhotos,
-  type ConditionPhotoEvent,
   type UploadConditionPhotosInput,
 } from '@/lib/api/queries/condition-photos';
+import type { LeaseDates } from './interfaces/lease-dates.interface';
 import { uploadErrorMessage } from './helpers/upload-error-message';
 import { UploadConditionPhotosForm } from './upload-condition-photos-form';
 
 interface UploadConditionPhotosSheetProps {
   apartmentId: string;
-  defaultEvent: ConditionPhotoEvent;
+  // Lease page: event/date defaults and the out-of-lease hint.
+  lease?: LeaseDates;
 }
 
 // "Додати фото стану" → a sheet. On an error it stays open: sending the same files again is safe
 // (already stored ones come back as duplicates).
 export function UploadConditionPhotosSheet({
   apartmentId,
-  defaultEvent,
+  lease,
 }: UploadConditionPhotosSheetProps) {
   const [open, setOpen] = useState(false);
   const upload = useUploadConditionPhotos(apartmentId);
@@ -59,11 +60,7 @@ export function UploadConditionPhotosSheet({
       >
         {/* Mounted only while open: fresh defaults (today) every time. */}
         {open && (
-          <UploadConditionPhotosForm
-            defaultEvent={defaultEvent}
-            pending={upload.isPending}
-            onSubmit={submit}
-          />
+          <UploadConditionPhotosForm lease={lease} pending={upload.isPending} onSubmit={submit} />
         )}
       </FormSheet>
     </>

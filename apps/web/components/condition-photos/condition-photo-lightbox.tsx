@@ -29,6 +29,11 @@ export function ConditionPhotoLightbox({
   const hasPrev = current !== null && current > 0;
   const hasNext = current !== null && current < photos.length - 1;
 
+  // The list emptied while open (last photo deleted): close, or the next upload would reopen it by itself.
+  useEffect(() => {
+    if (index !== null && photos.length === 0) onIndexChange(null);
+  }, [index, photos.length, onIndexChange]);
+
   useEffect(() => {
     if (current === null) return;
     function onKey(e: KeyboardEvent) {

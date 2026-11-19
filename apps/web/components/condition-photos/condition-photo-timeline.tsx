@@ -3,37 +3,37 @@
 import { useMemo, useState } from 'react';
 import { QueryError } from '@/components/query-error';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  useConditionPhotos,
-  type ConditionPhotoEvent,
-  type ConditionPhotoRange,
-} from '@/lib/api/queries/condition-photos';
+import { useConditionPhotos, type ConditionPhotoRange } from '@/lib/api/queries/condition-photos';
 import { formatDate } from '@/lib/format';
 import { ConditionPhotoCard } from './condition-photo-card';
 import { ConditionPhotoLightbox } from './condition-photo-lightbox';
 import { EVENT_LABELS } from './constants/events';
 import { groupByDayEvent } from './helpers/group-by-day-event';
+import type { LeaseDates } from './interfaces/lease-dates.interface';
 import { UploadConditionPhotosSheet } from './upload-condition-photos-sheet';
 
 const GRID = 'grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4';
 
 interface ConditionPhotoTimelineProps {
   apartmentId: string;
-  range?: ConditionPhotoRange;
+  // Lease page: only photos with takenOn within the lease; upload defaults follow it.
+  lease?: LeaseDates;
   // false for an archived apartment (the API refuses uploads).
   canUpload: boolean;
-  defaultEvent: ConditionPhotoEvent;
   emptyText: string;
 }
 
 // Groups by date + event (newest first), thumbnails → lightbox over the whole list. Apartment tab and lease page.
 export function ConditionPhotoTimeline({
   apartmentId,
-  range,
+  lease,
   canUpload,
-  defaultEvent,
   emptyText,
 }: ConditionPhotoTimelineProps) {
+  // Same rule as the API's lease of a photo (open-ended → from only).
+  const range: ConditionPhotoRange | undefined = lease
+    ? { from: lease.startDate, to: lease.endDate ?? undefined }
+    : undefined;
   const photos = useConditionPhotos(apartmentId, range);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const list = photos.data;
@@ -44,9 +44,7 @@ export function ConditionPhotoTimeline({
 
   return (
     <div className="space-y-4">
-      {canUpload && (
-        <UploadConditionPhotosSheet apartmentId={apartmentId} defaultEvent={defaultEvent} />
-      )}
+      {canUpload && <UploadConditionPhotosSheet apartmentId={apartmentId} lease={lease} />}
 
       {photos.isError ? (
         <QueryError error={photos.error} onRetry={() => void photos.refetch()} />

@@ -10,7 +10,6 @@ export function ApartmentConditionTab({ apartment }: { apartment: Apartment }) {
     <ConditionPhotoTimeline
       apartmentId={apartment.id}
       canUpload={apartment.isActive}
-      defaultEvent="CHANGE"
       emptyText="Фото стану ще не завантажені"
     />
   );
