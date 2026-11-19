@@ -15,10 +15,20 @@ interface PhotoFullscreenProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children?: ReactNode;
+  // Overlaid at the bottom (e.g. a caption and prev/next in a gallery).
+  footer?: ReactNode;
 }
 
 // Fullscreen photo with pinch zoom / pan / double-tap, so the meter digits are readable on a phone.
-export function PhotoFullscreen({ src, alt, open, onOpenChange, children }: PhotoFullscreenProps) {
+// The zoom state is keyed by src: in a gallery the next photo starts unzoomed.
+export function PhotoFullscreen({
+  src,
+  alt,
+  open,
+  onOpenChange,
+  children,
+  footer,
+}: PhotoFullscreenProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -27,7 +37,12 @@ export function PhotoFullscreen({ src, alt, open, onOpenChange, children }: Phot
       >
         <DialogTitle className="sr-only">{alt}</DialogTitle>
         {src ? (
-          <TransformWrapper centerOnInit maxScale={8} doubleClick={{ mode: 'toggle', step: 2 }}>
+          <TransformWrapper
+            key={src}
+            centerOnInit
+            maxScale={8}
+            doubleClick={{ mode: 'toggle', step: 2 }}
+          >
             <TransformComponent wrapperStyle={FILL} contentStyle={FILL}>
               <ApiImage src={src} alt={alt} loading="eager" className="size-full object-contain" />
             </TransformComponent>
@@ -35,6 +50,11 @@ export function PhotoFullscreen({ src, alt, open, onOpenChange, children }: Phot
         ) : (
           <div className="flex size-full items-center justify-center p-6 text-center">
             {children}
+          </div>
+        )}
+        {footer && (
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 pt-8 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            {footer}
           </div>
         )}
         <DialogClose

@@ -52,6 +52,7 @@
   - Auth helpers (`lib/api/auth-*`): `.claude/rules/api-auth.md`
   - Leases (`components/leases/`): `.claude/rules/web-leases.md`
   - Photos, inbox «Вхідні» (`components/photos/`, `app/(app)/inbox/`): `.claude/rules/web-photos.md`
+  - Condition photos — «Стан» tab, lease page (`components/condition-photos/`): `.claude/rules/web-condition-photos.md`
   - Readings and meters (`components/{readings,meters}/`): `.claude/rules/web-readings.md`
   - Statements (`components/statements/`): `.claude/rules/web-statements.md`
   - Tariffs (`components/tariffs/`): `.claude/rules/web-tariffs.md`

@@ -3,6 +3,7 @@
 import { ChevronLeft, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { ConditionPhotoTimeline } from '@/components/condition-photos/condition-photo-timeline';
 import { NotFoundState } from '@/components/not-found-state';
 import { QueryError } from '@/components/query-error';
 import { Button } from '@/components/ui/button';
@@ -129,6 +130,22 @@ export function LeaseDetail() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Стан квартири</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Upload is hidden only once the apartment is known to be archived; while it loads (or if it
+              failed) the button shows and the API has the last word. */}
+          <ConditionPhotoTimeline
+            apartmentId={data.apartmentId}
+            lease={data}
+            canUpload={apartment.data?.isActive !== false}
+            emptyText="За час договору фото стану немає"
+          />
+        </CardContent>
+      </Card>
     </section>
   );
 }

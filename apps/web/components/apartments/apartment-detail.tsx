@@ -11,6 +11,7 @@ import { useSearchParam } from '@/hooks/use-search-param';
 import { isNotFoundError } from '@/lib/api/api-error';
 import { useApartment } from '@/lib/api/queries/apartments';
 import { ApartmentDetailSkeleton } from './apartment-detail-skeleton';
+import { ApartmentConditionTab } from '@/components/condition-photos/apartment-condition-tab';
 import { ApartmentLeasesTab } from '@/components/leases/apartment-leases-tab';
 import { ApartmentMetersTab } from '@/components/meters/apartment-meters-tab';
 import { ApartmentPhotosTab } from '@/components/photos/apartment-photos-tab';
@@ -74,7 +75,7 @@ export function ApartmentDetail() {
       )}
 
       <Tabs value={tab} onValueChange={(value) => setTab(parseTab(value))}>
-        {/* Scrolls sideways on narrow screens instead of squeezing seven labels into 375px. */}
+        {/* Scrolls sideways on narrow screens instead of squeezing eight labels into 375px. */}
         <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
           <TabsList className="group-data-horizontal/tabs:h-11 md:group-data-horizontal/tabs:h-8">
             {APARTMENT_TABS.map((t) => (
@@ -104,6 +105,9 @@ export function ApartmentDetail() {
         </TabsContent>
         <TabsContent value="photos" className="pt-2">
           <ApartmentPhotosTab apartment={data} />
+        </TabsContent>
+        <TabsContent value="condition" className="pt-2">
+          <ApartmentConditionTab apartment={data} />
         </TabsContent>
       </Tabs>
     </section>
