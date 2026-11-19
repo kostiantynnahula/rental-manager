@@ -1,6 +1,7 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConditionPhotosModule } from './condition-photos/condition-photos.module.js';
 import { configModuleOptions } from './config/config-module-options.js';
 import { Env } from './config/env.validation.js';
 import { PhotosModule } from './photos/photos.module.js';
@@ -15,6 +16,7 @@ import { bullmqOptionsFromConfig } from './queue/bullmq.config.js';
       useFactory: (config: ConfigService<Env, true>) => bullmqOptionsFromConfig(config),
     }),
     PhotosModule,
+    ConditionPhotosModule,
   ],
 })
 export class WorkerModule {}

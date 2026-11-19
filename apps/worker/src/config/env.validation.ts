@@ -73,6 +73,11 @@ export class Env {
 
   @IsEnum(ExtractionEffort)
   EXTRACTION_EFFORT: ExtractionEffort = ExtractionEffort.Medium;
+
+  // Condition photo descriptions (src/condition-photos/): same provider and key as extraction.
+  @IsString()
+  @MinLength(1)
+  DESCRIPTION_MODEL: string = 'claude-haiku-5-5';
 }
 
 // Used by ConfigModule: fails fast at startup with all invalid vars listed (names and rules, never values).

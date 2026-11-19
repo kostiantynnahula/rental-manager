@@ -9,6 +9,7 @@ type Photo = Schemas['PhotoDetailResponseDto'];
 type Meter = Schemas['MeterResponseDto'];
 type DraftValue = Schemas['CreateDraftValueDto'];
 type ParseResult = Schemas['PhotoParseResult'];
+type ConditionPhotoResult = Schemas['SetConditionPhotoDescriptionDto'];
 
 // POST /meters/{meterId}/draft-values: posted (201 new draft / 200 added or already there), or an expected refusal
 // (409: zone already filled from another photo / meter removed; 400) — logged by the caller, not a job failure.
@@ -18,6 +19,10 @@ export type DraftValueResult =
 
 // PUT /photos/{id}/parse-result is best effort: the caller logs a refusal itself (with its own hint).
 export type ParseResultOutcome = { ok: true } | { ok: false; status: number };
+
+// PUT /condition-photos/{id}/description: the caller decides (a description must be saved — the job retries; a
+// failure report is best effort).
+export type DescriptionOutcome = { ok: true } | { ok: false; status: number; message: string };
 
 // The worker's calls to the API, in domain terms: the only place that touches the openapi-fetch client. Each
 // method returns data or throws (`apiError`: 4xx → UnrecoverableError, 5xx → retried); expected refusals come back
@@ -89,6 +94,34 @@ export class WorkerApi {
       body: { status, note },
     });
     return res.response.ok ? { ok: true } : { ok: false, status: res.response.status };
+  }
+
+  async getConditionPhotoFile(id: string): Promise<Buffer> {
+    const res = await this.client.GET('/condition-photos/{id}/file', {
+      params: { path: { id } },
+      parseAs: 'arrayBuffer',
+    });
+    if (res.data) return Buffer.from(res.data);
+    if (res.response.status === 404) {
+      throw new UnrecoverableError(`Condition photo ${id} was deleted`);
+    }
+    throw apiError(`GET /condition-photos/${id}/file`, res.response, res.error);
+  }
+
+  async putConditionPhotoDescription(
+    id: string,
+    body: ConditionPhotoResult,
+  ): Promise<DescriptionOutcome> {
+    const res = await this.client.PUT('/condition-photos/{id}/description', {
+      params: { path: { id } },
+      body,
+    });
+    if (res.response.ok) return { ok: true };
+    return {
+      ok: false,
+      status: res.response.status,
+      message: bodyField(res.error, 'message') ?? '',
+    };
   }
 }
 
