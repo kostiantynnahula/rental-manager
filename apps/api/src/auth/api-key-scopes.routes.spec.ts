@@ -4,6 +4,8 @@ import type { JwtService } from '@nestjs/jwt';
 import type { ApiKeysService } from '../api-keys/api-keys.service.js';
 import { API_KEY_SCOPES, type ApiKeyScope } from '../api-keys/constants/api-key-scopes.js';
 import { ApartmentsController } from '../apartments/apartments.controller.js';
+import { ConditionPhotosController } from '../condition-photos/condition-photos.controller.js';
+import { ApartmentConditionPhotosController } from '../condition-photos/apartment-condition-photos.controller.js';
 import type { ApartmentsService } from '../apartments/apartments.service.js';
 import type { Apartment } from '../generated/prisma/client.js';
 import type { LeaseWithTenants } from '../leases/helpers/lease-with-tenants.js';
@@ -52,6 +54,14 @@ const OPEN: [scope: ApiKeyScope, ...Route][] = [
     ApartmentStatementsController,
     'preview',
   ],
+  // The worker's condition photo routes (#129).
+  ['condition-photos:read', 'GET /condition-photos/:id/file', ConditionPhotosController, 'file'],
+  [
+    'condition-photos:describe',
+    'PUT /condition-photos/:id/description',
+    ConditionPhotosController,
+    'setDescription',
+  ],
 ];
 
 // Human-only: closed to keys whatever scopes they hold.
@@ -59,6 +69,9 @@ const CLOSED: Route[] = [
   ['POST /apartments/:apartmentId/statements', ApartmentStatementsController, 'issue'],
   ['GET /tenants', TenantsController, 'list'],
   ['GET /leases/:id', LeasesController, 'get'],
+  // Embeds the lease with tenants.
+  ['GET /condition-photos/:id', ConditionPhotosController, 'findOne'],
+  ['GET /apartments/:id/condition-photos', ApartmentConditionPhotosController, 'list'],
 ];
 
 function run(

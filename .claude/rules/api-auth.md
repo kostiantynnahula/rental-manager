@@ -34,6 +34,8 @@ paths:
     active apartments — for inbox photos);
     `readings:create-draft` → `POST /meters/:meterId/draft-values` (see `api-readings.md`);
     `photos:parse-result` → `PUT /photos/:id/parse-result` (see `api-photos.md`);
+    `condition-photos:read` → `GET /condition-photos/:id/file`, `condition-photos:describe` →
+    `PUT /condition-photos/:id/description` (the worker, see `api-condition-photos.md`);
     `photos:upload` → `POST /photos` (inbox only — the Telegram bot; the apartment upload stays human-only);
     the Telegram bot's results: `photos:assign` → `PATCH /photos/:id`, `apartments:read` → `GET /apartments`,
     `readings:read` → `GET /readings/:id`, `readings:confirm` → `POST /readings/:id/confirm` and

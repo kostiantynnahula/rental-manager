@@ -113,7 +113,7 @@ Needs an Anthropic API key and an API key for the worker's service user:
 
 ```bash
 pnpm --filter api apikey:create --service worker --name local \
-  --scopes photos:read,meters:read,readings:create-draft,photos:parse-result
+  --scopes photos:read,meters:read,readings:create-draft,photos:parse-result,condition-photos:read,condition-photos:describe
 ```
 
 Put the printed key into `WORKER_API_KEY`, set `ANTHROPIC_API_KEY`, then `pnpm dev:worker`.

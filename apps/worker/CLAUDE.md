@@ -1,4 +1,4 @@
-# apps/worker — photo parsing (BullMQ consumer)
+# apps/worker — photo parsing and condition photo descriptions (BullMQ consumer)
 
 NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM like the API.
 
@@ -16,8 +16,9 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
   Extraction: `ANTHROPIC_API_KEY?` (the worker starts without it; extracting then throws), `EXTRACTION_PROVIDER`
   (`anthropic`), `EXTRACTION_MODEL` (code default `claude-sonnet-5-5`; `.env.example` uses `claude-haiku-5-5`, which reads
   the golden set fine — go up to Sonnet/Opus only if accuracy falls short),
-  `EXTRACTION_EFFORT` (`low`…`max`, default `medium`).
-- Key: `pnpm --filter api apikey:create --service worker --name "<label>" --scopes photos:read,meters:read,readings:create-draft,photos:parse-result`
+  `EXTRACTION_EFFORT` (`low`…`max`, default `medium`). Condition photo descriptions: `DESCRIPTION_MODEL` (default
+  `claude-haiku-5-5`; provider and key shared).
+- Key: `pnpm --filter api apikey:create --service worker --name "<label>" --scopes photos:read,meters:read,readings:create-draft,photos:parse-result,condition-photos:read,condition-photos:describe`
   (scopes are fixed at creation — re-create the key when a new one is needed)
   → put the printed key into `WORKER_API_KEY`. Missing scope → the job fails with a 403 hint, no retry.
 
@@ -29,7 +30,8 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
   exports only `WorkerApi`). A new endpoint = a new `WorkerApi` method: returns data or throws (`apiError`); an
   expected refusal (e.g. `postDraftValue`'s 409/400) comes back as a typed `{ ok: false, ... }` result.
 - Never log `WORKER_API_KEY`, the `Authorization` header or photo bytes (log sizes, ids, meter summaries).
-- Queue/job names and payloads come from `@rental/shared` (`PHOTO_QUEUE`, `PARSE_PHOTO_JOB`, `ParsePhotoJobData`);
+- Queue/job names and payloads come from `@rental/shared` (`PHOTO_QUEUE`, `PARSE_PHOTO_JOB`, `ParsePhotoJobData`;
+  `CONDITION_PHOTO_QUEUE`, `DESCRIBE_CONDITION_PHOTO_JOB`);
   the API is the producer (`jobId = photoId`, attempts + backoff set there).
 - Never create CONFIRMED readings: parsed values only ever become DRAFTs a human confirms.
 
@@ -40,7 +42,8 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
 - Service tests: the API is `fakeApi<paths>(routes)` from `@rental/testing` (`packages/testing`) — the real
   openapi-fetch client with a fake `fetch`; routes `'METHOD /path?query'` → `json()` / `status()` responses; records
   requests; an unknown route fails the test. Build the photo-job services only via `photoServices()`
-  (`src/test/photo-services.ts`) — never `new` them in a spec, so a constructor change touches one file.
+  (`src/test/photo-services.ts`), the condition-photo ones via `conditionPhotoServices()` — never `new` them in a
+  spec, so a constructor change touches one file.
 - A PR that changes behaviour comes with tests for it.
 - A test failing because of this PR's change → fix it in this PR. Never weaken a test to make it pass — tell me.
 - A bug found in merged code → an `it.fails(...)` test with a `// bug: …` line above it, listed under "Found bugs" in
@@ -50,7 +53,7 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
 ## Modules
 
 - `WorkerModule` (root) holds only global infra: `ConfigModule` and `BullModule.forRootAsync` (Redis connection).
-- One feature module per queue (e.g. `PhotosModule`): it calls `BullModule.registerQueue` for its queue (required,
+- One feature module per queue (`PhotosModule`, `ConditionPhotosModule`): it calls `BullModule.registerQueue` for its queue (required,
   or the `@Processor` fails at startup), imports `ApiClientModule` (for `WorkerApi`) and provides its processor + services.
 
 ## More
@@ -59,4 +62,6 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
   - Job flow — parse-photo, matching, inbox, plausibility, errors (`src/photos/`): `.claude/rules/worker-photos.md`
   - Photo extraction — LangChain call, prompt, normalization, samples script (`src/extraction/`, `src/scripts/`):
     `.claude/rules/worker-extraction.md`
+  - Condition photo descriptions — job flow, prompt, output (`src/condition-photos/`, `src/llm/`):
+    `.claude/rules/worker-condition-photos.md`
 - Project rules override advice from skills.

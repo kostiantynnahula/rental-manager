@@ -31,7 +31,15 @@ Separate from meter `Photo` (`api-photos.md`): no inbox, no parsing, no readings
 - `PATCH /condition-photos/:id` — `event`, `takenOn`, `note` (null clears; event/takenOn can't be null). Doesn't
   touch `indexStatus`: the searchable text is built from the description, not from these fields.
 - `DELETE` is always allowed: row first (tx), then objects (`deleteAll`: a failure only logs an orphan).
-- Human-only routes (no `@Scopes`) — API keys are denied; the lease in detail includes tenants. #129 adds the worker's
-  key route (`PUT /condition-photos/:id/description`).
-- Indexing (`indexStatus` PENDING → DESCRIBED → INDEXED | FAILED, `description` Json, `indexNote`): columns exist,
-  nothing sets them yet (#129, #130).
+- Human-only routes (no `@Scopes`) — API keys are denied; the lease in detail includes tenants. Open to the
+  worker's key only: `GET /condition-photos/:id/file` (`condition-photos:read`, the bytes — not the detail) and
+  `PUT /condition-photos/:id/description` (`condition-photos:describe`).
+- Indexing (`indexStatus` PENDING → DESCRIBED → INDEXED | FAILED, `description` Json, `indexNote`):
+  - Upload enqueues `describe-condition-photo` `{ photoId }` on the `condition-photos` queue (`@rental/shared`,
+    `ConditionPhotoJobsService`) for every new photo, **after the commit**; a duplicate gets no job. Never throws
+    (a queue outage leaves the photo PENDING).
+  - `PUT /condition-photos/:id/description` (keys only — a human gets 403, 204): exactly one of
+    `description` `{ room, items[{ name, count?, condition? }], summary }` (`ConditionPhotoDescriptionDto`, rooms in
+    `constants/`; Json, no schema enum) → `DESCRIBED`, `indexNote: null`; or `error` (≤ 1000) → `FAILED` +
+    `indexNote`, the earlier description kept. Both/neither → 400. Idempotent (a retry overwrites).
+  - Embeddings (`DESCRIBED` → `INDEXED`): #130. The worker's side: `worker-condition-photos.md`.
