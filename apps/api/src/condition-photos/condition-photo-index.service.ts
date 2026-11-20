@@ -10,6 +10,7 @@ import { toVectorLiteral } from './helpers/vector-literal.js';
 import type { BackfillResult } from './interfaces/backfill-result.interface.js';
 import type { ConditionPhotoDescription } from './interfaces/condition-photo-description.interface.js';
 import type { ConditionPhotoSearchHit } from './interfaces/condition-photo-search-hit.interface.js';
+import type { PhotoSearchability } from './interfaces/photo-searchability.interface.js';
 
 // Embeddings of condition photos (DESCRIBED → INDEXED) and the semantic search over them. The only raw SQL of the
 // feature: Prisma can neither write nor compare a `vector`. Its own module (no Multer/S3/Redis), so the CLI can use it.
@@ -93,6 +94,29 @@ export class ConditionPhotoIndexService {
       const photo = byId.get(id);
       return photo ? [{ photo, score: Number(score) }] : [];
     });
+  }
+
+  // By id; an unknown id is absent from the map. Mirrors search()'s conditions, kept here next to them.
+  async searchability(ids: string[]): Promise<Map<string, PhotoSearchability>> {
+    const photos = await this.prisma.conditionPhoto.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        apartmentId: true,
+        event: true,
+        indexStatus: true,
+        embeddings: {
+          where: { kind: TEXT_EMBEDDING_KIND, model: this.embeddings.model },
+          select: { photoId: true },
+        },
+      },
+    });
+    return new Map(
+      photos.map(({ id, embeddings, ...rest }) => [
+        id,
+        { ...rest, embedded: embeddings.length > 0 },
+      ]),
+    );
   }
 
   // Photos with a description but no embedding of the current model: after an outage of Voyage (the photo stayed

@@ -7,28 +7,16 @@
 import { readFile } from 'node:fs/promises';
 import { NestFactory } from '@nestjs/core';
 import { ConditionPhotoIndexService } from '../condition-photos/condition-photo-index.service.js';
-import { ConditionPhotoIndexStatus } from '../generated/prisma/enums.js';
-import { PrismaService } from '../prisma/prisma.service.js';
 import { CliModule } from './cli.module.js';
 import { parseSearchCases } from './helpers/parse-search-cases.js';
 import { caseMetrics, mean } from './helpers/retrieval-metrics.js';
+import { unsearchable } from './helpers/unsearchable.js';
 import type { CaseMetrics } from './interfaces/case-metrics.interface.js';
-import type { SearchCase } from './interfaces/search-case.interface.js';
 
 const DEFAULT_FILE = 'eval/search-cases.json';
 const LIMIT = 10;
 
 const fmt = (n: number) => n.toFixed(2);
-
-// Why an expected photo can never be returned for this case (or null if it can).
-type PhotoState = { apartmentId: string; event: string; indexStatus: string };
-function unsearchable(c: SearchCase, photo: PhotoState | undefined): string | null {
-  if (!photo) return 'not found';
-  if (photo.apartmentId !== c.apartmentId) return 'another apartment';
-  if (c.event && photo.event !== c.event) return `event ${photo.event}`;
-  if (photo.indexStatus !== ConditionPhotoIndexStatus.INDEXED) return photo.indexStatus;
-  return null;
-}
 
 async function main(): Promise<void> {
   // pnpm may pass a literal `--` through before the script's own args.
@@ -39,24 +27,23 @@ async function main(): Promise<void> {
   const ran: CaseMetrics[] = [];
   let failed = 0;
   let skipped = 0;
+  let partial = 0;
   try {
     const index = app.get(ConditionPhotoIndexService);
-    const photos = await app.get(PrismaService).conditionPhoto.findMany({
-      where: { id: { in: [...new Set(cases.flatMap((c) => c.expected))] } },
-      select: { id: true, apartmentId: true, event: true, indexStatus: true },
-    });
-    const byId = new Map(photos.map((p) => [p.id, p]));
+    const byId = await index.searchability([...new Set(cases.flatMap((c) => c.expected))]);
 
     console.log(`${cases.length} cases from ${file}, top ${LIMIT}\n`);
     console.log('  R@5  R@10    RR  query');
     for (const c of cases) {
       const label = `${c.q}${c.event ? ` [${c.event}]` : ''}`;
-      const warnings = c.expected.flatMap((id) => {
+      const warnings: string[] = [];
+      const searchable = c.expected.filter((id) => {
         const why = unsearchable(c, byId.get(id));
-        return why ? [`    ⚠ ${id}: ${why}`] : [];
+        if (why) warnings.push(`    ⚠ ${id}: ${why} — not counted`);
+        return !why;
       });
       // Nothing it could find: a broken case, not bad retrieval — and no paid call for it.
-      if (warnings.length === c.expected.length) {
+      if (searchable.length === 0) {
         skipped++;
         console.log(`     —     —     —  ${label}  (skipped: no expected photo is searchable)`);
         warnings.forEach((w) => console.log(w));
@@ -64,10 +51,12 @@ async function main(): Promise<void> {
       }
       try {
         const hits = await index.search(c.apartmentId, { q: c.q, event: c.event, limit: LIMIT });
+        // Over the searchable expected photos only: a labelling or indexing problem must not read as a miss.
         const m = caseMetrics(
           hits.map((h) => h.photo.id),
-          c.expected,
+          searchable,
         );
+        if (searchable.length < c.expected.length) partial++;
         ran.push(m);
         const found = m.foundRanks.length ? `found at ${m.foundRanks.join(', ')}` : 'none found';
         const missed = m.missed ? `; missed ${m.missed}` : '';
@@ -88,7 +77,10 @@ async function main(): Promise<void> {
   else
     console.log(
       `\nOverall (${ran.length} cases): recall@5 ${fmt(mean(ran.map((m) => m.recallAt5)))}, ` +
-        `recall@10 ${fmt(mean(ran.map((m) => m.recallAt10)))}, MRR ${fmt(mean(ran.map((m) => m.reciprocalRank)))}`,
+        `recall@10 ${fmt(mean(ran.map((m) => m.recallAt10)))}, MRR ${fmt(mean(ran.map((m) => m.reciprocalRank)))}` +
+        (partial
+          ? ` — ${partial} of them partial (unsearchable expected photos not counted, see ⚠)`
+          : ''),
     );
   // Left out of the means, so they neither inflate nor hide the result — but they make the run incomplete.
   if (failed || skipped) {

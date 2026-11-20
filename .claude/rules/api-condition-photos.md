@@ -2,6 +2,8 @@
 paths:
   - 'apps/api/src/condition-photos/**'
   - 'apps/api/src/embeddings/**'
+  - 'apps/api/src/cli/eval-search.ts'
+  - 'apps/api/src/cli/helpers/**'
 ---
 
 # Condition photos (API)
@@ -75,7 +77,9 @@ Separate from meter `Photo` (`api-photos.md`): no inbox, no parsing, no readings
 - **Eval** (#132): `pnpm --filter api eval:search [-- <file>]` (`src/cli/eval-search.ts`) prints recall@5, recall@10
   and RR per case + overall (MRR) for hand-labelled cases `[{ apartmentId, q, event?, expected: photoId[] }]` —
   `eval/search-cases.json` (gitignored, real ids; format: `eval/search-cases.example.json`). Runs the route's own
-  `ConditionPhotoIndexService.search` at limit 10. A case whose expected photos are all unknown / of another
-  apartment or event / not INDEXED is skipped (no Voyage call); a failed or skipped case is left out of the means and
-  makes the exit code 1. Paid (one Voyage query per case) — never in tests or reviews, only when asked. Re-run it
+  `ConditionPhotoIndexService.search` at limit 10. An expected photo search can't return — unknown, another
+  apartment or event, not INDEXED, no embedding of the current model (`searchability()`, next to search's own
+  conditions) — is warned (⚠) and not counted: recall/RR are over the searchable ones (such a case is "partial" in
+  the overall line), and a case with none is skipped (no Voyage call). A failed or skipped case is left out of the
+  means and makes the exit code 1. Paid (one Voyage query per case) — never in tests or reviews, only when asked. Re-run it
   after changing the embedded text, the model or the search, and compare with the baseline in PR for #132.
