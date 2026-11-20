@@ -29,6 +29,9 @@ coverage/
 # Real meter photos for the extraction script (apps/worker/samples.example/ shows the format)
 apps/worker/samples/
 
+# Real search eval cases (apps/api/eval/search-cases.example.json shows the format)
+apps/api/eval/search-cases.json
+
 .idea/
 .vscode/
 

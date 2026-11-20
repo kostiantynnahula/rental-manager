@@ -5,6 +5,8 @@
 - dev: `pnpm dev:api` → http://localhost:3001/api (global `/api` prefix), Swagger UI at `/docs` (off in production)
 - test: `pnpm --filter api test` · e2e: `pnpm --filter api test:e2e`
 - lint: `pnpm --filter api lint` · build: `pnpm --filter api build`
+- condition photo search: `pnpm --filter api embed:backfill` (embed what's missing) · `pnpm --filter api eval:search`
+  (retrieval quality; paid, only when asked) — see `api-condition-photos.md`
 - generate code: `pnpm --filter api exec nest g <schematic> <name>`
 - OpenAPI: `pnpm --filter api openapi:export` → `openapi.json` (committed; root `pnpm gen:api` also regenerates the
   web types). Builds first and creates the app without `init()`, so no DB is needed (only a valid `.env`). Paths
