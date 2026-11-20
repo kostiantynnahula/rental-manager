@@ -16,8 +16,11 @@ export { normalizeUaPhone, phoneSearchDigits } from './phone.js';
 export {
   BATCH_PARSED_JOB,
   BOT_NOTIFICATIONS_QUEUE,
+  CONDITION_PHOTO_QUEUE,
+  DESCRIBE_CONDITION_PHOTO_JOB,
   PARSE_PHOTO_JOB,
   PHOTO_QUEUE,
   type BatchParsedJobData,
+  type DescribeConditionPhotoJobData,
   type ParsePhotoJobData,
 } from './queues.js';

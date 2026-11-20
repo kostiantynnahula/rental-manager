@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { components } from '../api/schema.js';
 import { WorkerApi } from '../api/worker-api.service.js';
+import { truncate } from '../helpers/truncate.js';
 
 type ParseResult = components['schemas']['PhotoParseResult'];
 
@@ -18,7 +19,7 @@ export class ParseResultReporter {
 
   async report(photoId: string, status: ParseResult, note?: string): Promise<void> {
     try {
-      const res = await this.api.putParseResult(photoId, status, note && truncate(note));
+      const res = await this.api.putParseResult(photoId, status, note && truncate(note, MAX_NOTE));
       if (res.ok) return;
       const hint =
         res.status === 401 || res.status === 403
@@ -33,8 +34,4 @@ export class ParseResultReporter {
       );
     }
   }
-}
-
-function truncate(note: string): string {
-  return note.length > MAX_NOTE ? `${note.slice(0, MAX_NOTE - 1)}…` : note;
 }

@@ -61,7 +61,8 @@ pnpm workspaces monorepo:
 - `apps/worker` — photo parsing (see `apps/worker/CLAUDE.md`). NestJS standalone consumer of BullMQ jobs (Redis)
   that the API enqueues on photo upload; authenticates to the API with an API key. Never touches the DB: it reads
   photos, extracts the values (LangChain.js + Claude vision, `src/extraction/`), matches them to meters (inbox photos: by serial across all active meters) and saves
-  them as DRAFT readings over HTTP (`draft-values`).
+  them as DRAFT readings over HTTP (`draft-values`). Also describes condition photos for search (own queue
+  `condition-photos`, `src/condition-photos/`).
 - `apps/bot` — Telegram bot (see `apps/bot/CLAUDE.md`). NestJS standalone + grammY, long polling, only answers
   allowlisted Telegram users; an HTTP client of the API with its own API key. API → bot events go through the
   BullMQ queue `bot-notifications` (the job name = the event type, e.g. `batch-parsed`; a signal only) — the bot's
