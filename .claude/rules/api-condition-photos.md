@@ -57,7 +57,9 @@ Separate from meter `Photo` (`api-photos.md`): no inbox, no parsing, no readings
   - `PhotoEmbedding` (`photo_embeddings`): one row per (`photoId`, `kind`, `model`) — `kind` `'TEXT'` now (TS const,
     not a DB enum), a new model / an IMAGE kind = new rows, no schema change. `ON DELETE CASCADE` with the photo.
   - Raw SQL (Prisma can't write or compare a `vector`), only in `ConditionPhotoIndexService`: the upsert
-    (`INSERT … SELECT FROM condition_photos` → a deleted photo is a 404, not an FK error) and the search.
+    (`INSERT … SELECT FROM condition_photos … FOR UPDATE` → a deleted photo is a 404, not an FK error; only while
+    the photo still has the embedded description — a newer PUT saved during the Voyage call wins, the stale vector
+    is dropped) and the search.
   - HNSW index `photo_embeddings_text_hnsw` (`vector_cosine_ops`) is **partial** (`WHERE kind = 'TEXT'`): Prisma
     ignores partial indexes, a full one shows as drift (a `DROP INDEX` in the next migration). So the search compares
     `e.kind = 'TEXT'` as a **literal** — a bind parameter doesn't match the predicate and skips the index. Another

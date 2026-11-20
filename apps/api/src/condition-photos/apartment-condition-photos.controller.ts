@@ -9,13 +9,13 @@ import {
   UploadedFiles,
 } from '@nestjs/common';
 import {
+  ApiBadGatewayResponse,
   ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCookieAuth,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiServiceUnavailableResponse,
-  ApiBadGatewayResponse,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';

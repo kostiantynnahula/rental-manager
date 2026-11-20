@@ -24,17 +24,28 @@ export class ConditionPhotoIndexService {
 
   // Embeds the description (Voyage first, outside the transaction), then upserts the row and marks the photo
   // INDEXED. Idempotent: a retry overwrites the vector. 502/503 from EmbeddingsService leave the photo as it was.
+  // Only while the photo still has this description: a newer PUT may have saved another one during the Voyage call
+  // (then it owns the indexing — this vector is stale and is dropped).
   async index(photoId: string, description: ConditionPhotoDescription): Promise<void> {
     const vector = toVectorLiteral(await this.embeddings.embedDocument(embeddingText(description)));
     await this.prisma.$transaction(async (tx) => {
-      // INSERT … SELECT: a photo deleted meanwhile inserts nothing (→ 404) instead of failing the FK.
+      // INSERT … SELECT: a photo deleted or re-described meanwhile inserts nothing instead of failing the FK or
+      // storing a stale vector. FOR UPDATE locks the row until the commit, so no PUT can change it in between.
+      // jsonb `=` ignores key order.
       const inserted = await tx.$executeRaw`
         INSERT INTO photo_embeddings ("photoId", kind, model, embedding)
         SELECT id, ${TEXT_EMBEDDING_KIND}, ${this.embeddings.model}, ${vector}::vector
-        FROM condition_photos WHERE id = ${photoId}::uuid
+        FROM condition_photos
+        WHERE id = ${photoId}::uuid AND description = ${JSON.stringify(description)}::jsonb
+        FOR UPDATE
         ON CONFLICT ("photoId", kind, model)
         DO UPDATE SET embedding = EXCLUDED.embedding, "createdAt" = now()`;
-      if (inserted === 0) throw new NotFoundException('Condition photo not found');
+      if (inserted === 0) {
+        const exists = await tx.conditionPhoto.count({ where: { id: photoId } });
+        if (!exists) throw new NotFoundException('Condition photo not found');
+        this.logger.warn(`Photo ${photoId}: description changed while embedding, skipped`);
+        return;
+      }
       await tx.conditionPhoto.update({
         where: { id: photoId },
         data: { indexStatus: ConditionPhotoIndexStatus.INDEXED, indexNote: null },
@@ -51,6 +62,8 @@ export class ConditionPhotoIndexService {
     const vector = toVectorLiteral(await this.embeddings.embedQuery(query.q));
     const filters = [
       Prisma.sql`p."apartmentId" = ${apartmentId}::uuid`,
+      // A re-described photo is DESCRIBED until its new vector is stored; its old row must not be searched meanwhile.
+      Prisma.sql`p."indexStatus" = 'INDEXED'::condition_photo_index_status`,
       Prisma.sql`e.model = ${this.embeddings.model}`,
       // Dates as YYYY-MM-DD strings: a JS Date would be cast through the session time zone.
       ...(query.event ? [Prisma.sql`p.event = ${query.event}::condition_photo_event`] : []),
