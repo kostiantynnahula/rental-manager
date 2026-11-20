@@ -28,7 +28,8 @@
     "openapi:export": "nest build && node dist/openapi/export.js",
     "apikey:create": "nest build && node dist/cli/api-keys.js create",
     "apikey:list": "nest build && node dist/cli/api-keys.js list",
-    "apikey:revoke": "nest build && node dist/cli/api-keys.js revoke"
+    "apikey:revoke": "nest build && node dist/cli/api-keys.js revoke",
+    "embed:backfill": "nest build && node dist/cli/embed-backfill.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1159.0",
