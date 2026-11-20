@@ -2167,6 +2167,110 @@
         ]
       }
     },
+    "/apartments/{apartmentId}/condition-photos/search": {
+      "get": {
+        "operationId": "ApartmentConditionPhotosController_search",
+        "parameters": [
+          {
+            "name": "apartmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "event",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ConditionPhotoEvent"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "takenOn ≥ from",
+            "schema": {
+              "format": "date",
+              "example": "2026-01-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "takenOn ≤ to",
+            "schema": {
+              "format": "date",
+              "example": "2026-12-31",
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "maxLength": 500,
+              "example": "холодильник",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 50,
+              "default": 10,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Most relevant first; only INDEXED photos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConditionPhotoSearchResultDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No q, invalid event/date/limit, from after to"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found"
+          },
+          "502": {
+            "description": "The embedding service failed"
+          },
+          "503": {
+            "description": "Semantic search is not configured"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "condition-photos"
+        ]
+      }
+    },
     "/condition-photos/{id}": {
       "get": {
         "operationId": "ConditionPhotosController_findOne",
@@ -2370,7 +2474,7 @@
     },
     "/condition-photos/{id}/description": {
       "put": {
-        "description": "description → DESCRIBED, error → FAILED (+ indexNote). Idempotent. API key scope: condition-photos:describe (keys only)",
+        "description": "description → DESCRIBED, then embedded → INDEXED; error → FAILED (+ indexNote). Idempotent. API key scope: condition-photos:describe (keys only)",
         "operationId": "ConditionPhotosController_setDescription",
         "parameters": [
           {
@@ -2407,6 +2511,12 @@
           },
           "404": {
             "description": "Condition photo not found"
+          },
+          "502": {
+            "description": "Embedding failed (the description is saved, DESCRIBED)"
+          },
+          "503": {
+            "description": "Embeddings not configured (saved, DESCRIBED)"
           }
         },
         "security": [
@@ -6162,6 +6272,111 @@
           "indexNote",
           "fileUrl",
           "thumbnailUrl"
+        ]
+      },
+      "ConditionPhotoSearchResultDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "apartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "event": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionPhotoEvent"
+              }
+            ]
+          },
+          "takenOn": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-11-01"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "uploadedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string",
+            "example": "image/jpeg",
+            "description": "Detected from the file content"
+          },
+          "size": {
+            "type": "number",
+            "description": "Bytes"
+          },
+          "sha256": {
+            "type": "string",
+            "example": "e3b0c442…",
+            "description": "SHA-256 of the original (hex)"
+          },
+          "width": {
+            "type": "number",
+            "description": "As displayed (EXIF orientation applied)"
+          },
+          "height": {
+            "type": "number"
+          },
+          "indexStatus": {
+            "description": "PENDING on upload → DESCRIBED → INDEXED (searchable), or FAILED",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionPhotoIndexStatus"
+              }
+            ]
+          },
+          "description": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true,
+            "description": "The worker's structured description; null until DESCRIBED"
+          },
+          "indexNote": {
+            "type": "string",
+            "nullable": true,
+            "description": "Why indexing failed"
+          },
+          "fileUrl": {
+            "type": "string",
+            "example": "/api/condition-photos/3f1c…/file"
+          },
+          "thumbnailUrl": {
+            "type": "string",
+            "example": "/api/condition-photos/3f1c…/thumbnail"
+          },
+          "score": {
+            "type": "number",
+            "example": 0.62,
+            "description": "1 − cosine distance; higher = more relevant"
+          }
+        },
+        "required": [
+          "id",
+          "apartmentId",
+          "event",
+          "takenOn",
+          "note",
+          "uploadedAt",
+          "mimeType",
+          "size",
+          "sha256",
+          "width",
+          "height",
+          "indexStatus",
+          "description",
+          "indexNote",
+          "fileUrl",
+          "thumbnailUrl",
+          "score"
         ]
       },
       "ConditionPhotoDetailResponseDto": {
