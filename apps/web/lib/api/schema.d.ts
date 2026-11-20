@@ -1557,6 +1557,24 @@ export interface components {
          * @enum {string}
          */
         ConditionPhotoIndexStatus: "PENDING" | "DESCRIBED" | "INDEXED" | "FAILED";
+        /** @enum {string} */
+        ConditionPhotoRoom: "KITCHEN" | "BATHROOM" | "BEDROOM" | "LIVING" | "HALL" | "BALCONY" | "OTHER";
+        ConditionPhotoItemDto: {
+            /** @example холодильник */
+            name: string;
+            /** @description Only when more than one is visible */
+            count?: number;
+            /**
+             * @description Visible condition, damage or wear
+             * @example подряпина на дверцятах
+             */
+            condition?: string;
+        };
+        ConditionPhotoDescriptionDto: {
+            room: components["schemas"]["ConditionPhotoRoom"];
+            items: components["schemas"]["ConditionPhotoItemDto"][];
+            summary: string;
+        };
         ConditionPhotoUploadResultDto: {
             /** Format: uuid */
             id: string;
@@ -1589,9 +1607,7 @@ export interface components {
             /** @description PENDING on upload → DESCRIBED → INDEXED (searchable), or FAILED */
             indexStatus: components["schemas"]["ConditionPhotoIndexStatus"];
             /** @description The worker's structured description; null until DESCRIBED */
-            description: {
-                [key: string]: unknown;
-            } | null;
+            description: components["schemas"]["ConditionPhotoDescriptionDto"] | null;
             /** @description Why indexing failed */
             indexNote: string | null;
             /** @example /api/condition-photos/3f1c…/file */
@@ -1633,9 +1649,7 @@ export interface components {
             /** @description PENDING on upload → DESCRIBED → INDEXED (searchable), or FAILED */
             indexStatus: components["schemas"]["ConditionPhotoIndexStatus"];
             /** @description The worker's structured description; null until DESCRIBED */
-            description: {
-                [key: string]: unknown;
-            } | null;
+            description: components["schemas"]["ConditionPhotoDescriptionDto"] | null;
             /** @description Why indexing failed */
             indexNote: string | null;
             /** @example /api/condition-photos/3f1c…/file */
@@ -1675,9 +1689,7 @@ export interface components {
             /** @description PENDING on upload → DESCRIBED → INDEXED (searchable), or FAILED */
             indexStatus: components["schemas"]["ConditionPhotoIndexStatus"];
             /** @description The worker's structured description; null until DESCRIBED */
-            description: {
-                [key: string]: unknown;
-            } | null;
+            description: components["schemas"]["ConditionPhotoDescriptionDto"] | null;
             /** @description Why indexing failed */
             indexNote: string | null;
             /** @example /api/condition-photos/3f1c…/file */
@@ -1722,9 +1734,7 @@ export interface components {
             /** @description PENDING on upload → DESCRIBED → INDEXED (searchable), or FAILED */
             indexStatus: components["schemas"]["ConditionPhotoIndexStatus"];
             /** @description The worker's structured description; null until DESCRIBED */
-            description: {
-                [key: string]: unknown;
-            } | null;
+            description: components["schemas"]["ConditionPhotoDescriptionDto"] | null;
             /** @description Why indexing failed */
             indexNote: string | null;
             /** @example /api/condition-photos/3f1c…/file */
@@ -1742,24 +1752,6 @@ export interface components {
              */
             takenOn?: string;
             note?: string | null;
-        };
-        /** @enum {string} */
-        ConditionPhotoRoom: "KITCHEN" | "BATHROOM" | "BEDROOM" | "LIVING" | "HALL" | "BALCONY" | "OTHER";
-        ConditionPhotoItemDto: {
-            /** @example холодильник */
-            name: string;
-            /** @description Only when more than one is visible */
-            count?: number;
-            /**
-             * @description Visible condition, damage or wear
-             * @example подряпина на дверцятах
-             */
-            condition?: string;
-        };
-        ConditionPhotoDescriptionDto: {
-            room: components["schemas"]["ConditionPhotoRoom"];
-            items: components["schemas"]["ConditionPhotoItemDto"][];
-            summary: string;
         };
         SetConditionPhotoDescriptionDto: {
             description?: components["schemas"]["ConditionPhotoDescriptionDto"];
