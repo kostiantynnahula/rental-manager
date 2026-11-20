@@ -16,7 +16,8 @@
 - Nest 12, native ESM (`"type": "module"`): relative imports need the `.js` extension.
 - Tests: vitest (globals on). Unit `*.spec.ts` next to the code; e2e in `test/*.e2e-spec.ts`.
 - One Nest module per domain area (apartments, tenants, leases, meters, readings, tariffs, statements, photos,
-  photo-batches, condition-photos, api-keys); infra modules: auth, users, prisma, storage, queue, health, cli.
+  photo-batches, condition-photos, api-keys); infra modules: auth, users, prisma, storage, queue, embeddings (the only code that knows the
+  embedding model), health, cli.
   `src/images/` = shared image-upload helpers (no module).
 - Shared types come from `@rental/shared` (built to `dist/`; root `dev`/`test`/`lint` build it first).
 - Env: read via `ConfigService<Env, true>`, never `process.env`. New vars → `src/config/env.validation.ts` + root `.env.example`.
@@ -41,7 +42,7 @@ Always loaded with this file (imports); split out only to keep this file short.
   - Prisma schema, migrations, client (`prisma/`, `src/prisma/`): `.claude/rules/api-database.md`
   - Photos, storage (MinIO), inbox, parse queue, shared image code (`src/{photos,storage,queue,images}/`): `.claude/rules/api-photos.md`
   - Photo batches — summary, confirm by batch (`src/photo-batches/`): `.claude/rules/api-photo-batches.md`
-  - Condition photos — check-in/check-out/change history (`src/condition-photos/`): `.claude/rules/api-condition-photos.md`
+  - Condition photos — check-in/check-out/change history, embeddings, semantic search (`src/{condition-photos,embeddings}/`): `.claude/rules/api-condition-photos.md`
   - Readings and meters (`src/{readings,meters}/`): `.claude/rules/api-readings.md`
   - Statements (`src/statements/`): `.claude/rules/api-statements.md`
   - Tariffs (`src/tariffs/`): `.claude/rules/api-tariffs.md`

@@ -23,6 +23,10 @@ paths:
   needed for embeddings (semantic search, #125). `postgres:18-alpine` has no pgvector.
 - Extensions are installed by raw SQL in a migration (`CREATE EXTENSION IF NOT EXISTS …`, see `*_pgvector`), not by
   Prisma's `postgresqlExtensions` preview feature (deprecated). `schema.prisma` doesn't list them.
+- Vector indexes (HNSW) are raw SQL too: Prisma has no HNSW index type, and it reports a full raw index on a
+  `vector` column as drift (`DROP INDEX`), but ignores **partial** ones — so they are partial (see
+  `api-condition-photos.md`, Embeddings). Check with `prisma migrate diff --from-config-datasource --to-schema
+prisma/schema.prisma --script` → "empty migration".
 - The image is Debian (glibc), the old one Alpine (musl): text collation differs (`en_US.utf8`: musl compares by code
   point, glibc linguistically), so indexes on text must be rebuilt. After switching an existing volume: `pg_dump` first
   (backup only, outside the repo), then in **every** database that allows connections (incl. `postgres`, `template1`)

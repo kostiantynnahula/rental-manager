@@ -1,6 +1,7 @@
 ---
 paths:
   - 'apps/api/src/condition-photos/**'
+  - 'apps/api/src/embeddings/**'
 ---
 
 # Condition photos (API)
@@ -44,4 +45,28 @@ Separate from meter `Photo` (`api-photos.md`): no inbox, no parsing, no readings
     `indexNote`, the earlier description kept — an error for a photo already `DESCRIBED`/`INDEXED` is a no-op 204
     (a usable description wins). Both/neither → 400. Idempotent (a retry overwrites). Upload enqueues in parallel
     (`Promise.all`): with Redis down the request waits one 3 s timeout, not one per photo.
-  - Embeddings (`DESCRIBED` → `INDEXED`): #130. The worker's side: `worker-condition-photos.md`.
+  - Embeddings (`DESCRIBED` → `INDEXED`, #130): after saving a description the same PUT embeds it and upserts
+    `photo_embeddings` → `INDEXED` (`ConditionPhotoIndexService`). Saved first: a Voyage failure (502) or no
+    `VOYAGE_API_KEY` (503) leaves the photo `DESCRIBED` with its description — a 5xx, so the worker's job retries;
+    `pnpm --filter api embed:backfill` indexes what's left. The worker's side: `worker-condition-photos.md`.
+- **Embeddings** — the **API owns the model**: documents and queries must be embedded by the same model (and
+  `input_type` document/query), so only `EmbeddingsService` (`src/embeddings/`, `voyage-4`, 1024) knows it; the
+  worker sends text, never vectors. Voyage via LangChain (`VoyageEmbeddings` from `@langchain/mongodb`).
+  - Embedded text (`embeddingText`): room in Ukrainian (`ROOM_LABELS`; OTHER left out) + summary + items
+    `назва ×N (стан)`.
+  - `PhotoEmbedding` (`photo_embeddings`): one row per (`photoId`, `kind`, `model`) — `kind` `'TEXT'` now (TS const,
+    not a DB enum), a new model / an IMAGE kind = new rows, no schema change. `ON DELETE CASCADE` with the photo.
+  - Raw SQL (Prisma can't write or compare a `vector`), only in `ConditionPhotoIndexService`: the upsert
+    (`INSERT … SELECT FROM condition_photos` → a deleted photo is a 404, not an FK error) and the search.
+  - HNSW index `photo_embeddings_text_hnsw` (`vector_cosine_ops`) is **partial** (`WHERE kind = 'TEXT'`): Prisma
+    ignores partial indexes, a full one shows as drift (a `DROP INDEX` in the next migration). So the search compares
+    `e.kind = 'TEXT'` as a **literal** — a bind parameter doesn't match the predicate and skips the index. Another
+    kind (other dimensions) → its own partial index.
+  - Model change: bump `EMBEDDING_MODEL`, run `embed:backfill` (embeds every described photo without a row of the
+    new model). Search only uses the current model's rows; old rows can be deleted afterwards.
+- Search `GET /apartments/:id/condition-photos/search?q=&event=&from=&to=&limit=` (human-only): `q` required
+  (trimmed, ≤ 500), `limit` 1..50 (default 10), the list's filters (from > to → 400); unknown apartment → 404 (both
+  checked before Voyage). Own route, not a list param: sorted by relevance with `score` = 1 − cosine distance
+  (`ConditionPhotoSearchResultDto` = the list item + `score`). Only `INDEXED` photos appear. Runs in a transaction
+  with `SET LOCAL hnsw.iterative_scan = strict_order` (pgvector ≥ 0.8): otherwise HNSW returns its ef_search (40)
+  nearest across **all** apartments and the filters run after — fewer results than `limit`, or none.

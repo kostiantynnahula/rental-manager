@@ -7,6 +7,11 @@ import { PrismaModule } from '../prisma/prisma.module.js';
 
 // Just what the CLI needs: no HTTP features, storage, queues or JWT.
 @Module({
-  imports: [ConfigModule.forRoot(configModuleOptions), PrismaModule, ApiKeysModule, ConditionPhotoIndexModule],
+  imports: [
+    ConfigModule.forRoot(configModuleOptions),
+    PrismaModule,
+    ApiKeysModule,
+    ConditionPhotoIndexModule,
+  ],
 })
 export class CliModule {}

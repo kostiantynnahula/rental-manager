@@ -50,7 +50,9 @@ export class EmbeddingsService {
       throw new BadGatewayException('Embedding service failed');
     }
     if (vector?.length !== EMBEDDING_DIMENSIONS || !vector.every(Number.isFinite)) {
-      this.logger.error(`Voyage returned an invalid ${inputType} vector (length ${vector?.length})`);
+      this.logger.error(
+        `Voyage returned an invalid ${inputType} vector (length ${vector?.length})`,
+      );
       throw new BadGatewayException('Embedding service failed');
     }
     return vector;
