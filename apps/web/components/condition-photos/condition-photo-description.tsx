@@ -31,7 +31,7 @@ export function ConditionPhotoDescription({ photo }: { photo: ConditionPhoto }) 
             aria-expanded={open}
             aria-controls={panelId}
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex h-9 items-center gap-1 text-sm font-medium text-white"
+            className="inline-flex h-11 items-center gap-1 px-2 text-sm font-medium text-white md:h-8"
           >
             Опис
             <ChevronDown className={cn('size-4 transition-transform', open && 'rotate-180')} />

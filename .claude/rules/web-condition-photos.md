@@ -28,8 +28,10 @@ separate from meter photos (`web-photos.md`): no parsing, no review screen.
   toggles «Усі · Заїзд · Виїзд · Зміна» → `?event=` (`parseEventFilter`, default `all` left out) — applies to the
   timeline too. `q` set → `ConditionPhotoSearchResults` instead of the timeline: rows (thumbnail, event · date,
   `description.summary`, «збіг N%» = `round(score × 100)`) in API order, a row opens the lightbox over the results;
-  `keepPreviousData` (dimmed while the next query loads); empty → «Нічого не знайдено» + only described photos are
-  searched. `useConditionPhotoSearch` is disabled for an empty `q`; API default limit.
+  `keepPreviousData` (results or the empty state dimmed while the next query loads); empty → «Нічого не знайдено» +
+  only photos already in the search (INDEXED) are searched. `parseQuery` trims and caps `?q=` (500, the API's limit).
+  The lightbox is rendered outside the states (as in the timeline), so it closes itself when a refetch empties the
+  results. `useConditionPhotoSearch` is disabled for an empty `q`; API default limit.
 - Lightbox detail (`ConditionPhotoDescription`, keyed by photo): `indexStatus` line unless INDEXED
   (`constants/index-status.ts`; FAILED + `indexNote`) and a collapsed «Опис» (`aria-expanded`): room
   (`constants/rooms.ts`, OTHER hidden), summary, items `назва ×N — стан`. `description` is typed in OpenAPI.
