@@ -72,3 +72,10 @@ Separate from meter `Photo` (`api-photos.md`): no inbox, no parsing, no readings
   (`ConditionPhotoSearchResultDto` = the list item + `score`). Only `INDEXED` photos appear. Runs in a transaction
   with `SET LOCAL hnsw.iterative_scan = strict_order` (pgvector ≥ 0.8): otherwise HNSW returns its ef_search (40)
   nearest across **all** apartments and the filters run after — fewer results than `limit`, or none.
+- **Eval** (#132): `pnpm --filter api eval:search [-- <file>]` (`src/cli/eval-search.ts`) prints recall@5, recall@10
+  and RR per case + overall (MRR) for hand-labelled cases `[{ apartmentId, q, event?, expected: photoId[] }]` —
+  `eval/search-cases.json` (gitignored, real ids; format: `eval/search-cases.example.json`). Runs the route's own
+  `ConditionPhotoIndexService.search` at limit 10. A case whose expected photos are all unknown / of another
+  apartment or event / not INDEXED is skipped (no Voyage call); a failed or skipped case is left out of the means and
+  makes the exit code 1. Paid (one Voyage query per case) — never in tests or reviews, only when asked. Re-run it
+  after changing the embedded text, the model or the search, and compare with the baseline in PR for #132.
