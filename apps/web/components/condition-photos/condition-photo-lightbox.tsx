@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { PhotoFullscreen } from '@/components/photos/photo-fullscreen';
 import type { ConditionPhoto } from '@/lib/api/queries/condition-photos';
 import { formatDate } from '@/lib/format';
+import { ConditionPhotoDescription } from './condition-photo-description';
 import { EVENT_LABELS } from './constants/events';
 
 interface ConditionPhotoLightboxProps {
@@ -78,6 +79,8 @@ export function ConditionPhotoLightbox({
                 {photo.note}
               </p>
             )}
+            {/* Keyed by photo: the next photo starts collapsed. */}
+            <ConditionPhotoDescription key={photo.id} photo={photo} />
           </div>
           <button
             type="button"
