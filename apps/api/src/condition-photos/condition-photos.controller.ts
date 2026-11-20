@@ -13,6 +13,7 @@ import {
   StreamableFile,
 } from '@nestjs/common';
 import {
+  ApiBadGatewayResponse,
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiCookieAuth,
@@ -22,6 +23,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiProduces,
+  ApiServiceUnavailableResponse,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -87,11 +89,13 @@ export class ConditionPhotosController {
   @ApiBearerAuth()
   @ApiOperation({
     description:
-      'description → DESCRIBED, error → FAILED (+ indexNote). Idempotent. API key scope: condition-photos:describe (keys only)',
+      'description → DESCRIBED, then embedded → INDEXED; error → FAILED (+ indexNote). Idempotent. API key scope: condition-photos:describe (keys only)',
   })
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiNoContentResponse({ description: 'indexStatus, description / indexNote set' })
   @ApiBadRequestResponse({ description: 'Invalid body, or both description and error' })
+  @ApiBadGatewayResponse({ description: 'Embedding failed (the description is saved, DESCRIBED)' })
+  @ApiServiceUnavailableResponse({ description: 'Embeddings not configured (saved, DESCRIBED)' })
   @ApiForbiddenResponse({
     description: 'Not an API key, or a key without condition-photos:describe',
   })
