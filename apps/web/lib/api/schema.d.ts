@@ -480,6 +480,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/apartments/{apartmentId}/condition-photos/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ApartmentConditionPhotosController_search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/condition-photos/{id}": {
         parameters: {
             query?: never;
@@ -537,7 +553,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** @description description → DESCRIBED, error → FAILED (+ indexNote). Idempotent. API key scope: condition-photos:describe (keys only) */
+        /** @description description → DESCRIBED, then embedded → INDEXED; error → FAILED (+ indexNote). Idempotent. API key scope: condition-photos:describe (keys only) */
         put: operations["ConditionPhotosController_setDescription"];
         post?: never;
         delete?: never;
@@ -1626,6 +1642,53 @@ export interface components {
             fileUrl: string;
             /** @example /api/condition-photos/3f1c…/thumbnail */
             thumbnailUrl: string;
+        };
+        ConditionPhotoSearchResultDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            apartmentId: string;
+            event: components["schemas"]["ConditionPhotoEvent"];
+            /**
+             * Format: date
+             * @example 2026-11-01
+             */
+            takenOn: string;
+            note: string | null;
+            /** Format: date-time */
+            uploadedAt: string;
+            /**
+             * @description Detected from the file content
+             * @example image/jpeg
+             */
+            mimeType: string;
+            /** @description Bytes */
+            size: number;
+            /**
+             * @description SHA-256 of the original (hex)
+             * @example e3b0c442…
+             */
+            sha256: string;
+            /** @description As displayed (EXIF orientation applied) */
+            width: number;
+            height: number;
+            /** @description PENDING on upload → DESCRIBED → INDEXED (searchable), or FAILED */
+            indexStatus: components["schemas"]["ConditionPhotoIndexStatus"];
+            /** @description The worker's structured description; null until DESCRIBED */
+            description: {
+                [key: string]: unknown;
+            } | null;
+            /** @description Why indexing failed */
+            indexNote: string | null;
+            /** @example /api/condition-photos/3f1c…/file */
+            fileUrl: string;
+            /** @example /api/condition-photos/3f1c…/thumbnail */
+            thumbnailUrl: string;
+            /**
+             * @description 1 − cosine distance; higher = more relevant
+             * @example 0.62
+             */
+            score: number;
         };
         ConditionPhotoDetailResponseDto: {
             /** Format: uuid */
@@ -4333,6 +4396,70 @@ export interface operations {
             };
         };
     };
+    ApartmentConditionPhotosController_search: {
+        parameters: {
+            query: {
+                event?: components["schemas"]["ConditionPhotoEvent"];
+                /** @description takenOn ≥ from */
+                from?: string;
+                /** @description takenOn ≤ to */
+                to?: string;
+                q: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                apartmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Most relevant first; only INDEXED photos */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConditionPhotoSearchResultDto"][];
+                };
+            };
+            /** @description No q, invalid event/date/limit, from after to */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Apartment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The embedding service failed */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Semantic search is not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ConditionPhotosController_findOne: {
         parameters: {
             query?: never;
@@ -4562,6 +4689,20 @@ export interface operations {
             };
             /** @description Condition photo not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Embedding failed (the description is saved, DESCRIBED) */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Embeddings not configured (saved, DESCRIBED) */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

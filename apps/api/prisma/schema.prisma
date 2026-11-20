@@ -323,9 +323,27 @@ model ConditionPhoto {
   description  Json?
   // Why indexing failed (the worker's or the API's text).
   indexNote    String?
+  embeddings   PhotoEmbedding[]
 
   @@index([apartmentId, takenOn])
   @@map("condition_photos")
+}
+
+// An embedding of a condition photo (#130), one per (kind, model): re-embedding with a new model or adding an IMAGE
+// kind needs no schema change. Written and searched by raw SQL only (Prisma can't write `vector`); the HNSW index
+// (vector_cosine_ops) is raw SQL in the migration.
+model PhotoEmbedding {
+  photoId   String                     @db.Uuid
+  photo     ConditionPhoto             @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  // 'TEXT' (the description) — a TS const, not a DB enum.
+  kind      String
+  // e.g. 'voyage-4'. Only EmbeddingsService knows the current one.
+  model     String
+  embedding Unsupported("vector(1024)")
+  createdAt DateTime                   @default(now())
+
+  @@id([photoId, kind, model])
+  @@map("photo_embeddings")
 }
 
 model Photo {

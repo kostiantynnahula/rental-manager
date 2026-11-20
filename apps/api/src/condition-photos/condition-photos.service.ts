@@ -19,14 +19,18 @@ import { leaseWithTenantsInclude } from '../leases/helpers/lease-with-tenants.js
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ConditionPhotoJobsService } from '../queue/condition-photo-jobs.service.js';
 import { StorageService } from '../storage/storage.service.js';
+import { ConditionPhotoIndexService } from './condition-photo-index.service.js';
 import { ListConditionPhotosQueryDto } from './dto/list-condition-photos-query.dto.js';
+import { SearchConditionPhotosQueryDto } from './dto/search-condition-photos-query.dto.js';
 import { SetConditionPhotoDescriptionDto } from './dto/set-condition-photo-description.dto.js';
 import { UpdateConditionPhotoDto } from './dto/update-condition-photo.dto.js';
 import { UploadConditionPhotosBodyDto } from './dto/upload-condition-photos-body.dto.js';
+import { assertDateRange } from './helpers/assert-date-range.js';
 import { assertSameApartment } from './helpers/assert-same-apartment.js';
 import { cleanNote } from './helpers/note.js';
 import { newConditionPhotos, uploadAnswers } from './helpers/upload-batch.js';
 import type { ConditionPhotoDetail } from './interfaces/condition-photo-detail.interface.js';
+import type { ConditionPhotoSearchHit } from './interfaces/condition-photo-search-hit.interface.js';
 import type { NewConditionPhoto } from './interfaces/new-condition-photo.interface.js';
 import type { UploadedConditionPhoto } from './interfaces/uploaded-condition-photo.interface.js';
 
@@ -37,6 +41,7 @@ export class ConditionPhotosService {
     private readonly storage: StorageService,
     private readonly apartments: ApartmentsService,
     private readonly jobs: ConditionPhotoJobsService,
+    private readonly index: ConditionPhotoIndexService,
   ) {}
 
   // One event/takenOn/note for the whole request. All or nothing, as meter photos: every file is validated first,
@@ -75,10 +80,7 @@ export class ConditionPhotosService {
   // Sorted by takenOn (newest first), then by upload. An archived apartment's history is still listed.
   async list(apartmentId: string, query: ListConditionPhotosQueryDto): Promise<ConditionPhoto[]> {
     await this.apartments.findOrThrow(apartmentId);
-    // YYYY-MM-DD strings compare as dates.
-    if (query.from && query.to && query.from > query.to) {
-      throw new BadRequestException('from must not be after to');
-    }
+    assertDateRange(query);
     const takenOn: Prisma.DateTimeFilter = {
       ...(query.from && { gte: parseDateOnly(query.from) }),
       ...(query.to && { lte: parseDateOnly(query.to) }),
@@ -87,6 +89,16 @@ export class ConditionPhotosService {
       where: { apartmentId, event: query.event, takenOn },
       orderBy: [{ takenOn: 'desc' }, { uploadedAt: 'desc' }, { id: 'desc' }],
     });
+  }
+
+  // By relevance (semantic search over the descriptions). The cheap checks first, then Voyage.
+  async search(
+    apartmentId: string,
+    query: SearchConditionPhotosQueryDto,
+  ): Promise<ConditionPhotoSearchHit[]> {
+    await this.apartments.findOrThrow(apartmentId);
+    assertDateRange(query);
+    return this.index.search(apartmentId, query);
   }
 
   async findOrThrow(id: string): Promise<ConditionPhoto> {
@@ -155,6 +167,9 @@ export class ConditionPhotosService {
     const { count } = await this.prisma.conditionPhoto.updateMany({ where, data });
     // Nothing updated: unknown photo → 404; an error for a described one → skipped on purpose.
     if (count === 0) await this.findOrThrow(id);
+    // DESCRIBED → INDEXED. Saved first: if Voyage fails (5xx → the worker retries) the description isn't lost, and
+    // the backfill can index it later.
+    if (dto.description) await this.index.index(id, dto.description);
   }
 
   async openFile(id: string, variant: 'original' | 'thumbnail'): Promise<ImageFile> {

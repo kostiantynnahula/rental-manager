@@ -93,6 +93,11 @@ export class Env {
   @IsOptional()
   @IsString()
   REDIS_PASSWORD?: string;
+
+  // Voyage AI (condition photo embeddings, semantic search). Optional: without it indexing and search answer 503.
+  @IsOptional()
+  @IsString()
+  VOYAGE_API_KEY?: string;
 }
 
 // Used by ConfigModule: fails fast at startup with all invalid vars listed.

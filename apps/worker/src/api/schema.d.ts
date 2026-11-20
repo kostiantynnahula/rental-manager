@@ -201,7 +201,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** @description description → DESCRIBED, error → FAILED (+ indexNote). Idempotent. API key scope: condition-photos:describe (keys only) */
+        /** @description description → DESCRIBED, then embedded → INDEXED; error → FAILED (+ indexNote). Idempotent. API key scope: condition-photos:describe (keys only) */
         put: operations["ConditionPhotosController_setDescription"];
         post?: never;
         delete?: never;
@@ -1859,6 +1859,20 @@ export interface operations {
             };
             /** @description Condition photo not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Embedding failed (the description is saved, DESCRIBED) */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Embeddings not configured (saved, DESCRIBED) */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

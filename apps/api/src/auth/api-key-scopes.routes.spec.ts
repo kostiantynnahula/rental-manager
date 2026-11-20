@@ -72,6 +72,7 @@ const CLOSED: Route[] = [
   // Embeds the lease with tenants.
   ['GET /condition-photos/:id', ConditionPhotosController, 'findOne'],
   ['GET /apartments/:id/condition-photos', ApartmentConditionPhotosController, 'list'],
+  ['GET /apartments/:id/condition-photos/search', ApartmentConditionPhotosController, 'search'],
 ];
 
 function run(
