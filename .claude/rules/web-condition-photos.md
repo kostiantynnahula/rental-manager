@@ -11,6 +11,7 @@ separate from meter photos (`web-photos.md`): no parsing, no review screen.
 
 - Shown in two places, both via `ConditionPhotoTimeline`:
   - Apartment tab «Стан» (`?tab=condition`, `ApartmentConditionTab`): the whole history; upload defaults to «Зміна».
+    The tab renders the upload itself (timeline `canUpload={false}`), so it stays while searching.
   - Lease page, card «Стан квартири»: `lease={lease}` → `range = { from: startDate, to: endDate }` (open-ended →
     `from` only), the same rule the API uses to derive a photo's lease (`helpers/is-within-lease.ts`). Upload
     defaults (`helpers/default-event.ts`, `default-taken-on.ts`): an ended lease → «Виїзд» on its **last day** (today
@@ -23,6 +24,17 @@ separate from meter photos (`web-photos.md`): no parsing, no review screen.
   heading «Заїзд · 01.11.2026 · N». Thumbnail tap → `ConditionPhotoLightbox` = `PhotoFullscreen` (zoom) with a
   `footer`: ‹ › over the whole list on screen (arrow keys too), event · date · «N з M», note. Closes itself when the list empties. The event choice is toggle buttons
   (`aria-pressed`), not a radiogroup.
+- Search (apartment tab only, #131): input → `useDebouncedValue(300)` → `?q=` (the tenants pattern), event filter
+  toggles «Усі · Заїзд · Виїзд · Зміна» → `?event=` (`parseEventFilter`, default `all` left out) — applies to the
+  timeline too. `q` set → `ConditionPhotoSearchResults` instead of the timeline: rows (thumbnail, event · date,
+  `description.summary`, «збіг N%» = `round(score × 100)`) in API order, a row opens the lightbox over the results;
+  `keepPreviousData` (results or the empty state dimmed while the next query loads); empty → «Нічого не знайдено» +
+  only photos already in the search (INDEXED) are searched. `parseQuery` trims and caps `?q=` (500, the API's limit).
+  The lightbox is rendered outside the states (as in the timeline), so it closes itself when a refetch empties the
+  results. `useConditionPhotoSearch` is disabled for an empty `q`; API default limit.
+- Lightbox detail (`ConditionPhotoDescription`, keyed by photo): `indexStatus` line unless INDEXED
+  (`constants/index-status.ts`; FAILED + `indexNote`) and a collapsed «Опис» (`aria-expanded`): room
+  (`constants/rooms.ts`, OTHER hidden), summary, items `назва ×N — стан`. `description` is typed in OpenAPI.
 - Upload (`UploadConditionPhotosSheet` + form): plain `<input type="file" multiple>` with local previews
   (`FilePreview`: object URL revoked by the React 19 ref cleanup; the first 12, then «ще N»), then one event, date (today, not in the future)
   and note for all files. `useUploadConditionPhotos` sends **chunks of `PHOTO_MAX_FILES`** one after another; a failed
@@ -32,4 +44,4 @@ separate from meter photos (`web-photos.md`): no parsing, no review screen.
   photos' helper).
 - Edit / delete from the card's ⋯ menu: `EditConditionPhotoForm` (shared `ConditionPhotoFields`, zod
   `conditionPhotoSchema`) PATCHes only changed fields (cleared note → `null`; nothing changed → no request);
-  delete = `ConfirmDialog`, always allowed. Every mutation invalidates `conditionPhotoKeys.lists()` (both pages).
+  delete = `ConfirmDialog`, always allowed. Every mutation invalidates `conditionPhotoKeys.all` (lists of both pages + searches).

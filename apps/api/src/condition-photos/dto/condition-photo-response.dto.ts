@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { formatDateOnly } from '../../common/helpers/date-only.js';
 import type { ConditionPhoto } from '../../generated/prisma/client.js';
 import { ConditionPhotoEvent, ConditionPhotoIndexStatus } from '../../generated/prisma/enums.js';
+import { ConditionPhotoDescriptionDto } from './condition-photo-description.dto.js';
 
 // Storage keys stay internal: clients fetch the bytes through the API (auth + cache headers).
 export class ConditionPhotoResponseDto {
@@ -45,13 +46,13 @@ export class ConditionPhotoResponseDto {
   })
   indexStatus: ConditionPhotoIndexStatus;
 
+  // Json in the DB, but only ever written through the validated ConditionPhotoDescriptionDto (PUT description).
   @ApiProperty({
-    type: 'object',
-    additionalProperties: true,
+    type: () => ConditionPhotoDescriptionDto,
     nullable: true,
     description: "The worker's structured description; null until DESCRIBED",
   })
-  description: Record<string, unknown> | null;
+  description: ConditionPhotoDescriptionDto | null;
 
   @ApiProperty({ type: String, nullable: true, description: 'Why indexing failed' })
   indexNote: string | null;
@@ -76,7 +77,7 @@ export class ConditionPhotoResponseDto {
       width: p.width,
       height: p.height,
       indexStatus: p.indexStatus,
-      description: p.description as Record<string, unknown> | null,
+      description: p.description as unknown as ConditionPhotoDescriptionDto | null,
       indexNote: p.indexNote,
       fileUrl: `/api/condition-photos/${p.id}/file`,
       thumbnailUrl: `/api/condition-photos/${p.id}/thumbnail`,

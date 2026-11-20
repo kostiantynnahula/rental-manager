@@ -3,7 +3,11 @@
 import { useMemo, useState } from 'react';
 import { QueryError } from '@/components/query-error';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useConditionPhotos, type ConditionPhotoRange } from '@/lib/api/queries/condition-photos';
+import {
+  useConditionPhotos,
+  type ConditionPhotoEvent,
+  type ConditionPhotoFilter,
+} from '@/lib/api/queries/condition-photos';
 import { formatDate } from '@/lib/format';
 import { ConditionPhotoCard } from './condition-photo-card';
 import { ConditionPhotoLightbox } from './condition-photo-lightbox';
@@ -20,6 +24,8 @@ interface ConditionPhotoTimelineProps {
   lease?: LeaseDates;
   // false for an archived apartment (the API refuses uploads).
   canUpload: boolean;
+  // Apartment tab's event filter (undefined = all events).
+  event?: ConditionPhotoEvent;
   emptyText: string;
 }
 
@@ -28,13 +34,15 @@ export function ConditionPhotoTimeline({
   apartmentId,
   lease,
   canUpload,
+  event,
   emptyText,
 }: ConditionPhotoTimelineProps) {
   // Same rule as the API's lease of a photo (open-ended → from only).
-  const range: ConditionPhotoRange | undefined = lease
-    ? { from: lease.startDate, to: lease.endDate ?? undefined }
-    : undefined;
-  const photos = useConditionPhotos(apartmentId, range);
+  const filter: ConditionPhotoFilter = {
+    ...(lease && { from: lease.startDate, to: lease.endDate ?? undefined }),
+    ...(event && { event }),
+  };
+  const photos = useConditionPhotos(apartmentId, filter);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const list = photos.data;
   const groups = useMemo(() => groupByDayEvent(list ?? []), [list]);

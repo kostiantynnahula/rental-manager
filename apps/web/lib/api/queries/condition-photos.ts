@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PHOTO_MAX_FILES } from '@/components/photos/constants/upload';
 import { api } from '@/lib/api/client';
 import { unwrap } from '@/lib/api/errors';
@@ -8,11 +8,16 @@ export type ConditionPhoto = components['schemas']['ConditionPhotoResponseDto'];
 export type ConditionPhotoEvent = components['schemas']['ConditionPhotoEvent'];
 export type ConditionPhotoUploadResult = components['schemas']['ConditionPhotoUploadResultDto'];
 export type UpdateConditionPhotoInput = components['schemas']['UpdateConditionPhotoDto'];
+export type ConditionPhotoSearchResult = components['schemas']['ConditionPhotoSearchResultDto'];
+export type ConditionPhotoDescription = components['schemas']['ConditionPhotoDescriptionDto'];
+export type ConditionPhotoRoom = components['schemas']['ConditionPhotoRoom'];
+export type ConditionPhotoIndexStatus = components['schemas']['ConditionPhotoIndexStatus'];
 
-// Inclusive `takenOn` range ("YYYY-MM-DD"); a lease page passes its dates.
-export interface ConditionPhotoRange {
+// Inclusive `takenOn` range ("YYYY-MM-DD"; a lease page passes its dates) and an event (the apartment tab's filter).
+export interface ConditionPhotoFilter {
   from?: string;
   to?: string;
+  event?: ConditionPhotoEvent;
 }
 
 export interface UploadConditionPhotosInput {
@@ -37,20 +42,46 @@ export class UploadPartialError extends Error {
 export const conditionPhotoKeys = {
   all: ['condition-photos'] as const,
   lists: () => [...conditionPhotoKeys.all, 'list'] as const,
-  list: (apartmentId: string, range: ConditionPhotoRange) =>
-    [...conditionPhotoKeys.lists(), apartmentId, range] as const,
+  list: (apartmentId: string, filter: ConditionPhotoFilter) =>
+    [...conditionPhotoKeys.lists(), apartmentId, filter] as const,
+  searches: () => [...conditionPhotoKeys.all, 'search'] as const,
+  search: (apartmentId: string, q: string, event: ConditionPhotoEvent | undefined) =>
+    [...conditionPhotoKeys.searches(), apartmentId, q, event] as const,
 };
 
 // Newest `takenOn` first (API order).
-export function useConditionPhotos(apartmentId: string, range: ConditionPhotoRange = {}) {
+export function useConditionPhotos(apartmentId: string, filter: ConditionPhotoFilter = {}) {
   return useQuery({
-    queryKey: conditionPhotoKeys.list(apartmentId, range),
+    queryKey: conditionPhotoKeys.list(apartmentId, filter),
     queryFn: async (): Promise<ConditionPhoto[]> =>
       unwrap(
         await api.GET('/apartments/{apartmentId}/condition-photos', {
-          params: { path: { apartmentId }, query: { from: range.from, to: range.to } },
+          params: {
+            path: { apartmentId },
+            query: { from: filter.from, to: filter.to, event: filter.event },
+          },
         }),
       ),
+  });
+}
+
+// Semantic search over the worker's descriptions: most relevant first, only INDEXED photos (the API's default
+// limit). Off while `q` is empty. keepPreviousData: the old results stay while the next query loads.
+export function useConditionPhotoSearch(
+  apartmentId: string,
+  q: string,
+  event: ConditionPhotoEvent | undefined,
+) {
+  return useQuery({
+    queryKey: conditionPhotoKeys.search(apartmentId, q, event),
+    queryFn: async (): Promise<ConditionPhotoSearchResult[]> =>
+      unwrap(
+        await api.GET('/apartments/{apartmentId}/condition-photos/search', {
+          params: { path: { apartmentId }, query: { q, event } },
+        }),
+      ),
+    enabled: q !== '',
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -104,7 +135,7 @@ export function useUploadConditionPhotos(apartmentId: string) {
       return results;
     },
     // Settled, not success: chunks stored before a failure are saved too.
-    onSettled: () => void queryClient.invalidateQueries({ queryKey: conditionPhotoKeys.lists() }),
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: conditionPhotoKeys.all }),
   });
 }
 
@@ -113,7 +144,7 @@ export function useUpdateConditionPhoto(id: string) {
   return useMutation({
     mutationFn: async (body: UpdateConditionPhotoInput) =>
       unwrap(await api.PATCH('/condition-photos/{id}', { params: { path: { id } }, body })),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: conditionPhotoKeys.lists() }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: conditionPhotoKeys.all }),
   });
 }
 
@@ -122,6 +153,6 @@ export function useDeleteConditionPhoto(id: string) {
   return useMutation({
     mutationFn: async () =>
       unwrap(await api.DELETE('/condition-photos/{id}', { params: { path: { id } } })),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: conditionPhotoKeys.lists() }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: conditionPhotoKeys.all }),
   });
 }

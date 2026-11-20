@@ -41,7 +41,7 @@ Separate from meter `Photo` (`api-photos.md`): no inbox, no parsing, no readings
     (a queue outage leaves the photo PENDING).
   - `PUT /condition-photos/:id/description` (keys only — a human gets 403, 204): exactly one of
     `description` `{ room, items[{ name, count?, condition? }], summary }` (`ConditionPhotoDescriptionDto`, rooms in
-    `constants/`; Json, no schema enum) → `DESCRIBED`, `indexNote: null`; or `error` (≤ 1000) → `FAILED` +
+    `constants/`; Json, no schema enum; typed as that DTO in OpenAPI responses — only this PUT writes it) → `DESCRIBED`, `indexNote: null`; or `error` (≤ 1000) → `FAILED` +
     `indexNote`, the earlier description kept — an error for a photo already `DESCRIBED`/`INDEXED` is a no-op 204
     (a usable description wins). Both/neither → 400. Idempotent (a retry overwrites). Upload enqueues in parallel
     (`Promise.all`): with Redis down the request waits one 3 s timeout, not one per photo.
