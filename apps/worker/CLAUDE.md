@@ -29,6 +29,8 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
 - Services call `WorkerApi` (`src/api/worker-api.service.ts`), never `API_CLIENT` directly (`ApiClientModule`
   exports only `WorkerApi`). A new endpoint = a new `WorkerApi` method: returns data or throws (`apiError`); an
   expected refusal (e.g. `postDraftValue`'s 409/400) comes back as a typed `{ ok: false, ... }` result.
+- A text sent to a length-limited API field is cut with `truncate(text, max)` (`src/helpers/truncate.ts`), never a
+  local copy.
 - Never log `WORKER_API_KEY`, the `Authorization` header or photo bytes (log sizes, ids, meter summaries).
 - Queue/job names and payloads come from `@rental/shared` (`PHOTO_QUEUE`, `PARSE_PHOTO_JOB`, `ParsePhotoJobData`;
   `CONDITION_PHOTO_QUEUE`, `DESCRIBE_CONDITION_PHOTO_JOB`);

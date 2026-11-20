@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { WorkerApi } from '../api/worker-api.service.js';
+import { truncate } from '../helpers/truncate.js';
 
 // SetConditionPhotoDescriptionDto.error limit.
 const MAX_ERROR = 1000;
@@ -16,7 +17,7 @@ export class ConditionDescriptionReporter {
     try {
       const res = await this.api.putConditionPhotoDescription(photoId, {
         // The API rejects an empty error (the photo would stay PENDING).
-        error: truncate(error.trim() || 'Unknown error'),
+        error: truncate(error.trim() || 'Unknown error', MAX_ERROR),
       });
       if (res.ok) return;
       const hint =
@@ -28,8 +29,4 @@ export class ConditionDescriptionReporter {
       this.logger.warn(`condition photo ${photoId}: failure not saved (${(e as Error).message})`);
     }
   }
-}
-
-function truncate(text: string): string {
-  return text.length > MAX_ERROR ? `${text.slice(0, MAX_ERROR - 1)}…` : text;
 }

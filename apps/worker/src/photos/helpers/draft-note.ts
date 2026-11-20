@@ -1,4 +1,5 @@
 import type { ExtractedReading } from '../../extraction/interfaces/extracted-reading.interface.js';
+import { truncate } from '../../helpers/truncate.js';
 
 // CreateDraftValueDto.note limit.
 const MAX_NOTE = 1000;
@@ -12,6 +13,5 @@ export function draftNote(reading: ExtractedReading, warnings: string[]): string
     parts.push(`впевненість ${reading.confidence}${issues}`);
   }
   if (parts.length === 0) return undefined;
-  const note = `Фото ${reading.zone}: ${parts.join('; ')}`;
-  return note.length > MAX_NOTE ? `${note.slice(0, MAX_NOTE - 1)}…` : note;
+  return truncate(`Фото ${reading.zone}: ${parts.join('; ')}`, MAX_NOTE);
 }

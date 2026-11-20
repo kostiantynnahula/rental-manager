@@ -1,5 +1,6 @@
 import type { ConditionPhotoDescription } from '../interfaces/condition-photo-description.interface.js';
 import type { RawDescription } from '../interfaces/raw-description.interface.js';
+import { truncate } from '../../helpers/truncate.js';
 import { ROOMS } from './rooms.js';
 
 // The API's limits (ConditionPhotoDescriptionDto): over them the PUT would be a 400, so texts are cut instead.
@@ -12,7 +13,7 @@ const MAX_SUMMARY = 2000;
 // only a hint), items without a name dropped, count only when > 1, null → omitted. Throws on an empty summary
 // (a plain Error: the job is retried, a new answer may have one).
 export function normalizeDescription(raw: RawDescription): ConditionPhotoDescription {
-  const summary = cut(raw.summary.trim(), MAX_SUMMARY);
+  const summary = truncate(raw.summary.trim(), MAX_SUMMARY);
   if (!summary) throw new Error('The model returned an empty summary');
   const room = (ROOMS as readonly string[]).includes(raw.room)
     ? (raw.room as ConditionPhotoDescription['room'])
@@ -21,16 +22,12 @@ export function normalizeDescription(raw: RawDescription): ConditionPhotoDescrip
     .map(({ name, count, condition }) => {
       const cleanCondition = condition?.trim();
       return {
-        name: cut(name.trim(), MAX_NAME),
+        name: truncate(name.trim(), MAX_NAME),
         ...(Number.isInteger(count) && count! > 1 && { count: count! }),
-        ...(cleanCondition && { condition: cut(cleanCondition, MAX_CONDITION) }),
+        ...(cleanCondition && { condition: truncate(cleanCondition, MAX_CONDITION) }),
       };
     })
     .filter((item) => item.name)
     .slice(0, MAX_ITEMS);
   return { room, items, summary };
-}
-
-function cut(text: string, max: number): string {
-  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
