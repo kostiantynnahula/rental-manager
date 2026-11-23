@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/confirm-dialog';
@@ -37,8 +37,14 @@ const ERROR_MESSAGES = {
 
 // Room, summary and items → PATCH { description } (replaces it as a whole, re-indexed for search).
 // An edited description can be restored to the model's → PATCH { description: null }.
-// Keyed by the page: a restore / an edit elsewhere remounts it with fresh defaults.
-export function ConditionPhotoDescriptionForm({ photo }: { photo: ConditionPhotoDetail }) {
+// Keyed by ConditionPhotoDescriptionSection, which remounts it with fresh defaults only while it isn't dirty.
+export function ConditionPhotoDescriptionForm({
+  photo,
+  onDirtyChange,
+}: {
+  photo: ConditionPhotoDetail;
+  onDirtyChange: (dirty: boolean) => void;
+}) {
   const update = useUpdateConditionPhoto(photo.id);
   const [confirmRestore, setConfirmRestore] = useState(false);
   const idPrefix = `condition-description-${photo.id}`;
@@ -49,6 +55,8 @@ export function ConditionPhotoDescriptionForm({ photo }: { photo: ConditionPhoto
   const items = useFieldArray({ control: form.control, name: 'items' });
   const { isDirty, isSubmitting } = form.formState;
   const { dialog } = useUnsavedChanges(isDirty);
+
+  useEffect(() => onDirtyChange(isDirty), [isDirty, onDirtyChange]);
   // Hidden by navigation right after a save: come back to the saved values, not a stale "dirty" form.
   const markSaved = useResetAfterSave(() => form.reset(form.getValues()));
 
@@ -67,7 +75,11 @@ export function ConditionPhotoDescriptionForm({ photo }: { photo: ConditionPhoto
     update.mutate(
       { description: null },
       {
-        onSuccess: () => toast.success('Повернуто опис моделі'),
+        onSuccess: () => {
+          // Drop the draft: a dirty form isn't remounted, and the restored description must show.
+          form.reset();
+          toast.success('Повернуто опис моделі');
+        },
         onError: (error) => applyApiError(error, { messages: ERROR_MESSAGES }),
         onSettled: () => setConfirmRestore(false),
       },

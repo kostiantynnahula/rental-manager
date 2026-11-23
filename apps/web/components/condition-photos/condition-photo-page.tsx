@@ -18,7 +18,7 @@ import { isNotFoundError } from '@/lib/api/api-error';
 import { useApartment } from '@/lib/api/queries/apartments';
 import { useConditionPhoto } from '@/lib/api/queries/condition-photos';
 import { formatDate } from '@/lib/format';
-import { ConditionPhotoDescriptionForm } from './condition-photo-description-form';
+import { ConditionPhotoDescriptionSection } from './condition-photo-description-section';
 import { ConditionPhotoLeaseLine } from './condition-photo-lease-line';
 import { ConditionPhotoPageSkeleton } from './condition-photo-page-skeleton';
 import { EVENT_LABELS } from './constants/events';
@@ -100,12 +100,7 @@ export function ConditionPhotoPage() {
         </DropdownMenu>
       </div>
       <PhotoViewer photo={data} alt={caption} />
-      {/* Remount on a restore or an edit made elsewhere (fresh defaults), and when the worker's first description
-          arrives; the page stays mounted (hidden) between photos, so another photo needs a fresh form too. */}
-      <ConditionPhotoDescriptionForm
-        key={`${data.id}:${data.descriptionEditedAt ?? 'model'}:${data.description === null}`}
-        photo={data}
-      />
+      <ConditionPhotoDescriptionSection photo={data} />
       <EditConditionPhotoSheet photo={data} open={panel === 'edit'} onOpenChange={close} />
       <DeleteConditionPhotoDialog
         photo={data}
