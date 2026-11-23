@@ -78,7 +78,9 @@ Separate from meter `Photo` (`api-photos.md`): no inbox, no parsing, no readings
   (`src/embeddings/`) is the only place that knows the rerank model (`rerank-2.5`, `constants/rerank-model.ts`).
   `rerank(query, documents[]) → { index, score }[]`, most relevant first. Plain `fetch` to Voyage's `/v1/rerank`:
   LangChain has no standalone Voyage reranker (`@langchain/mongodb` reranks only inside an Atlas search). Errors as
-  `EmbeddingsService`: no key → 503, any Voyage failure or a malformed response → 502. ≤ 1000 documents per call.
+  `EmbeddingsService`: no key → 503, any Voyage failure or a malformed response (incl. a repeated index) → 502.
+  ≤ 1000 documents per call — the caller caps, more is a 500 (a bug). No retry yet (EmbeddingsService has 2): decide
+  when the route uses it.
   Documents = `embeddingText(description)`, the same text as the embedding.
   - Debug CLI `pnpm --filter api search:debug -- --apartment <id|name> [--event CHECK_IN] [--candidates 50] "<query>"`
     (`src/cli/search-debug.ts`). `--apartment` is a uuid or a case-insensitive part of the name (must match one; an

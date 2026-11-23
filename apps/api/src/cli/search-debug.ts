@@ -6,6 +6,7 @@
 import { parseArgs } from 'node:util';
 import { NestFactory } from '@nestjs/core';
 import { isUUID } from 'class-validator';
+import { SEARCH_QUERY_MAX_LENGTH } from '../condition-photos/constants/condition-photo-search.js';
 import { ConditionPhotoIndexService } from '../condition-photos/condition-photo-index.service.js';
 import { embeddingText } from '../condition-photos/helpers/embedding-text.js';
 import type { ConditionPhotoDescription } from '../condition-photos/interfaces/condition-photo-description.interface.js';
@@ -42,6 +43,11 @@ function parse(argv: string[]): Args {
   });
   const q = positionals.join(' ').trim();
   if (!values.apartment || !q) throw new Error(`--apartment and a query are required.\n${USAGE}`);
+  if (q.length > SEARCH_QUERY_MAX_LENGTH) {
+    throw new Error(
+      `The query is longer than ${SEARCH_QUERY_MAX_LENGTH} characters (the route's limit)`,
+    );
+  }
   if (values.event && !EVENTS.includes(values.event as ConditionPhotoEvent)) {
     throw new Error(`--event must be one of ${EVENTS.join(', ')}`);
   }

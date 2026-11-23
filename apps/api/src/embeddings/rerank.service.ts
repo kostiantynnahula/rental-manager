@@ -1,6 +1,7 @@
 import {
   BadGatewayException,
   Injectable,
+  InternalServerErrorException,
   Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
@@ -15,10 +16,10 @@ const TIMEOUT_MS = 30_000;
 
 // Query + documents → relevance scores (Voyage rerank). The only place that knows the rerank model. Plain fetch:
 // LangChain has no standalone Voyage reranker (`@langchain/mongodb` reranks only inside an Atlas vector search).
-// Errors as EmbeddingsService: no key → 503; any Voyage failure → 502.
+// Errors as EmbeddingsService: no key → 503; any Voyage failure → 502. More than RERANK_MAX_DOCUMENTS → 500 (the
+// caller must cap). No retry yet: decided when the search route uses it.
 @Injectable()
 export class RerankService {
-  readonly model = RERANK_MODEL;
   private readonly logger = new Logger(RerankService.name);
   private readonly apiKey?: string;
 
@@ -31,7 +32,8 @@ export class RerankService {
     if (!this.apiKey) throw new ServiceUnavailableException('Semantic search is not configured');
     if (documents.length === 0) return [];
     if (documents.length > RERANK_MAX_DOCUMENTS) {
-      throw new Error(
+      // The caller caps the candidates; reaching this is a bug, not a client error.
+      throw new InternalServerErrorException(
         `Too many documents to rerank: ${documents.length} > ${RERANK_MAX_DOCUMENTS}`,
       );
     }
