@@ -50,7 +50,7 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
 - A test failing because of this PR's change → fix it in this PR. Never weaken a test to make it pass — tell me.
 - A bug found in merged code → an `it.fails(...)` test with a `// bug: …` line above it, listed under "Found bugs" in
   the PR description. Don't fix the code and don't create issues — I decide.
-- Never run `extract:samples` in tests or reviews (paid model calls) — only when I ask.
+- Never run `extract:samples` or `describe:samples` in tests or reviews (paid model calls) — only when I ask.
 
 ## Modules
 
@@ -64,6 +64,7 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
   - Job flow — parse-photo, matching, inbox, plausibility, errors (`src/photos/`): `.claude/rules/worker-photos.md`
   - Photo extraction — LangChain call, prompt, normalization, samples script (`src/extraction/`, `src/scripts/`):
     `.claude/rules/worker-extraction.md`
-  - Condition photo descriptions — job flow, prompt, output (`src/condition-photos/`, `src/llm/`):
+  - Condition photo descriptions — job flow, prompt, output, samples script (`src/condition-photos/`, `src/llm/`,
+    `src/scripts/describe-samples*`):
     `.claude/rules/worker-condition-photos.md`
 - Project rules override advice from skills.
