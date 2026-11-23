@@ -27,9 +27,11 @@ separate from meter photos (`web-photos.md`): no parsing, no review screen.
 - Search (apartment tab only, #131): input → `useDebouncedValue(300)` → `?q=` (the tenants pattern), event filter
   toggles «Усі · Заїзд · Виїзд · Зміна» → `?event=` (`parseEventFilter`, default `all` left out) — applies to the
   timeline too. `q` set → `ConditionPhotoSearchResults` instead of the timeline: rows (thumbnail, event · date,
-  `description.summary`, «збіг N%» = `round(score × 100)`) in API order, a row opens the lightbox over the results;
-  `keepPreviousData` (results or the empty state dimmed while the next query loads); empty → «Нічого не знайдено» +
-  only photos already in the search (INDEXED) are searched. `parseQuery` trims and caps `?q=` (500, the API's limit).
+  `description.summary`) in API order, a row opens the lightbox over the results. No score (#141): every result
+  already passed the API's rerank threshold, and a correct 0.5 would read as a bad match. `keepPreviousData` (results
+  or the empty state dimmed while the next query loads); empty → «Нічого не знайдено» + only photos already in the
+  search (INDEXED) are searched. Empty also means nothing was relevant enough. `parseQuery` trims and caps `?q=`
+  (500, the API's limit).
   The lightbox is rendered outside the states (as in the timeline), so it closes itself when a refetch empties the
   results. `useConditionPhotoSearch` is disabled for an empty `q`; API default limit.
 - Lightbox detail (`ConditionPhotoDescription`, keyed by photo): `indexStatus` line unless INDEXED

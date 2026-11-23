@@ -2,10 +2,14 @@
 // repo root:
 //   pnpm --filter api search:debug -- --apartment <id|name> [--event CHECK_IN] [--candidates 50] "<query>"
 // --apartment: see findApartment.
-// Builds first (Nest DI needs decorator metadata). Needs VOYAGE_API_KEY. No threshold: prints every candidate.
+// Builds first (Nest DI needs decorator metadata). Needs VOYAGE_API_KEY. Prints every candidate; `kept` = passes
+// RERANK_MIN_SCORE (what the route returns, up to its limit).
 import { parseArgs } from 'node:util';
 import { NestFactory } from '@nestjs/core';
-import { SEARCH_QUERY_MAX_LENGTH } from '../condition-photos/constants/condition-photo-search.js';
+import {
+  RERANK_MIN_SCORE,
+  SEARCH_QUERY_MAX_LENGTH,
+} from '../condition-photos/constants/condition-photo-search.js';
 import { ConditionPhotoIndexService } from '../condition-photos/condition-photo-index.service.js';
 import { embeddingText } from '../condition-photos/helpers/embedding-text.js';
 import type { ConditionPhotoDescription } from '../condition-photos/interfaces/condition-photo-description.interface.js';
@@ -91,6 +95,7 @@ async function main(): Promise<void> {
         rank: rank + 1,
         rerank: score.toFixed(3),
         vector: hits[index].score.toFixed(3),
+        kept: score >= RERANK_MIN_SCORE ? '✓' : '',
         event: hits[index].photo.event,
         takenOn: formatDateOnly(hits[index].photo.takenOn),
         room: descriptions[index].room,

@@ -71,12 +71,8 @@ export function ConditionPhotoSearchResults({
                     className="size-20 shrink-0 rounded-md bg-muted object-cover"
                   />
                   <span className="min-w-0 flex-1">
-                    <span className="flex items-baseline justify-between gap-2">
-                      <span className="font-medium">{label}</span>
-                      <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                        збіг {Math.round(photo.score * 100)}%
-                      </span>
-                    </span>
+                    {/* No score: every result already passed the API's relevance threshold. */}
+                    <span className="block font-medium">{label}</span>
                     {photo.description && (
                       <span className="mt-1 line-clamp-2 text-sm break-words text-muted-foreground">
                         {photo.description.summary}
