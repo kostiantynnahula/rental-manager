@@ -12,6 +12,11 @@ export type ConditionPhotoSearchResult = components['schemas']['ConditionPhotoSe
 export type ConditionPhotoDescription = components['schemas']['ConditionPhotoDescriptionDto'];
 export type ConditionPhotoRoom = components['schemas']['ConditionPhotoRoom'];
 export type ConditionPhotoIndexStatus = components['schemas']['ConditionPhotoIndexStatus'];
+export type ConditionPhotoDetail = components['schemas']['ConditionPhotoDetailResponseDto'];
+export type ConditionPhotoItem = components['schemas']['ConditionPhotoItemDto'];
+
+// The detail page polls while the worker describes the photo (PENDING) or it's being embedded (DESCRIBED).
+const INDEX_POLL_MS = 5000;
 
 // Inclusive `takenOn` range ("YYYY-MM-DD"; a lease page passes its dates) and an event (the apartment tab's filter).
 export interface ConditionPhotoFilter {
@@ -47,6 +52,8 @@ export const conditionPhotoKeys = {
   searches: () => [...conditionPhotoKeys.all, 'search'] as const,
   search: (apartmentId: string, q: string, event: ConditionPhotoEvent | undefined) =>
     [...conditionPhotoKeys.searches(), apartmentId, q, event] as const,
+  details: () => [...conditionPhotoKeys.all, 'detail'] as const,
+  detail: (id: string) => [...conditionPhotoKeys.details(), id] as const,
 };
 
 // Newest `takenOn` first (API order).
@@ -82,6 +89,19 @@ export function useConditionPhotoSearch(
       ),
     enabled: q !== '',
     placeholderData: keepPreviousData,
+  });
+}
+
+// One photo with its derived lease and the worker's last description (the detail page).
+export function useConditionPhoto(id: string) {
+  return useQuery({
+    queryKey: conditionPhotoKeys.detail(id),
+    queryFn: async (): Promise<ConditionPhotoDetail> =>
+      unwrap(await api.GET('/condition-photos/{id}', { params: { path: { id } } })),
+    refetchInterval: (query) => {
+      const status = query.state.data?.indexStatus;
+      return status === 'PENDING' || status === 'DESCRIBED' ? INDEX_POLL_MS : false;
+    },
   });
 }
 
