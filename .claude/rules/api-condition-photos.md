@@ -50,11 +50,13 @@ Separate from meter `Photo` (`api-photos.md`): no inbox, no parsing, no readings
   - Embeddings (`DESCRIBED` → `INDEXED`, #130): after saving a description the same PUT embeds it and upserts
     `photo_embeddings` → `INDEXED` (`ConditionPhotoIndexService`). Saved first: a Voyage failure (502) or no
     `VOYAGE_API_KEY` (503) leaves the photo `DESCRIBED` with its description — a 5xx, so the worker's job retries;
-    `pnpm --filter api embed:backfill` indexes what's left. The worker's side: `worker-condition-photos.md`.
+    `pnpm --filter api embed:backfill` indexes what's left (every `DESCRIBED` photo + any described photo without a
+    row of the current model — a re-described photo still has its old row). The worker's side: `worker-condition-photos.md`.
   - Re-describe CLI `pnpm --filter api describe:requeue -- --apartment <id|name> | --all` (#146, e.g. after a
     prompt change; `src/cli/describe-requeue.ts`): enqueues `describe-condition-photo` for every photo of the
-    apartment (or all, archived apartments too), any `indexStatus`, which is **not** reset — an INDEXED photo stays
-    searchable until the worker's PUT saves the new description and it is re-embedded. Via
+    apartment (or all, archived apartments too) except `PENDING` ones (their upload job is still due — a second job =
+    a second paid call). The CLI doesn't reset `indexStatus`, but the worker's PUT sets `DESCRIBED` before embedding:
+    the photo is **out of search from the PUT until re-embedded** (seconds; a Voyage failure → `embed:backfill`). Via
     `ConditionPhotoJobsService.enqueueRedescribe`: own jobId `<photoId>-<ms>` (the upload's `jobId = photoId` is kept
     7 days / failed forever and BullMQ ignores a repeated id) and it **throws** (the upload path never does); the CLI
     stops at the first failure, prints `queued N of M`. Own Nest module (`DescribeRequeueModule`): BullMQ connects

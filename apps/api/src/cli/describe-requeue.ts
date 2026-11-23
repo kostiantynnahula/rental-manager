@@ -1,11 +1,13 @@
 // Describe condition photos again, e.g. after a change of the worker's prompt. Run from the repo root:
 //   pnpm --filter api describe:requeue -- --apartment <id|name> | --all
 // --apartment: see findApartment. --all: every apartment's photos, archived ones too.
-// Enqueues describe-condition-photo for every photo, whatever its indexStatus, which stays as is: an INDEXED photo
-// stays searchable until the worker's PUT saves the new description and the API embeds it. Needs Redis (the API's
+// Enqueues describe-condition-photo for every photo except PENDING ones (their upload job is still due — a second
+// job would be a second paid call). indexStatus isn't reset here, but the worker's PUT sets DESCRIBED before the
+// API embeds it: the photo is out of search until re-embedded (a Voyage failure → embed:backfill). Needs Redis (the API's
 // REDIS_* env) and a running worker to do the work. Builds first (Nest DI needs decorator metadata).
 import { parseArgs } from 'node:util';
 import { NestFactory } from '@nestjs/core';
+import { ConditionPhotoIndexStatus } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ConditionPhotoJobsService } from '../queue/condition-photo-jobs.service.js';
 import { DescribeRequeueModule } from './describe-requeue.module.js';
@@ -46,7 +48,10 @@ async function main(): Promise<void> {
       'apartment' in target ? await findApartment(prisma, target.apartment) : undefined;
     const label = apartment?.name ?? 'all apartments';
     const photos = await prisma.conditionPhoto.findMany({
-      where: apartment ? { apartmentId: apartment.id } : {},
+      where: {
+        ...(apartment && { apartmentId: apartment.id }),
+        indexStatus: { not: ConditionPhotoIndexStatus.PENDING },
+      },
       select: { id: true },
       orderBy: [{ uploadedAt: 'asc' }, { id: 'asc' }],
     });

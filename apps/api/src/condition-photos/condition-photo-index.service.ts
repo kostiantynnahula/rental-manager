@@ -105,13 +105,17 @@ export class ConditionPhotoIndexService {
     });
   }
 
-  // Photos with a description but no embedding of the current model: after an outage of Voyage (the photo stayed
-  // DESCRIBED) or a model change. One by one; a failure is logged and the rest go on.
+  // Photos with a description but no embedding of the current model (a model change), or still DESCRIBED (a Voyage
+  // outage; also a re-described photo, #146: its old vector is still there, so the missing-row check alone would
+  // skip it). One by one; a failure is logged and the rest go on.
   async backfill(): Promise<BackfillResult> {
     const photos = await this.prisma.conditionPhoto.findMany({
       where: {
         description: { not: Prisma.DbNull },
-        embeddings: { none: { kind: TEXT_EMBEDDING_KIND, model: this.embeddings.model } },
+        OR: [
+          { indexStatus: ConditionPhotoIndexStatus.DESCRIBED },
+          { embeddings: { none: { kind: TEXT_EMBEDDING_KIND, model: this.embeddings.model } } },
+        ],
       },
       select: { id: true, description: true },
       orderBy: { uploadedAt: 'asc' },

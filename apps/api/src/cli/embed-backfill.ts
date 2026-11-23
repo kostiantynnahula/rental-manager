@@ -1,5 +1,5 @@
-// Embed condition photos that have a description but no embedding of the current model: after a Voyage outage
-// (the photo stayed DESCRIBED) or a model change. Run from the repo root:
+// Embed condition photos that have a description but no embedding of the current model (a model change), or are
+// still DESCRIBED (a Voyage outage, also after a re-describe). Run from the repo root:
 //   pnpm --filter api embed:backfill
 // Builds first (Nest DI needs decorator metadata). Needs VOYAGE_API_KEY. Exit code 1 if any photo failed.
 import { NestFactory } from '@nestjs/core';
