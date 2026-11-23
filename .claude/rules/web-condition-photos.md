@@ -65,6 +65,7 @@ separate from meter photos (`web-photos.md`): no parsing, no review screen.
   can't be closed mid-upload; sending the same files again is safe (stored ones come back `duplicate: true`).
   Error texts: `helpers/upload-error-message.ts` (404 archived, 409 another apartment; file errors reuse the meter
   photos' helper).
-- Edit / delete from the card's ⋯ menu: `EditConditionPhotoForm` (shared `ConditionPhotoFields`, zod
+- The card's ⋯ menu: «Переглянути» (a link to the photo's page — the description / items editor), edit, delete.
+  Edit / delete: `EditConditionPhotoForm` (shared `ConditionPhotoFields`, zod
   `conditionPhotoSchema`) PATCHes only changed fields (cleared note → `null`; nothing changed → no request);
   delete = `ConfirmDialog`, always allowed. Every mutation invalidates `conditionPhotoKeys.all` (lists of both pages + searches).
