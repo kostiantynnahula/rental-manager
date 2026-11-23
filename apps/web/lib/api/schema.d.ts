@@ -1697,7 +1697,7 @@ export interface components {
             /** @example /api/condition-photos/3f1c…/thumbnail */
             thumbnailUrl: string;
             /**
-             * @description 1 − cosine distance; higher = more relevant
+             * @description Rerank relevance 0..1, higher = more relevant; always ≥ 0.45 (the threshold)
              * @example 0.62
              */
             score: number;
@@ -4407,7 +4407,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Most relevant first; only INDEXED photos */
+            /** @description Only INDEXED photos that pass the relevance threshold, most relevant first: may be fewer than `limit`, or none */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -4436,7 +4436,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description The embedding service failed */
+            /** @description The embedding or rerank service failed */
             502: {
                 headers: {
                     [name: string]: unknown;
