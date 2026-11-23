@@ -38,6 +38,26 @@ separate from meter photos (`web-photos.md`): no parsing, no review screen.
 - Lightbox detail (`ConditionPhotoDescription`, keyed by photo): `indexStatus` line unless INDEXED
   (`constants/index-status.ts`; FAILED + `indexNote`) and a collapsed «Опис» (`aria-expanded`): room
   (`constants/rooms.ts`, OTHER hidden), summary, items `назва ×N — стан`. `description` is typed in OpenAPI.
+  Read-only: editing is on the photo's page. «Відкрити» links there and also closes the lightbox (the tab stays
+  mounted, hidden — it would still be open on Back).
+- Photo page `/apartments/[id]/condition-photos/[photoId]` (#143, `ConditionPhotoPage`; states as the meter photo
+  review page): `useConditionPhoto` (`conditionPhotoKeys.detail(id)` under `all`, so every mutation refreshes it;
+  polls 5 s while PENDING / DESCRIBED), `PhotoViewer` (zoom), event · date as the title, note, the lease line (the
+  derived `lease` → `/leases/<id>?from=apartment` with dates · primary tenant, else «Поза договором»), `indexStatus`.
+  ⋯ menu = the card's edit sheet and delete dialog (`onDeleted` → `router.replace` to `?tab=condition`). The back
+  link always goes to `?tab=condition`, also when opened from a lease page.
+- Description editor (`ConditionPhotoDescriptionForm`, zod `descriptionSchema`, the API's limits copied into
+  `constants/description.ts`): room (`ROOM_OPTIONS`, all 7 — «Інше» is selectable here), summary, items via
+  `useFieldArray` (name; count as text, blank = left out; condition, blank = left out) → `PATCH { description }`, the
+  whole description. No description yet (PENDING / FAILED) → an empty form: describe by hand.
+  - «Змінено вручну · дата» when `descriptionEditedAt`. «Повернути опис моделі» only when edited **and**
+    `generatedDescription` exists → `ConfirmDialog` → `PATCH { description: null }`. 409 (changed meanwhile) →
+    «Опис змінився, поки ви редагували. Оновіть сторінку».
+  - Remount (`ConditionPhotoDescriptionSection`): key `id:descriptionEditedAt:description===null` → fresh defaults
+    after a save, a restore, an edit elsewhere or the worker's first description — **but not while dirty** (the
+    poll must not throw a draft away; the form reports `onDirtyChange`). Another photo id always remounts (a kept
+    draft would be saved to the previous photo). A restore resets the form first, so the restored text shows.
+  - `useUnsavedChanges` guard; `markSaved()` after a save (a page hidden right after resets to the saved values).
 - Upload (`UploadConditionPhotosSheet` + form): plain `<input type="file" multiple>` with local previews
   (`FilePreview`: object URL revoked by the React 19 ref cleanup; the first 12, then «ще N»), then one event, date (today, not in the future)
   and note for all files. `useUploadConditionPhotos` sends **chunks of `PHOTO_MAX_FILES`** one after another; a failed
