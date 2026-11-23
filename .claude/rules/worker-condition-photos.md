@@ -31,8 +31,9 @@ items: [{ name, count?, condition? }], summary }`, texts **in Ukrainian**. The s
   present); `normalizeDescription()` (pure) trims, cuts to the API's limits (100 items, name 200, condition 500,
   summary 2000), unknown room → OTHER (the SDK's `enum` is only a hint), count only when > 1, empty summary → throws
   (retried).
-- Prompt (`helpers/description-prompt.ts`): every visible item worth recording, plain names a landlord would
-  search for; visible damage/wear named explicitly with where it is; never guess what isn't visible, never judge
+- Prompt (`helpers/description-prompt.ts`): every visible item worth recording, by its everyday Ukrainian name;
+  common synonyms in parentheses for items people name differently — «мийка (раковина)», «змішувач (кран)», at most
+  2–3, never invented, none for items with one usual name (#146: a query with the other name scored 0.45 vs 0.65); visible damage/wear named explicitly with where it is; never guess what isn't visible, never judge
   whether something works.
 - Never log the image or the description texts (room, item count, sizes, ms only).
 - Tests: build the services only via `conditionPhotoServices()` (`src/test/condition-photo-services.ts`); the

@@ -199,6 +199,7 @@ Manual tools, run from the repo root. They build first, then run once.
 | `pnpm --filter api apikey:create --service <s> --name <n> --scopes <a,b>` | API key for a service (worker, bot, MCP); `apikey:list`, `apikey:revoke <prefix>`  |
 | `pnpm --filter api embed:backfill`                                        | embed described condition photos that have no vector yet (Voyage)                  |
 | `pnpm --filter api search:debug -- --apartment <id\|name> "<query>"`      | condition photo search: vector and rerank scores side by side                      |
+| `pnpm --filter api describe:requeue -- --apartment <id\|name> \| --all`   | describe condition photos again (worker: **paid**, 1 call / photo)                 |
 
 Samples folders, `expected.json` and the output: [`apps/worker/README.md`](apps/worker/README.md#samples-scripts--check-the-model-on-local-photos).
 

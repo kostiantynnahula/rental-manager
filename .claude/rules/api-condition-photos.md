@@ -2,6 +2,8 @@
 paths:
   - 'apps/api/src/condition-photos/**'
   - 'apps/api/src/embeddings/**'
+  - 'apps/api/src/cli/{describe-requeue,embed-backfill,search-debug}*.ts'
+  - 'apps/api/src/queue/condition-photo-jobs.service.ts'
 ---
 
 # Condition photos (API)
@@ -49,6 +51,15 @@ Separate from meter `Photo` (`api-photos.md`): no inbox, no parsing, no readings
     `photo_embeddings` → `INDEXED` (`ConditionPhotoIndexService`). Saved first: a Voyage failure (502) or no
     `VOYAGE_API_KEY` (503) leaves the photo `DESCRIBED` with its description — a 5xx, so the worker's job retries;
     `pnpm --filter api embed:backfill` indexes what's left. The worker's side: `worker-condition-photos.md`.
+  - Re-describe CLI `pnpm --filter api describe:requeue -- --apartment <id|name> | --all` (#146, e.g. after a
+    prompt change; `src/cli/describe-requeue.ts`): enqueues `describe-condition-photo` for every photo of the
+    apartment (or all, archived apartments too), any `indexStatus`, which is **not** reset — an INDEXED photo stays
+    searchable until the worker's PUT saves the new description and it is re-embedded. Via
+    `ConditionPhotoJobsService.enqueueRedescribe`: own jobId `<photoId>-<ms>` (the upload's `jobId = photoId` is kept
+    7 days / failed forever and BullMQ ignores a repeated id) and it **throws** (the upload path never does); the CLI
+    stops at the first failure, prints `queued N of M`. Own Nest module (`DescribeRequeueModule`): BullMQ connects
+    at startup, so `CliModule` stays without queues. Each job is a paid model call in the worker.
+    Not yet: a human-edited description must not be overwritten (#142's PUT rule).
 - **Embeddings** — the **API owns the model**: documents and queries must be embedded by the same model (and
   `input_type` document/query), so only `EmbeddingsService` (`src/embeddings/`, `voyage-4`, 1024) knows it; the
   worker sends text, never vectors. Voyage via LangChain (`VoyageEmbeddings` from `@langchain/mongodb`).
