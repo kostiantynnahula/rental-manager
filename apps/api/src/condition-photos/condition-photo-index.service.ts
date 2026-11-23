@@ -8,6 +8,7 @@ import { SearchConditionPhotosQueryDto } from './dto/search-condition-photos-que
 import { embeddingText } from './helpers/embedding-text.js';
 import { toVectorLiteral } from './helpers/vector-literal.js';
 import type { BackfillResult } from './interfaces/backfill-result.interface.js';
+import type { ConditionPhotoSearchFilters } from './interfaces/condition-photo-search-filters.interface.js';
 import type { ConditionPhotoDescription } from './interfaces/condition-photo-description.interface.js';
 import type { ConditionPhotoSearchHit } from './interfaces/condition-photo-search-hit.interface.js';
 
@@ -53,11 +54,20 @@ export class ConditionPhotoIndexService {
     });
   }
 
-  // Nearest first, only embeddings of the current model (a photo not re-embedded after a model change isn't found
-  // until the backfill). The caller checks the apartment and the dates.
-  async search(
+  // The search route: the `limit` nearest candidates. The caller checks the apartment and the dates.
+  search(
     apartmentId: string,
     query: SearchConditionPhotosQueryDto,
+  ): Promise<ConditionPhotoSearchHit[]> {
+    return this.candidates(apartmentId, query, query.limit);
+  }
+
+  // The `n` nearest photos by vector, nearest first, only embeddings of the current model (a photo not re-embedded
+  // after a model change isn't found until the backfill). `score` = 1 − cosine distance.
+  async candidates(
+    apartmentId: string,
+    query: ConditionPhotoSearchFilters,
+    n: number,
   ): Promise<ConditionPhotoSearchHit[]> {
     const vector = toVectorLiteral(await this.embeddings.embedQuery(query.q));
     const filters = [
@@ -81,7 +91,7 @@ export class ConditionPhotoIndexService {
         JOIN condition_photos p ON p.id = e."photoId"
         WHERE e.kind = 'TEXT' AND ${Prisma.join(filters, ' AND ')}
         ORDER BY e.embedding <=> ${vector}::vector
-        LIMIT ${query.limit}`;
+        LIMIT ${n}`;
     });
     if (rows.length === 0) return [];
     const photos = await this.prisma.conditionPhoto.findMany({
