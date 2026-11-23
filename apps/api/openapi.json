@@ -6432,7 +6432,7 @@
           "score": {
             "type": "number",
             "example": 0.62,
-            "description": "Rerank relevance 0..1, higher = more relevant; always ≥ 0.45 (the threshold)"
+            "description": "Rerank relevance 0..1, higher = more relevant; always ≥ 0.5 (the threshold)"
           }
         },
         "required": [

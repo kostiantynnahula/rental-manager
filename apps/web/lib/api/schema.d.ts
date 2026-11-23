@@ -1697,7 +1697,7 @@ export interface components {
             /** @example /api/condition-photos/3f1c…/thumbnail */
             thumbnailUrl: string;
             /**
-             * @description Rerank relevance 0..1, higher = more relevant; always ≥ 0.45 (the threshold)
+             * @description Rerank relevance 0..1, higher = more relevant; always ≥ 0.5 (the threshold)
              * @example 0.62
              */
             score: number;

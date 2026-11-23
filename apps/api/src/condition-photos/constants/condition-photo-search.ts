@@ -9,8 +9,9 @@ export const TEXT_EMBEDDING_KIND = 'TEXT';
 
 // The route's two stages: the SEARCH_CANDIDATES nearest by vector, then Voyage rerank keeps those scoring
 // ≥ RERANK_MIN_SCORE (first `limit` of them). Vector scores can't be thresholded — for "мийка" the right photo got
-// 0.241 and a balcony 0.234 — while rerank scores split cleanly (#140, `search:debug` on 11 photos): relevant
-// ≥ 0.467, irrelevant ≤ 0.428 (any kitchen gets ~0.40 for a kitchen item). 0.45 sits in that gap. Re-check with
-// `search:debug` after a change of the description prompt or the rerank model.
+// 0.240 and a kitchen without one 0.247 — while rerank scores split (#141, `search:debug` on 11 photos, 9 queries, after the #146
+// synonyms): relevant ≥ 0.551, irrelevant ≤ 0.474. A kitchen without the item still gets ~0.40, ~0.47 when the query
+// names the room ("кран на кухні"), so #140's 0.45 kept those; 0.50 sits in the gap. Re-check with `search:debug`
+// after a change of the description prompt or the rerank model.
 export const SEARCH_CANDIDATES = 50;
-export const RERANK_MIN_SCORE = 0.45;
+export const RERANK_MIN_SCORE = 0.5;

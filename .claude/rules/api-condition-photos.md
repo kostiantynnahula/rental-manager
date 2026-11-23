@@ -84,9 +84,10 @@ Separate from meter `Photo` (`api-photos.md`): no inbox, no parsing, no readings
   (trimmed, ≤ 500), `limit` 1..50 (default 10), the list's filters (from > to → 400); unknown apartment → 404 (both
   checked before Voyage). Own route, not a list param (`ConditionPhotoSearchResultDto` = the list item + `score`).
   Only `INDEXED` photos appear. **Two stages** (#141, `ConditionPhotoIndexService.search`): the `SEARCH_CANDIDATES`
-  (50) nearest by vector → `RerankService` → keep `score ≥ RERANK_MIN_SCORE` (0.45) → first `limit`, rerank order,
+  (50) nearest by vector → `RerankService` → keep `score ≥ RERANK_MIN_SCORE` (0.50) → first `limit`, rerank order,
   `score` = the rerank score. May be fewer than `limit`, or `[]`. Why: vector scores can't be thresholded (the right
-  photo 0.241, a balcony 0.234 for "мийка"); rerank splits relevant ≥ 0.467 / irrelevant ≤ 0.428 (#140). Re-check
+  photo 0.240, a kitchen without one 0.247 for "мийка"); rerank splits relevant ≥ 0.551 / irrelevant ≤ 0.474 — a kitchen without
+  the item reaches ~0.47 when the query names the room ("кран на кухні"), hence not #140's 0.45. Re-check
   the threshold with `search:debug` after a prompt or rerank-model change (`constants/condition-photo-search.ts`).
   Rerank fails → 502, no vector-only fallback (that's the noise removed); no key → 503; no retry. Runs in a transaction
   with `SET LOCAL hnsw.iterative_scan = strict_order` (pgvector ≥ 0.8): otherwise HNSW returns its ef_search (40)
