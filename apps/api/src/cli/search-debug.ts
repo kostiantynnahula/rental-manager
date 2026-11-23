@@ -1,11 +1,10 @@
 // Vector and rerank scores side by side for a condition-photo search, to pick the rerank threshold. Run from the
 // repo root:
 //   pnpm --filter api search:debug -- --apartment <id|name> [--event CHECK_IN] [--candidates 50] "<query>"
-// --apartment: a uuid, or a case-insensitive part of the name matching exactly one apartment (an exact name wins).
+// --apartment: see findApartment.
 // Builds first (Nest DI needs decorator metadata). Needs VOYAGE_API_KEY. No threshold: prints every candidate.
 import { parseArgs } from 'node:util';
 import { NestFactory } from '@nestjs/core';
-import { isUUID } from 'class-validator';
 import { SEARCH_QUERY_MAX_LENGTH } from '../condition-photos/constants/condition-photo-search.js';
 import { ConditionPhotoIndexService } from '../condition-photos/condition-photo-index.service.js';
 import { embeddingText } from '../condition-photos/helpers/embedding-text.js';
@@ -16,6 +15,7 @@ import { RerankService } from '../embeddings/rerank.service.js';
 import { ConditionPhotoEvent } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CliModule } from './cli.module.js';
+import { findApartment } from './helpers/find-apartment.js';
 
 const DEFAULT_CANDIDATES = 50;
 const SUMMARY_MAX = 60;
@@ -62,28 +62,6 @@ function parse(argv: string[]): Args {
     candidates,
     q,
   };
-}
-
-async function findApartment(
-  prisma: PrismaService,
-  ref: string,
-): Promise<{ id: string; name: string }> {
-  const select = { id: true, name: true };
-  if (isUUID(ref)) {
-    const apartment = await prisma.apartment.findUnique({ where: { id: ref }, select });
-    if (!apartment) throw new Error(`No apartment with id ${ref}`);
-    return apartment;
-  }
-  const matches = await prisma.apartment.findMany({
-    where: { name: { contains: ref, mode: 'insensitive' } },
-    select,
-    orderBy: { name: 'asc' },
-  });
-  const exact = matches.find((a) => a.name.toLowerCase() === ref.toLowerCase());
-  if (exact) return exact;
-  if (matches.length === 1) return matches[0];
-  if (matches.length === 0) throw new Error(`No apartment matches "${ref}"`);
-  throw new Error(`"${ref}" matches several apartments: ${matches.map((a) => a.name).join(', ')}`);
 }
 
 function truncate(text: string, max: number): string {

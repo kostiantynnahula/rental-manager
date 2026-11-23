@@ -192,13 +192,14 @@ npx @modelcontextprotocol/inspector node apps/mcp/dist/main.js
 
 Manual tools, run from the repo root. They build first, then run once.
 
-| Command                                                                   | What                                                                               |
-| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `pnpm --filter worker describe:samples -- samples/condition`              | condition photos in a folder → the model's descriptions (**paid**, 1 call / photo) |
-| `pnpm --filter worker extract:samples -- samples [--inbox]`               | meter photos in a folder → the model's readings (**paid**, 1 call / photo)         |
-| `pnpm --filter api apikey:create --service <s> --name <n> --scopes <a,b>` | API key for a service (worker, bot, MCP); `apikey:list`, `apikey:revoke <prefix>`  |
-| `pnpm --filter api embed:backfill`                                        | embed described condition photos that have no vector yet (Voyage)                  |
-| `pnpm --filter api search:debug -- --apartment <id\|name> "<query>"`      | condition photo search: vector and rerank scores side by side                      |
+| Command                                                                                 | What                                                                               |
+| --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `pnpm --filter worker describe:samples -- samples/condition`                            | condition photos in a folder → the model's descriptions (**paid**, 1 call / photo) |
+| `pnpm --filter worker extract:samples -- samples [--inbox]`                             | meter photos in a folder → the model's readings (**paid**, 1 call / photo)         |
+| `pnpm --filter api apikey:create --service <s> --name <n> --scopes <a,b>`               | API key for a service (worker, bot, MCP); `apikey:list`, `apikey:revoke <prefix>`  |
+| `pnpm --filter api embed:backfill`                                                      | embed described condition photos that have no vector yet (Voyage)                  |
+| `pnpm --filter api search:debug -- --apartment <id\|name> "<query>"`                    | condition photo search: vector and rerank scores side by side                      |
+| `pnpm --filter api describe:requeue -- --apartment <id\|name> \| --all \| --photo <id>` | describe condition photos again (worker: **paid**, 1 call / photo)                 |
 
 Samples folders, `expected.json` and the output: [`apps/worker/README.md`](apps/worker/README.md#samples-scripts--check-the-model-on-local-photos).
 
