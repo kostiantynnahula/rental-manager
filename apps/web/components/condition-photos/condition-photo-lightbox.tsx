@@ -1,6 +1,7 @@
 'use client';
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect } from 'react';
 import { PhotoFullscreen } from '@/components/photos/photo-fullscreen';
 import type { ConditionPhoto } from '@/lib/api/queries/condition-photos';
@@ -81,6 +82,15 @@ export function ConditionPhotoLightbox({
             )}
             {/* Keyed by photo: the next photo starts collapsed. */}
             <ConditionPhotoDescription key={photo.id} photo={photo} />
+            {/* Closes too: the tab stays mounted (Activity), the lightbox would still be open on Back. */}
+            <Link
+              href={`/apartments/${photo.apartmentId}/condition-photos/${photo.id}`}
+              onClick={() => onIndexChange(null)}
+              className="inline-flex h-11 items-center gap-1 px-2 text-sm font-medium text-white underline md:h-8"
+            >
+              <ExternalLink className="size-4" aria-hidden />
+              Відкрити
+            </Link>
           </div>
           <button
             type="button"

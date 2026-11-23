@@ -2,6 +2,7 @@
 paths:
   - 'apps/web/components/condition-photos/**'
   - 'apps/web/lib/api/queries/condition-photos.ts'
+  - 'apps/web/app/(app)/apartments/*/condition-photos/**'
 ---
 
 # Condition photos (Web)
