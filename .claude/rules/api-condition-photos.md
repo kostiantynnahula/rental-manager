@@ -31,8 +31,15 @@ Separate from meter `Photo` (`api-photos.md`): no inbox, no parsing, no readings
   not `takenOn` (it can be edited).
 - List `GET /apartments/:id/condition-photos?event=&from=&to=` (all optional, dates inclusive on `takenOn`; from > to → 400), sorted
   `takenOn desc, uploadedAt desc, id desc`.
-- `PATCH /condition-photos/:id` — `event`, `takenOn`, `note` (null clears; event/takenOn can't be null). Doesn't
-  touch `indexStatus`: the searchable text is built from the description, not from these fields.
+- `PATCH /condition-photos/:id` — `event`, `takenOn`, `note` (null clears; event/takenOn can't be null): these don't
+  touch `indexStatus` (the searchable text is built from the description only). And `description` (#142):
+  - an object (`ConditionPhotoDescriptionDto`, the worker's limits) replaces it **as a whole** (no item merge),
+    `descriptionEditedAt = now`, in any `indexStatus` (a FAILED/PENDING photo can be described by hand);
+  - `null` → back to `generatedDescription`, `descriptionEditedAt = null`; edited but no generated one → 409; not
+    edited → nothing to restore, no-op;
+  - a changed description → `DESCRIBED`, `indexNote: null` (one transaction with the other fields) → re-embedded →
+    `INDEXED`. Voyage 502/503 → still 200, left `DESCRIBED` for `embed:backfill`: a human edit never fails on
+    indexing (the worker's PUT does fail, so its job retries).
 - `DELETE` is always allowed: row first (tx), then objects (`deleteAll`: a failure only logs an orphan).
 - Human-only routes (no `@Scopes`) — API keys are denied; the lease in detail includes tenants. Open to the
   worker's key only: `GET /condition-photos/:id/file` (`condition-photos:read`, the bytes — not the detail) and
@@ -43,7 +50,9 @@ Separate from meter `Photo` (`api-photos.md`): no inbox, no parsing, no readings
     (a queue outage leaves the photo PENDING).
   - `PUT /condition-photos/:id/description` (keys only — a human gets 403, 204): exactly one of
     `description` `{ room, items[{ name, count?, condition? }], summary }` (`ConditionPhotoDescriptionDto`, rooms in
-    `constants/`; Json, no schema enum; typed as that DTO in OpenAPI responses — only this PUT writes it) → `DESCRIBED`, `indexNote: null`; or `error` (≤ 1000) → `FAILED` +
+    `constants/`; Json, no schema enum; typed as that DTO in OpenAPI responses — only this PUT and the PATCH write
+    it, both validated) → `DESCRIBED`, `indexNote: null` (an edited photo: see "Human edit wins"); or `error`
+    (≤ 1000) → `FAILED` +
     `indexNote`, the earlier description kept — an error for a photo already `DESCRIBED`/`INDEXED` is a no-op 204
     (a usable description wins). Both/neither → 400. Idempotent (a retry overwrites). Upload enqueues in parallel
     (`Promise.all`): with Redis down the request waits one 3 s timeout, not one per photo.
@@ -52,6 +61,10 @@ Separate from meter `Photo` (`api-photos.md`): no inbox, no parsing, no readings
     `VOYAGE_API_KEY` (503) leaves the photo `DESCRIBED` with its description — a 5xx, so the worker's job retries;
     `pnpm --filter api embed:backfill` indexes what's left (every `DESCRIBED` photo + any described photo without a
     row of the current model — a re-described photo still has its old row). The worker's side: `worker-condition-photos.md`.
+  - **Human edit wins** (#142): `generatedDescription` = the worker's last description (always written by the PUT);
+    `description` = the searched one, written by the PUT only while `descriptionEditedAt` is null. An edited photo's
+    PUT updates `generatedDescription` only (status and search untouched, no Voyage call), still 204. Detail returns
+    `generatedDescription`; list/search/detail `descriptionEditedAt`.
   - Re-describe CLI `pnpm --filter api describe:requeue -- --apartment <id|name> | --all | --photo <id> [--photo <id>…]`
     (#146, e.g. after a prompt change; `src/cli/describe-requeue.ts`): enqueues `describe-condition-photo` for every
     photo of the apartment (or all, archived apartments too) except `PENDING` ones (their upload job is still due — a
@@ -62,7 +75,7 @@ Separate from meter `Photo` (`api-photos.md`): no inbox, no parsing, no readings
     upload's `jobId = photoId` is kept 7 days / failed forever and BullMQ ignores a repeated id) and it **throws** (the
     upload path never does); the CLI stops at the first failure, prints `queued N of M`. Own Nest module
     (`DescribeRequeueModule`): BullMQ connects at startup, so `CliModule` stays without queues. Each job is a paid model
-    call in the worker. Not yet: a human-edited description must not be overwritten (#142's PUT rule).
+    call in the worker; an edited photo then only gets its `generatedDescription` refreshed (the CLI doesn't skip it).
 - **Embeddings** — the **API owns the model**: documents and queries must be embedded by the same model (and
   `input_type` document/query), so only `EmbeddingsService` (`src/embeddings/`, `voyage-4`, 1024) knows it; the
   worker sends text, never vectors. Voyage via LangChain (`VoyageEmbeddings` from `@langchain/mongodb`).
