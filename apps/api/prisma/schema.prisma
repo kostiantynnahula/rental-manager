@@ -299,31 +299,35 @@ enum ConditionPhotoIndexStatus {
 // A photo of an apartment's condition. Belongs to the apartment, not to a lease: the lease is derived from takenOn
 // (leases never overlap). Separate from meter Photo: no inbox, no parsing, no readings.
 model ConditionPhoto {
-  id           String                    @id @default(uuid()) @db.Uuid
-  apartmentId  String                    @db.Uuid
-  apartment    Apartment                 @relation(fields: [apartmentId], references: [id], onDelete: Restrict)
-  event        ConditionPhotoEvent
+  id                   String                    @id @default(uuid()) @db.Uuid
+  apartmentId          String                    @db.Uuid
+  apartment            Apartment                 @relation(fields: [apartmentId], references: [id], onDelete: Restrict)
+  event                ConditionPhotoEvent
   // Set by the user (messengers strip EXIF), not the upload day.
-  takenOn      DateTime                  @db.Date
-  note         String?                   @db.VarChar(500)
-  uploadedAt   DateTime                  @default(now())
+  takenOn              DateTime                  @db.Date
+  note                 String?                   @db.VarChar(500)
+  uploadedAt           DateTime                  @default(now())
   // condition-photos/YYYY/MM/<id>.<ext> — never derived from the original filename.
-  storageKey   String                    @unique
+  storageKey           String                    @unique
   // condition-thumbnails/YYYY/MM/<id>.webp
-  thumbnailKey String                    @unique
+  thumbnailKey         String                    @unique
   // Detected from the file content, not from the client's header.
-  mimeType     String
-  size         Int
+  mimeType             String
+  size                 Int
   // Lowercase hex; dedup key (its own space: the same bytes as a meter Photo don't conflict).
-  sha256       String                    @unique
-  width        Int
-  height       Int
-  indexStatus  ConditionPhotoIndexStatus @default(PENDING)
-  // The worker's structured description (#129).
-  description  Json?
+  sha256               String                    @unique
+  width                Int
+  height               Int
+  indexStatus          ConditionPhotoIndexStatus @default(PENDING)
+  // The structured description that is searched: the worker's (#129), or a human's edit (#142).
+  description          Json?
+  // The worker's last output, kept even when a human edit replaced `description` (to compare and restore).
+  generatedDescription Json?
+  // When a human last edited `description`; null = it's the worker's. While set, the worker never overwrites it.
+  descriptionEditedAt  DateTime?
   // Why indexing failed (the worker's or the API's text).
-  indexNote    String?
-  embeddings   PhotoEmbedding[]
+  indexNote            String?
+  embeddings           PhotoEmbedding[]
 
   @@index([apartmentId, takenOn])
   @@map("condition_photos")
@@ -333,14 +337,14 @@ model ConditionPhoto {
 // kind needs no schema change. Written and searched by raw SQL only (Prisma can't write `vector`); the HNSW index
 // (vector_cosine_ops) is raw SQL in the migration.
 model PhotoEmbedding {
-  photoId   String                     @db.Uuid
-  photo     ConditionPhoto             @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  photoId   String                      @db.Uuid
+  photo     ConditionPhoto              @relation(fields: [photoId], references: [id], onDelete: Cascade)
   // 'TEXT' (the description) — a TS const, not a DB enum.
   kind      String
   // e.g. 'voyage-4'. Only EmbeddingsService knows the current one.
   model     String
   embedding Unsupported("vector(1024)")
-  createdAt DateTime                   @default(now())
+  createdAt DateTime                    @default(now())
 
   @@id([photoId, kind, model])
   @@map("photo_embeddings")
