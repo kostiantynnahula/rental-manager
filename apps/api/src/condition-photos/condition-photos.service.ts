@@ -30,7 +30,7 @@ import { UpdateConditionPhotoDto } from './dto/update-condition-photo.dto.js';
 import { UploadConditionPhotosBodyDto } from './dto/upload-condition-photos-body.dto.js';
 import { assertDateRange } from './helpers/assert-date-range.js';
 import { assertSameApartment } from './helpers/assert-same-apartment.js';
-import { toDescriptionJson } from './helpers/description-json.js';
+import { jsonEquals, sameDescription, toDescriptionJson } from './helpers/description-json.js';
 import { cleanNote } from './helpers/note.js';
 import { newConditionPhotos, uploadAnswers } from './helpers/upload-batch.js';
 import type { ConditionPhotoDescription } from './interfaces/condition-photo-description.interface.js';
@@ -134,9 +134,10 @@ export class ConditionPhotosService {
     const toIndex = await this.prisma.$transaction(async (tx) => {
       const photo = await tx.conditionPhoto.findUnique({
         where: { id },
-        select: { descriptionEditedAt: true, generatedDescription: true },
+        select: { description: true, descriptionEditedAt: true, generatedDescription: true },
       });
       if (!photo) throw new NotFoundException('Condition photo not found');
+      // What the description becomes (undefined = left as is) and its descriptionEditedAt.
       let description: ConditionPhotoDescription | undefined;
       let editedAt: Date | null = null;
       if (dto.description) {
@@ -149,22 +150,37 @@ export class ConditionPhotosService {
         description = generated;
       }
       // null for a photo that isn't edited: already the worker's, nothing to restore.
-      const data: Prisma.ConditionPhotoUpdateInput = {
+      // The same content as now: no edit mark, no re-index — the photo stays searchable even if Voyage is down.
+      // (Restoring the same content still clears the edit mark.)
+      const unchanged =
+        description !== undefined && sameDescription(description, photo.description);
+      const data: Prisma.ConditionPhotoUpdateManyMutationInput = {
         event: dto.event,
         takenOn: dto.takenOn === undefined ? undefined : parseDateOnly(dto.takenOn),
         note: dto.note === undefined ? undefined : cleanNote(dto.note),
-        ...(description && {
-          description: toDescriptionJson(description),
-          descriptionEditedAt: editedAt,
-          indexStatus: ConditionPhotoIndexStatus.DESCRIBED,
-          indexNote: null,
-        }),
+        ...(description &&
+          !unchanged && {
+            description: toDescriptionJson(description),
+            descriptionEditedAt: editedAt,
+            indexStatus: ConditionPhotoIndexStatus.DESCRIBED,
+            indexNote: null,
+          }),
+        ...(dto.description === null && unchanged && { descriptionEditedAt: null }),
       };
       // Nothing to change → no write.
-      if (Object.values(data).some((v) => v !== undefined)) {
-        await tx.conditionPhoto.update({ where: { id }, data });
-      }
-      return description;
+      if (Object.values(data).every((v) => v === undefined)) return undefined;
+      // Only while the photo is as read: no row lock here, so a worker PUT that refreshed generatedDescription in
+      // between (or another edit) would otherwise be overwritten by a stale restore.
+      const { count } = await tx.conditionPhoto.updateMany({
+        where: {
+          id,
+          descriptionEditedAt: photo.descriptionEditedAt,
+          generatedDescription: jsonEquals(photo.generatedDescription),
+        },
+        data,
+      });
+      if (count === 0) throw new ConflictException('The photo changed meanwhile, try again');
+      return unchanged ? undefined : description;
     });
     if (toIndex) await this.indexEdited(id, toIndex);
     return this.findDetailOrThrow(id);

@@ -2354,7 +2354,7 @@
             "description": "Condition photo not found"
           },
           "409": {
-            "description": "description: null, but there is no generated description to restore"
+            "description": "description: null, but there is no generated description to restore; or the photo changed meanwhile (retry)"
           }
         },
         "security": [

@@ -37,6 +37,9 @@ Separate from meter `Photo` (`api-photos.md`): no inbox, no parsing, no readings
     `descriptionEditedAt = now`, in any `indexStatus` (a FAILED/PENDING photo can be described by hand);
   - `null` → back to `generatedDescription`, `descriptionEditedAt = null`; edited but no generated one → 409; not
     edited → nothing to restore, no-op;
+  - the same content as now (key order ignored, `sameDescription`) → no edit mark, no re-index (stays searchable);
+  - written only while the photo is as read (`descriptionEditedAt` + `generatedDescription` in the `where`, no row
+    lock): a worker PUT in between → 409 "changed meanwhile", never a stale restore;
   - a changed description → `DESCRIBED`, `indexNote: null` (one transaction with the other fields) → re-embedded →
     `INDEXED`. Voyage 502/503 → still 200, left `DESCRIBED` for `embed:backfill`: a human edit never fails on
     indexing (the worker's PUT does fail, so its job retries).

@@ -4587,7 +4587,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description description: null, but there is no generated description to restore */
+            /** @description description: null, but there is no generated description to restore; or the photo changed meanwhile (retry) */
             409: {
                 headers: {
                     [name: string]: unknown;

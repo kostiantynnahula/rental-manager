@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   IsDefined,
   IsNotEmpty,
+  IsObject,
   IsString,
   MaxLength,
   ValidateIf,
@@ -18,6 +19,8 @@ export class SetConditionPhotoDescriptionDto {
   @ApiPropertyOptional({ type: ConditionPhotoDescriptionDto })
   @ValidateIf((dto: SetConditionPhotoDescriptionDto) => dto.error === undefined)
   @IsDefined()
+  // ValidateNested alone lets an array through (it validates each element).
+  @IsObject()
   @ValidateNested()
   @Type(() => ConditionPhotoDescriptionDto)
   description?: ConditionPhotoDescriptionDto;
