@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "test": "vitest run --passWithNoTests",
     "gen:api": "node scripts/gen-api.mjs",
-    "extract:samples": "nest build && node dist/scripts/extract-samples.js"
+    "extract:samples": "nest build && node dist/scripts/extract-samples.js",
+    "describe:samples": "nest build && node dist/scripts/describe-samples.js"
   },
   "dependencies": {
     "@langchain/anthropic": "1.6.0",
