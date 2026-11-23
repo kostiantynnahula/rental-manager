@@ -1,6 +1,7 @@
 'use client';
 
-import { MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Eye, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import Link from 'next/link';
 import { useState } from 'react';
 import { ApiImage } from '@/components/photos/api-image';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,7 @@ import { EditConditionPhotoSheet } from './edit-condition-photo-sheet';
 
 type Panel = 'edit' | 'delete' | null;
 
-// Thumbnail (tap → lightbox), the note, and a ⋯ menu: edit / delete.
+// Thumbnail (tap → lightbox), the note, and a ⋯ menu: view (the photo's page) / edit / delete.
 export function ConditionPhotoCard({
   photo,
   onOpen,
@@ -52,6 +53,13 @@ export function ConditionPhotoCard({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
+            {/* The photo's page: zoom, lease, and the description / items editor. */}
+            <DropdownMenuItem asChild>
+              <Link href={`/apartments/${photo.apartmentId}/condition-photos/${photo.id}`}>
+                <Eye />
+                Переглянути
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setPanel('edit')}>
               <Pencil />
               Редагувати
