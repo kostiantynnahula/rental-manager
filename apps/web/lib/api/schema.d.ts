@@ -1606,8 +1606,13 @@ export interface components {
             height: number;
             /** @description PENDING on upload → DESCRIBED → INDEXED (searchable), or FAILED */
             indexStatus: components["schemas"]["ConditionPhotoIndexStatus"];
-            /** @description The worker's structured description; null until DESCRIBED */
+            /** @description The searched description: the worker's, or a human's edit (see descriptionEditedAt); null until described */
             description: components["schemas"]["ConditionPhotoDescriptionDto"] | null;
+            /**
+             * Format: date-time
+             * @description When a human last edited the description; null = it's the worker's
+             */
+            descriptionEditedAt: string | null;
             /** @description Why indexing failed */
             indexNote: string | null;
             /** @example /api/condition-photos/3f1c…/file */
@@ -1648,8 +1653,13 @@ export interface components {
             height: number;
             /** @description PENDING on upload → DESCRIBED → INDEXED (searchable), or FAILED */
             indexStatus: components["schemas"]["ConditionPhotoIndexStatus"];
-            /** @description The worker's structured description; null until DESCRIBED */
+            /** @description The searched description: the worker's, or a human's edit (see descriptionEditedAt); null until described */
             description: components["schemas"]["ConditionPhotoDescriptionDto"] | null;
+            /**
+             * Format: date-time
+             * @description When a human last edited the description; null = it's the worker's
+             */
+            descriptionEditedAt: string | null;
             /** @description Why indexing failed */
             indexNote: string | null;
             /** @example /api/condition-photos/3f1c…/file */
@@ -1688,8 +1698,13 @@ export interface components {
             height: number;
             /** @description PENDING on upload → DESCRIBED → INDEXED (searchable), or FAILED */
             indexStatus: components["schemas"]["ConditionPhotoIndexStatus"];
-            /** @description The worker's structured description; null until DESCRIBED */
+            /** @description The searched description: the worker's, or a human's edit (see descriptionEditedAt); null until described */
             description: components["schemas"]["ConditionPhotoDescriptionDto"] | null;
+            /**
+             * Format: date-time
+             * @description When a human last edited the description; null = it's the worker's
+             */
+            descriptionEditedAt: string | null;
             /** @description Why indexing failed */
             indexNote: string | null;
             /** @example /api/condition-photos/3f1c…/file */
@@ -1733,8 +1748,13 @@ export interface components {
             height: number;
             /** @description PENDING on upload → DESCRIBED → INDEXED (searchable), or FAILED */
             indexStatus: components["schemas"]["ConditionPhotoIndexStatus"];
-            /** @description The worker's structured description; null until DESCRIBED */
+            /** @description The searched description: the worker's, or a human's edit (see descriptionEditedAt); null until described */
             description: components["schemas"]["ConditionPhotoDescriptionDto"] | null;
+            /**
+             * Format: date-time
+             * @description When a human last edited the description; null = it's the worker's
+             */
+            descriptionEditedAt: string | null;
             /** @description Why indexing failed */
             indexNote: string | null;
             /** @example /api/condition-photos/3f1c…/file */
@@ -1743,6 +1763,8 @@ export interface components {
             thumbnailUrl: string;
             /** @description The apartment's lease covering takenOn (leases never overlap), or null. Derived, never validated */
             lease: components["schemas"]["LeaseResponseDto"] | null;
+            /** @description The worker's last description, kept when a human edits it (equals description while not edited) */
+            generatedDescription: components["schemas"]["ConditionPhotoDescriptionDto"] | null;
         };
         UpdateConditionPhotoDto: {
             event?: components["schemas"]["ConditionPhotoEvent"];
@@ -1752,6 +1774,8 @@ export interface components {
              */
             takenOn?: string;
             note?: string | null;
+            /** @description Replaces the description as a whole (a human edit: the worker never overwrites it) and re-indexes the photo. null = back to the worker's last description (409 if there is none) */
+            description?: components["schemas"]["ConditionPhotoDescriptionDto"] | null;
         };
         SetConditionPhotoDescriptionDto: {
             description?: components["schemas"]["ConditionPhotoDescriptionDto"];
@@ -4534,6 +4558,7 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Saved even if re-indexing an edited description fails (then indexStatus stays DESCRIBED) */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -4557,6 +4582,13 @@ export interface operations {
             };
             /** @description Condition photo not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description description: null, but there is no generated description to restore */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
