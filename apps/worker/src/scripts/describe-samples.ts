@@ -10,19 +10,20 @@ import { ConditionPhotoDescriber } from '../condition-photos/condition-photo-des
 import { DescribeSamplesModule } from './describe-samples.module.js';
 import { formatDescription } from './helpers/format-description.js';
 import { missingItems } from './helpers/missing-items.js';
+import { parseConditionExpectations } from './helpers/parse-condition-expectations.js';
 import type { ConditionSampleExpectation } from './interfaces/condition-sample-expectation.interface.js';
 
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 
 async function readExpected(dir: string): Promise<ConditionSampleExpectation[]> {
+  let text: string;
   try {
-    return JSON.parse(
-      await readFile(join(dir, 'expected.json'), 'utf8'),
-    ) as ConditionSampleExpectation[];
+    text = await readFile(join(dir, 'expected.json'), 'utf8');
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code === 'ENOENT') return [];
     throw e;
   }
+  return parseConditionExpectations(JSON.parse(text));
 }
 
 async function main(): Promise<void> {
@@ -33,6 +34,9 @@ async function main(): Promise<void> {
     .filter((f) => IMAGE_EXTENSIONS.has(extname(f).toLowerCase()))
     .sort();
   if (files.length === 0) throw new Error(`No photos in ${dir}`);
+  // Before the paid calls: a typo in a file name would otherwise just skip its check.
+  const unmatched = [...new Set(expected.map((x) => x.file))].filter((f) => !files.includes(f));
+  unmatched.forEach((f) => console.log(`✗ expected.json: no photo ${f}`));
 
   const app = await NestFactory.createApplicationContext(DescribeSamplesModule, {
     logger: ['error', 'warn'],
@@ -50,22 +54,27 @@ async function main(): Promise<void> {
         formatDescription(description).forEach((line) => console.log(line));
         if (wanted.length > 0) {
           const missing = missingItems(wanted, description.items);
-          const count = wanted.filter((w) => w.trim()).length;
-          total += count;
-          found += count - missing.length;
+          total += wanted.length;
+          found += wanted.length - missing.length;
           console.log(
             missing.length === 0 ? '  ✓ all expected items' : `  ✗ missing: ${missing.join(', ')}`,
           );
         }
       } catch (e) {
         console.log(`\n${file}\n  error: ${(e as Error).message}`);
-        total += wanted.filter((w) => w.trim()).length;
+        total += wanted.length;
       }
     }
   } finally {
     await app.close();
   }
   if (total > 0) console.log(`\nExpected items found: ${found}/${total}`);
+  if (unmatched.length > 0) console.log(`Expected files without a photo: ${unmatched.join(', ')}`);
 }
 
-await main();
+try {
+  await main();
+} catch (error) {
+  console.error((error as Error).message);
+  process.exitCode = 1;
+}

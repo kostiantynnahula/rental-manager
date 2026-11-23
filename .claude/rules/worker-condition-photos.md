@@ -3,6 +3,8 @@ paths:
   - 'apps/worker/src/condition-photos/**'
   - 'apps/worker/src/llm/**'
   - 'apps/worker/src/scripts/describe-samples*.ts'
+  - 'apps/worker/src/scripts/helpers/{format-description,missing-items,parse-condition-expectations}*.ts'
+  - 'apps/worker/src/scripts/interfaces/condition-sample-expectation*.ts'
 ---
 
 # Condition photo descriptions (worker, `src/condition-photos/`)
@@ -39,6 +41,7 @@ items: [{ name, count?, condition? }], summary }`, texts **in Ukrainian**. The s
   to `apps/worker`). Every photo of the dir → `ConditionPhotoDescriber.describe` → prints room, ms, items
   (`назва ×N — стан`) and the summary; no API, queue or DB (`DescribeSamplesModule`: config + describer only).
   Optional `expected.json` (`{ file, items: string[] }[]`, format: `samples.example/condition/`) → `✗ missing: …`
-  per photo (case-insensitive substring of the item names, `missingItems`) and a total. Prints the description texts
-  — a local tool, unlike the job. One paid model call per photo: only when I ask, never in tests or reviews;
+  per photo (case-insensitive substring of the item names, `missingItems`) and a total; a wrong shape throws
+  (`parseConditionExpectations`), an entry with no such photo → `✗ expected.json: no photo …` before the model
+  calls. Prints the description texts — a local tool, unlike the job. One paid model call per photo: only when I ask, never in tests or reviews;
   `samples/` is gitignored.

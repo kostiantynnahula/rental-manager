@@ -26,7 +26,8 @@ coverage/
 *.pem
 .vercel
 
-# Real meter photos for the extraction script (apps/worker/samples.example/ shows the format)
+# Real meter and apartment condition photos for the worker's samples scripts (extract:samples, describe:samples;
+# apps/worker/samples.example/ shows the format) — private, never commit
 apps/worker/samples/
 
 .idea/

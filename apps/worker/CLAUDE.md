@@ -65,6 +65,6 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
   - Photo extraction — LangChain call, prompt, normalization, samples script (`src/extraction/`, `src/scripts/`):
     `.claude/rules/worker-extraction.md`
   - Condition photo descriptions — job flow, prompt, output, samples script (`src/condition-photos/`, `src/llm/`,
-    `src/scripts/describe-samples*`):
+    `src/scripts/describe-samples*` and its helpers/interface):
     `.claude/rules/worker-condition-photos.md`
 - Project rules override advice from skills.
