@@ -16,6 +16,7 @@ import {
   ApiBadGatewayResponse,
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiConflictResponse,
   ApiCookieAuth,
   ApiForbiddenResponse,
   ApiNoContentResponse,
@@ -74,8 +75,16 @@ export class ConditionPhotosController {
   }
 
   @Patch(':id')
-  @ApiOkResponse({ type: ConditionPhotoDetailResponseDto })
+  @ApiOkResponse({
+    type: ConditionPhotoDetailResponseDto,
+    description:
+      'Saved even if re-indexing an edited description fails (then indexStatus stays DESCRIBED)',
+  })
   @ApiBadRequestResponse({ description: 'Invalid body' })
+  @ApiConflictResponse({
+    description:
+      'description: null, but there is no generated description to restore; or the photo changed meanwhile (retry)',
+  })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateConditionPhotoDto,

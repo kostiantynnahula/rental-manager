@@ -46,13 +46,21 @@ export class ConditionPhotoResponseDto {
   })
   indexStatus: ConditionPhotoIndexStatus;
 
-  // Json in the DB, but only ever written through the validated ConditionPhotoDescriptionDto (PUT description).
+  // Json in the DB, but only ever written through the validated ConditionPhotoDescriptionDto (PUT description, PATCH).
   @ApiProperty({
     type: () => ConditionPhotoDescriptionDto,
     nullable: true,
-    description: "The worker's structured description; null until DESCRIBED",
+    description:
+      "The searched description: the worker's, or a human's edit (see descriptionEditedAt); null until described",
   })
   description: ConditionPhotoDescriptionDto | null;
+
+  @ApiProperty({
+    type: Date,
+    nullable: true,
+    description: "When a human last edited the description; null = it's the worker's",
+  })
+  descriptionEditedAt: Date | null;
 
   @ApiProperty({ type: String, nullable: true, description: 'Why indexing failed' })
   indexNote: string | null;
@@ -78,6 +86,7 @@ export class ConditionPhotoResponseDto {
       height: p.height,
       indexStatus: p.indexStatus,
       description: p.description as unknown as ConditionPhotoDescriptionDto | null,
+      descriptionEditedAt: p.descriptionEditedAt,
       indexNote: p.indexNote,
       fileUrl: `/api/condition-photos/${p.id}/file`,
       thumbnailUrl: `/api/condition-photos/${p.id}/thumbnail`,

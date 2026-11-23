@@ -1,9 +1,12 @@
 import {
+  BadGatewayException,
   BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { parseDateOnly } from '../common/helpers/date-only.js';
 import { ApartmentsService } from '../apartments/apartments.service.js';
@@ -27,8 +30,10 @@ import { UpdateConditionPhotoDto } from './dto/update-condition-photo.dto.js';
 import { UploadConditionPhotosBodyDto } from './dto/upload-condition-photos-body.dto.js';
 import { assertDateRange } from './helpers/assert-date-range.js';
 import { assertSameApartment } from './helpers/assert-same-apartment.js';
+import { jsonEquals, sameDescription, toDescriptionJson } from './helpers/description-json.js';
 import { cleanNote } from './helpers/note.js';
 import { newConditionPhotos, uploadAnswers } from './helpers/upload-batch.js';
+import type { ConditionPhotoDescription } from './interfaces/condition-photo-description.interface.js';
 import type { ConditionPhotoDetail } from './interfaces/condition-photo-detail.interface.js';
 import type { ConditionPhotoSearchHit } from './interfaces/condition-photo-search-hit.interface.js';
 import type { NewConditionPhoto } from './interfaces/new-condition-photo.interface.js';
@@ -36,6 +41,8 @@ import type { UploadedConditionPhoto } from './interfaces/uploaded-condition-pho
 
 @Injectable()
 export class ConditionPhotosService {
+  private readonly logger = new Logger(ConditionPhotosService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
@@ -118,27 +125,72 @@ export class ConditionPhotosService {
     return { photo, lease };
   }
 
-  // Only the user's fields. The index status stays: the searchable text is built from the description.
+  // The user's fields, and the description (#142). event/takenOn/note don't touch indexStatus: the searchable text is
+  // built from the description only. `description`: an object replaces it as a whole (no item merge) and marks it
+  // edited — the worker never overwrites it again (setDescription); null restores the worker's last one. Allowed in
+  // any indexStatus (a FAILED photo can be described by hand). A changed description → DESCRIBED → re-embedded →
+  // INDEXED; Voyage down → still 200, left DESCRIBED for embed:backfill (a human edit never fails on indexing).
   async update(id: string, dto: UpdateConditionPhotoDto): Promise<ConditionPhotoDetail> {
-    // Nothing to change: updateMany with an empty `data` writes nothing, so its count can't tell us the row exists.
-    if (dto.event === undefined && dto.takenOn === undefined && dto.note === undefined) {
-      return this.findDetailOrThrow(id);
-    }
-    const { count } = await this.prisma.conditionPhoto.updateMany({
-      where: { id },
-      data: {
+    const toIndex = await this.prisma.$transaction(async (tx) => {
+      const photo = await tx.conditionPhoto.findUnique({
+        where: { id },
+        select: { description: true, descriptionEditedAt: true, generatedDescription: true },
+      });
+      if (!photo) throw new NotFoundException('Condition photo not found');
+      // What the description becomes (undefined = left as is) and its descriptionEditedAt.
+      let description: ConditionPhotoDescription | undefined;
+      let editedAt: Date | null = null;
+      if (dto.description) {
+        description = dto.description;
+        editedAt = new Date();
+      } else if (dto.description === null && photo.descriptionEditedAt) {
+        // Only ever written by the PUT from a validated DTO.
+        const generated = photo.generatedDescription as unknown as ConditionPhotoDescription | null;
+        if (!generated) throw new ConflictException('No generated description to restore');
+        description = generated;
+      }
+      // null for a photo that isn't edited: already the worker's, nothing to restore.
+      // The same content as now: no edit mark, no re-index — the photo stays searchable even if Voyage is down.
+      // (Restoring the same content still clears the edit mark.)
+      const unchanged =
+        description !== undefined && sameDescription(description, photo.description);
+      const data: Prisma.ConditionPhotoUpdateManyMutationInput = {
         event: dto.event,
         takenOn: dto.takenOn === undefined ? undefined : parseDateOnly(dto.takenOn),
         note: dto.note === undefined ? undefined : cleanNote(dto.note),
-      },
+        ...(description &&
+          !unchanged && {
+            description: toDescriptionJson(description),
+            descriptionEditedAt: editedAt,
+            indexStatus: ConditionPhotoIndexStatus.DESCRIBED,
+            indexNote: null,
+          }),
+        ...(dto.description === null && unchanged && { descriptionEditedAt: null }),
+      };
+      // Nothing to change → no write.
+      if (Object.values(data).every((v) => v === undefined)) return undefined;
+      // Only while the photo is as read: no row lock here, so a worker PUT that refreshed generatedDescription in
+      // between (or another edit) would otherwise be overwritten by a stale restore.
+      const { count } = await tx.conditionPhoto.updateMany({
+        where: {
+          id,
+          descriptionEditedAt: photo.descriptionEditedAt,
+          generatedDescription: jsonEquals(photo.generatedDescription),
+        },
+        data,
+      });
+      if (count === 0) throw new ConflictException('The photo changed meanwhile, try again');
+      return unchanged ? undefined : description;
     });
-    if (count === 0) throw new NotFoundException('Condition photo not found');
+    if (toIndex) await this.indexEdited(id, toIndex);
     return this.findDetailOrThrow(id);
   }
 
-  // The worker's result (API keys only). Idempotent: a retry overwrites. An error never overwrites a usable
-  // description: a photo already DESCRIBED/INDEXED stays so (e.g. the worker lost the answer to a successful PUT and
-  // then failed its retries) — a no-op 204.
+  // The worker's result (API keys only). Idempotent: a retry overwrites. A description always becomes
+  // generatedDescription, but `description` only while a human hasn't edited it (#142: the edit wins — then status
+  // and search stay as they are, no re-embed). An error never overwrites a usable description: a photo already
+  // DESCRIBED/INDEXED stays so (e.g. the worker lost the answer to a successful PUT and then failed its retries) — a
+  // no-op 204.
   async setDescription(
     id: string,
     dto: SetConditionPhotoDescriptionDto,
@@ -148,28 +200,56 @@ export class ConditionPhotosService {
     if (dto.description !== undefined && dto.error !== undefined) {
       throw new BadRequestException('Send either description or error, not both');
     }
-    const data: Prisma.ConditionPhotoUpdateManyMutationInput = dto.description
-      ? {
+    if (dto.description) {
+      const json = toDescriptionJson(dto.description);
+      const { count } = await this.prisma.conditionPhoto.updateMany({
+        where: { id, descriptionEditedAt: null },
+        data: {
           indexStatus: ConditionPhotoIndexStatus.DESCRIBED,
-          // A plain object (class instances → JSON) for the Json column.
-          description: JSON.parse(JSON.stringify(dto.description)) as Prisma.InputJsonObject,
+          description: json,
+          generatedDescription: json,
           indexNote: null,
-        }
-      : { indexStatus: ConditionPhotoIndexStatus.FAILED, indexNote: dto.error };
-    const where: Prisma.ConditionPhotoWhereInput = dto.description
-      ? { id }
-      : {
-          id,
-          indexStatus: {
-            notIn: [ConditionPhotoIndexStatus.DESCRIBED, ConditionPhotoIndexStatus.INDEXED],
-          },
-        };
-    const { count } = await this.prisma.conditionPhoto.updateMany({ where, data });
+        },
+      });
+      if (count === 0) {
+        // Edited by a human (or unknown → 404): keep the model's output only.
+        const kept = await this.prisma.conditionPhoto.updateMany({
+          where: { id },
+          data: { generatedDescription: json },
+        });
+        if (kept.count === 0) throw new NotFoundException('Condition photo not found');
+        return;
+      }
+      // DESCRIBED → INDEXED. Saved first: if Voyage fails (5xx → the worker retries) the description isn't lost,
+      // and the backfill can index it later. A human edit saved meanwhile wins: index() drops the stale vector.
+      await this.index.index(id, dto.description);
+      return;
+    }
+    const where: Prisma.ConditionPhotoWhereInput = {
+      id,
+      indexStatus: {
+        notIn: [ConditionPhotoIndexStatus.DESCRIBED, ConditionPhotoIndexStatus.INDEXED],
+      },
+    };
+    const { count } = await this.prisma.conditionPhoto.updateMany({
+      where,
+      data: { indexStatus: ConditionPhotoIndexStatus.FAILED, indexNote: dto.error },
+    });
     // Nothing updated: unknown photo → 404; an error for a described one → skipped on purpose.
     if (count === 0) await this.findOrThrow(id);
-    // DESCRIBED → INDEXED. Saved first: if Voyage fails (5xx → the worker retries) the description isn't lost, and
-    // the backfill can index it later.
-    if (dto.description) await this.index.index(id, dto.description);
+  }
+
+  // After a human edit: Voyage down (502) or not configured (503) leaves the photo DESCRIBED for embed:backfill —
+  // the edit is saved, the PATCH still succeeds.
+  private async indexEdited(id: string, description: ConditionPhotoDescription): Promise<void> {
+    try {
+      await this.index.index(id, description);
+    } catch (e) {
+      if (!(e instanceof BadGatewayException || e instanceof ServiceUnavailableException)) throw e;
+      this.logger.warn(
+        `Photo ${id}: edited description not embedded (${e.message}), left DESCRIBED`,
+      );
+    }
   }
 
   async openFile(id: string, variant: 'original' | 'thumbnail'): Promise<ImageFile> {

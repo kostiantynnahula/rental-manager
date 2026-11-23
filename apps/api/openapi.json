@@ -2335,7 +2335,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "Saved even if re-indexing an edited description fails (then indexStatus stays DESCRIBED)",
             "content": {
               "application/json": {
                 "schema": {
@@ -2352,6 +2352,9 @@
           },
           "404": {
             "description": "Condition photo not found"
+          },
+          "409": {
+            "description": "description: null, but there is no generated description to restore; or the photo changed meanwhile (retry)"
           }
         },
         "security": [
@@ -6197,13 +6200,19 @@
           },
           "description": {
             "nullable": true,
-            "description": "The worker's structured description; null until DESCRIBED",
+            "description": "The searched description: the worker's, or a human's edit (see descriptionEditedAt); null until described",
             "type": "object",
             "allOf": [
               {
                 "$ref": "#/components/schemas/ConditionPhotoDescriptionDto"
               }
             ]
+          },
+          "descriptionEditedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true,
+            "description": "When a human last edited the description; null = it's the worker's"
           },
           "indexNote": {
             "type": "string",
@@ -6237,6 +6246,7 @@
           "height",
           "indexStatus",
           "description",
+          "descriptionEditedAt",
           "indexNote",
           "fileUrl",
           "thumbnailUrl",
@@ -6305,13 +6315,19 @@
           },
           "description": {
             "nullable": true,
-            "description": "The worker's structured description; null until DESCRIBED",
+            "description": "The searched description: the worker's, or a human's edit (see descriptionEditedAt); null until described",
             "type": "object",
             "allOf": [
               {
                 "$ref": "#/components/schemas/ConditionPhotoDescriptionDto"
               }
             ]
+          },
+          "descriptionEditedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true,
+            "description": "When a human last edited the description; null = it's the worker's"
           },
           "indexNote": {
             "type": "string",
@@ -6341,6 +6357,7 @@
           "height",
           "indexStatus",
           "description",
+          "descriptionEditedAt",
           "indexNote",
           "fileUrl",
           "thumbnailUrl"
@@ -6408,13 +6425,19 @@
           },
           "description": {
             "nullable": true,
-            "description": "The worker's structured description; null until DESCRIBED",
+            "description": "The searched description: the worker's, or a human's edit (see descriptionEditedAt); null until described",
             "type": "object",
             "allOf": [
               {
                 "$ref": "#/components/schemas/ConditionPhotoDescriptionDto"
               }
             ]
+          },
+          "descriptionEditedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true,
+            "description": "When a human last edited the description; null = it's the worker's"
           },
           "indexNote": {
             "type": "string",
@@ -6449,6 +6472,7 @@
           "height",
           "indexStatus",
           "description",
+          "descriptionEditedAt",
           "indexNote",
           "fileUrl",
           "thumbnailUrl",
@@ -6517,13 +6541,19 @@
           },
           "description": {
             "nullable": true,
-            "description": "The worker's structured description; null until DESCRIBED",
+            "description": "The searched description: the worker's, or a human's edit (see descriptionEditedAt); null until described",
             "type": "object",
             "allOf": [
               {
                 "$ref": "#/components/schemas/ConditionPhotoDescriptionDto"
               }
             ]
+          },
+          "descriptionEditedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true,
+            "description": "When a human last edited the description; null = it's the worker's"
           },
           "indexNote": {
             "type": "string",
@@ -6547,6 +6577,16 @@
                 "$ref": "#/components/schemas/LeaseResponseDto"
               }
             ]
+          },
+          "generatedDescription": {
+            "nullable": true,
+            "description": "The worker's last description, kept when a human edits it (equals description while not edited)",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionPhotoDescriptionDto"
+              }
+            ]
           }
         },
         "required": [
@@ -6563,10 +6603,12 @@
           "height",
           "indexStatus",
           "description",
+          "descriptionEditedAt",
           "indexNote",
           "fileUrl",
           "thumbnailUrl",
-          "lease"
+          "lease",
+          "generatedDescription"
         ]
       },
       "UpdateConditionPhotoDto": {
@@ -6588,6 +6630,16 @@
             "type": "string",
             "nullable": true,
             "maxLength": 500
+          },
+          "description": {
+            "nullable": true,
+            "description": "Replaces the description as a whole (a human edit: the worker never overwrites it) and re-indexes the photo. null = back to the worker's last description (409 if there is none)",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ConditionPhotoDescriptionDto"
+              }
+            ]
           }
         }
       },
