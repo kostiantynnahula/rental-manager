@@ -67,4 +67,6 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
   - Condition photo descriptions — job flow, prompt, output, samples script (`src/condition-photos/`, `src/llm/`,
     `src/scripts/describe-samples*` and its helpers/interface):
     `.claude/rules/worker-condition-photos.md`
+- `README.md` (this app) and the root README's "Scripts and CLIs" table are for a person: a new samples script or
+  changed script arguments → update both.
 - Project rules override advice from skills.
