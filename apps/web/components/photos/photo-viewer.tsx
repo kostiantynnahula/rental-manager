@@ -2,12 +2,18 @@
 
 import { Maximize2 } from 'lucide-react';
 import { useState } from 'react';
-import type { PhotoDetail } from '@/lib/api/queries/photos';
 import { ApiImage } from './api-image';
 import { PhotoFullscreen } from './photo-fullscreen';
 
-// The original on top of the review screen; tap → fullscreen with zoom.
-export function PhotoViewer({ photo, alt }: { photo: PhotoDetail; alt: string }) {
+// Any API image with its displayed size: a meter photo, a condition photo.
+interface ViewerPhoto {
+  fileUrl: string;
+  width: number;
+  height: number;
+}
+
+// The original on top of a photo page; tap → fullscreen with zoom.
+export function PhotoViewer({ photo, alt }: { photo: ViewerPhoto; alt: string }) {
   const [open, setOpen] = useState(false);
 
   return (
