@@ -1,9 +1,14 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { EmbeddingsService } from '../embeddings/embeddings.service.js';
+import { RerankService } from '../embeddings/rerank.service.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { ConditionPhotoIndexStatus } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { TEXT_EMBEDDING_KIND } from './constants/condition-photo-search.js';
+import {
+  RERANK_MIN_SCORE,
+  SEARCH_CANDIDATES,
+  TEXT_EMBEDDING_KIND,
+} from './constants/condition-photo-search.js';
 import { SearchConditionPhotosQueryDto } from './dto/search-condition-photos-query.dto.js';
 import { embeddingText } from './helpers/embedding-text.js';
 import { toVectorLiteral } from './helpers/vector-literal.js';
@@ -21,6 +26,7 @@ export class ConditionPhotoIndexService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly embeddings: EmbeddingsService,
+    private readonly reranker: RerankService,
   ) {}
 
   // Embeds the description (Voyage first, outside the transaction), then upserts the row and marks the photo
@@ -54,12 +60,24 @@ export class ConditionPhotoIndexService {
     });
   }
 
-  // The search route: the `limit` nearest candidates. The caller checks the apartment and the dates.
-  search(
+  // The search route, two stages (see RERANK_MIN_SCORE): SEARCH_CANDIDATES by vector → rerank → those scoring
+  // ≥ RERANK_MIN_SCORE, most relevant first, at most `limit` (may be none). `score` = the rerank score. A rerank
+  // failure is a 502 (no vector-only fallback: that's the noise the threshold removes). The caller checks the
+  // apartment and the dates.
+  async search(
     apartmentId: string,
     query: SearchConditionPhotosQueryDto,
   ): Promise<ConditionPhotoSearchHit[]> {
-    return this.candidates(apartmentId, query, query.limit);
+    const hits = await this.candidates(apartmentId, query, SEARCH_CANDIDATES);
+    // Only INDEXED photos are candidates, and those always have a description.
+    const texts = hits.map(({ photo }) =>
+      embeddingText(photo.description as unknown as ConditionPhotoDescription),
+    );
+    const ranked = await this.reranker.rerank(query.q, texts);
+    return ranked
+      .filter(({ score }) => score >= RERANK_MIN_SCORE)
+      .slice(0, query.limit)
+      .map(({ index, score }) => ({ photo: hits[index].photo, score }));
   }
 
   // The `n` nearest photos by vector, nearest first, only embeddings of the current model (a photo not re-embedded

@@ -2233,7 +2233,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Most relevant first; only INDEXED photos",
+            "description": "Only INDEXED photos that pass the relevance threshold, most relevant first: may be fewer than `limit`, or none",
             "content": {
               "application/json": {
                 "schema": {
@@ -2255,7 +2255,7 @@
             "description": "Apartment not found"
           },
           "502": {
-            "description": "The embedding service failed"
+            "description": "The embedding or rerank service failed"
           },
           "503": {
             "description": "Semantic search is not configured"
@@ -6432,7 +6432,7 @@
           "score": {
             "type": "number",
             "example": 0.62,
-            "description": "1 − cosine distance; higher = more relevant"
+            "description": "Rerank relevance 0..1, higher = more relevant; always ≥ 0.45 (the threshold)"
           }
         },
         "required": [

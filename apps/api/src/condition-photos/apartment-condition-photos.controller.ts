@@ -72,11 +72,12 @@ export class ApartmentConditionPhotosController {
   @Get('search')
   @ApiNotFoundResponse({ description: 'Apartment not found' })
   @ApiBadRequestResponse({ description: 'No q, invalid event/date/limit, from after to' })
-  @ApiBadGatewayResponse({ description: 'The embedding service failed' })
+  @ApiBadGatewayResponse({ description: 'The embedding or rerank service failed' })
   @ApiServiceUnavailableResponse({ description: 'Semantic search is not configured' })
   @ApiOkResponse({
     type: [ConditionPhotoSearchResultDto],
-    description: 'Most relevant first; only INDEXED photos',
+    description:
+      'Only INDEXED photos that pass the relevance threshold, most relevant first: may be fewer than `limit`, or none',
   })
   async search(
     @Param('apartmentId', ParseUUIDPipe) apartmentId: string,

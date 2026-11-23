@@ -17,7 +17,7 @@ const TIMEOUT_MS = 30_000;
 // Query + documents → relevance scores (Voyage rerank). The only place that knows the rerank model. Plain fetch:
 // LangChain has no standalone Voyage reranker (`@langchain/mongodb` reranks only inside an Atlas vector search).
 // Errors as EmbeddingsService: no key → 503; any Voyage failure → 502. More than RERANK_MAX_DOCUMENTS → 500 (the
-// caller must cap). No retry yet: decided when the search route uses it.
+// caller must cap). No retry: the search route's caller can retry (the web shows a retry button).
 @Injectable()
 export class RerankService {
   private readonly logger = new Logger(RerankService.name);
