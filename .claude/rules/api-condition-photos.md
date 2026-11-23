@@ -72,3 +72,15 @@ Separate from meter `Photo` (`api-photos.md`): no inbox, no parsing, no readings
   (`ConditionPhotoSearchResultDto` = the list item + `score`). Only `INDEXED` photos appear. Runs in a transaction
   with `SET LOCAL hnsw.iterative_scan = strict_order` (pgvector ≥ 0.8): otherwise HNSW returns its ef_search (40)
   nearest across **all** apartments and the filters run after — fewer results than `limit`, or none.
+  - The vector part is `ConditionPhotoIndexService.candidates(apartmentId, { q, event?, from?, to? }, n)`; the route
+    calls it with `limit`. The CLI below uses it with more candidates.
+- **Rerank** (#140, groundwork for a relevance threshold; the route doesn't use it yet): `RerankService`
+  (`src/embeddings/`) is the only place that knows the rerank model (`rerank-2.5`, `constants/rerank-model.ts`).
+  `rerank(query, documents[]) → { index, score }[]`, most relevant first. Plain `fetch` to Voyage's `/v1/rerank`:
+  LangChain has no standalone Voyage reranker (`@langchain/mongodb` reranks only inside an Atlas search). Errors as
+  `EmbeddingsService`: no key → 503, any Voyage failure or a malformed response → 502. ≤ 1000 documents per call.
+  Documents = `embeddingText(description)`, the same text as the embedding.
+  - Debug CLI `pnpm --filter api search:debug -- --apartment <id|name> [--event CHECK_IN] [--candidates 50] "<query>"`
+    (`src/cli/search-debug.ts`). `--apartment` is a uuid or a case-insensitive part of the name (must match one; an
+    exact name wins). Prints a `console.table` of every candidate sorted by rerank score: rank, rerank, vector,
+    event, takenOn, room, summary, id. No threshold: it's for picking one.
