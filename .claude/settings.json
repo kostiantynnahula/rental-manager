@@ -9,9 +9,31 @@
       "Bash(gh issue view:*)",
       "Bash(gh issue list:*)",
       "Bash(git diff:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(git status:*)",
+      "Bash(git branch --show-current)",
+      "Bash(git ls-remote:*)",
+      "Bash(git fetch:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh pr list:*)"
     ],
-    "deny": ["Read(./.env)", "Read(./**/.env*)", "Read(./apps/api/prisma/seed-users.json)"]
+    "deny": [
+      "Read(./.env)",
+      "Read(./**/.env*)",
+      "Read(./apps/api/prisma/seed-users.json)",
+      "Bash(git push * main)",
+      "Bash(git push * HEAD:main)",
+      "Bash(git push *:main)",
+      "Bash(git push *refs/heads/main)",
+      "Bash(git push --force*)",
+      "Bash(git push * --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * -f*)",
+      "Bash(git push * +*)",
+      "Bash(git fetch *--upl*)",
+      "Bash(git ls-remote *--upl*)"
+    ]
   },
   "hooks": {
     "PostToolUse": [

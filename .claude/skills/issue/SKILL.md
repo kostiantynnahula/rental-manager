@@ -3,7 +3,7 @@ name: issue
 description: Implement a GitHub issue end to end.
 argument-hint: <N> [--scout] [--tests] [--review]
 disable-model-invocation: true
-allowed-tools: Bash(git branch --show-current), Bash(git status --short)
+allowed-tools: Bash(git branch --show-current), Bash(git status --short), Bash(gh issue edit * --add-assignee @me)
 ---
 
 ## Context
@@ -21,7 +21,7 @@ pass a `#…` to the shell, where `#` starts a comment.
 
 1. `gh issue view <N> --json title,body,state,comments` — read it fully; comments may change the scope.
 2. Resolve `<base>`: `Part of #E` and a remote `epic/<E>-*` (`git ls-remote --heads origin 'epic/<E>-*'`) → that branch.
-   `Part of #E` without one → ask me: create `epic/<E>-<slug>` from `main`, or work from `main`. Otherwise `main`.
+   `Part of #E` without one → ask me (AskUserQuestion): create `epic/<E>-<slug>` from `main`, or work from `main`. Otherwise `main`.
    Don't create anything yet.
 3. Every `Depends on #M` is satisfied: closed, or has a merged PR into the epic `<base>` with `Implements #M` in its
    body. If not, stop and tell me.

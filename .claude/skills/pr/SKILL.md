@@ -2,7 +2,7 @@
 name: pr
 description: Push the current branch and open its PR.
 disable-model-invocation: true
-allowed-tools: Bash(git branch --show-current), Bash(git status --short)
+allowed-tools: Bash(git branch --show-current), Bash(git status --short), Bash(gh issue view *), Bash(git ls-remote *), Bash(git log *), Bash(git diff *), Bash(gh pr list *), Bash(gh api --paginate repos/{owner}/{repo}/issues/*/sub_issues), Bash(git push -u origin *), Bash(gh pr create *)
 ---
 
 ## Context
@@ -35,7 +35,8 @@ Open a PR for the current branch.
      `Closes #E, closes #N1, closes #N2…`: the keyword before every number, only sub-issues that are still open.
    - Issue → the issue lines, what changed, how to verify.
    - No number → description from the commits and the diff against `main`.
-5. Push the branch, open the PR (`gh pr create --base <base> --body-file …`), print the link.
+5. `git push -u origin <branch>`, then `gh pr create --base <base> --title '…' --body-file - <<'EOF'` with the body on
+   stdin, as separate commands. Print the link.
 
 ## Rules
 
