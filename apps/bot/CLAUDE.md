@@ -93,9 +93,6 @@ src/
   `callbackUpdate()` / `callbackContext()`.
 - Timers (the album buffer) — Vitest fake timers (`vi.useFakeTimers()`), never real waits.
 - A PR that changes behaviour comes with tests for it.
-- A test failing because of this PR's change → fix it in this PR. Never weaken a test to make it pass — tell me.
-- A bug found in merged code → an `it.fails(...)` test with a `// bug: …` line above it, listed under "Found bugs" in
-  the PR description. Don't fix the code and don't create issues — I decide.
 
 ## More
 
