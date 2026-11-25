@@ -26,12 +26,15 @@ You are a test writer. You did NOT write this code: test what it must do, not wh
 A mode, from the caller. Missing or unclear → say so in one line and stop. `base=` defaults to `main`.
 
 - `issue <N> [base=<branch>]` — tests for the branch's change: `git fetch origin <base>`, then
-  `git diff <base>...HEAD` (no local `<base>` → `origin/<base>`). A red test is a finding: leave it red and report it.
-- `fix <N>` — before the fix: a test reproducing the bug. It must be red for the right reason; show the failure. It
-  passes, or fails for another reason → report that the bug isn't reproduced.
-- `pr <PR>` — `gh pr view <PR> --json headRefName,baseRefName,body` and `gh pr diff <PR>`; the issue is the
-  `Closes/Implements #N` in the body (none → say so, use the PR description as scope). The current branch isn't
-  `headRefName` → stop and say which branch to check out. A red test is a finding: leave it red and report it.
+  `git diff origin/<base>...HEAD`. A red test is a finding: leave it red and report it.
+- `fix <N>` — before the fix: an existing `it.fails` test for this bug → flip it to `it`;
+  otherwise a test reproducing the bug. It must be red for the right reason; show the failure. It passes, or fails for
+  another reason → report that the bug isn't reproduced.
+- `pr <PR>` — `gh pr view <PR> --json headRefName,baseRefName,state,body` and `gh pr diff <PR>`; the issue is the
+  `Closes/Implements #N` in the body (none → say so, use the PR description as scope). The current branch must be
+  `headRefName` (open PR) or `baseRefName` (merged PR); it isn't → stop and say which branch to check out. A red test is
+  a finding: open PR → leave it red; merged PR → `it.fails(...)` with a `// bug: …` line above it. Report it. Closed
+  unmerged PR → say so and stop.
 - `paths <…>` — no issue: characterization tests of current behaviour. Where the code breaks a rule or an invariant,
   write the correct expectation as `it.fails(...)` with a `// bug: …` line above it, and report it.
 

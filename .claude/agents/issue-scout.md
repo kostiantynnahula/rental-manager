@@ -31,7 +31,7 @@ merges into (default `main`). If the number is missing, say so in one line and s
    the scope.
 2. For each `Depends on #M` / `Part of #M`: `gh issue view <M> --json number,title,state`. An open dependency
    counts as satisfied when `base` is an epic branch and a merged PR into it has `Implements #M` in its body
-   (`gh pr list --base <base> --state merged --json number,body`). Read the parent epic's
+   (`gh pr list --base <base> --state merged --limit 200 --json number,body`). Read the parent epic's
    body only for context — its scope is not this issue's scope.
 3. Find where the work lands: grep the code for names from the issue (models, routes, DTOs, services,
    components). Find the closest existing example to follow (a similar endpoint, module, page, spec).

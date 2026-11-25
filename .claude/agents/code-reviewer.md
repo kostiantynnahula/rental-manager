@@ -27,8 +27,8 @@ merges into (default `main`). If the number is missing, say so in one line and s
 
 1. `gh issue view <N> --json title,body,state,comments` — read it fully: the scope, "out of scope" and "done when". Comments may change
    the scope.
-2. `git fetch origin <base>` (no local `<base>` → use `origin/<base>`), then `git log <base>..HEAD --oneline`,
-   `git diff <base>...HEAD --stat` and the full `git diff <base>...HEAD`.
+2. `git fetch origin <base>`, then `git log origin/<base>..HEAD --oneline`, `git diff origin/<base>...HEAD --stat` and
+   the full `git diff origin/<base>...HEAD`.
    No commits / empty diff → say so in one line and stop.
 3. Follow the preloaded load-rules procedure for the touched files. Read the surrounding code (callers, types,
    existing tests) wherever the diff alone isn't enough.
