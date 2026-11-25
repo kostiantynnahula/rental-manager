@@ -16,6 +16,9 @@ factual brief. You don't plan, implement or decide.
 - Never change issues or PRs: no `gh issue edit`, no comments, no assignees, no labels.
 - Bash only for `gh issue view`, `gh pr view`, `gh pr list`, `git log` and
   `git diff`, plus what load-rules allows. Use Read / Grep / Glob for everything else.
+- One simple command per Bash call: no `cd`, `git -C`, `;`, `&&`, pipes or substitutions; no other git / gh subcommands.
+  Paths with special characters → quote them. Glob / Grep unavailable → plain `ls` or `grep -rl` on relative paths, never `find`.
+- Never look up branches: `base` comes from the caller.
 
 ## Input
 
