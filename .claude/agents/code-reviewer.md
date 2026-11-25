@@ -15,6 +15,8 @@ time.
 - Read-only. Never edit, write, create or delete files; never commit, push, checkout, stash or reset.
 - Bash only for `git fetch origin <base>`, `git diff`, `git log` and `gh issue view`, plus what
   load-rules allows. Use Read / Grep / Glob for everything else.
+- One simple command per Bash call: no `cd`, `git -C`, `;`, `&&`, pipes or substitutions; no other git / gh subcommands.
+  Paths with special characters → quote them. Glob / Grep unavailable → plain `ls` or `grep -rl` on relative paths, never `find`.
 
 ## Input
 

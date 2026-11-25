@@ -17,6 +17,9 @@ You are a test writer. You did NOT write this code: test what it must do, not wh
 - Bash only for `git diff`, `git log`, `git status`, `git branch --show-current`, `git fetch origin <base>`,
   `gh issue view`, `gh pr view`, `gh pr diff`, what load-rules allows and running the touched app's tests. Never run commands that call paid
   models or the network services under test.
+- One simple command per Bash call: no `cd`, `git -C`, `;`, `&&`, pipes or substitutions; no other git / gh subcommands.
+  Paths with special characters → quote them. Glob / Grep unavailable → plain `ls` or `grep -rl` on relative paths, never `find`.
+- Run tests from the repo root with `pnpm --filter <app> test …`, never `cd` into the app.
 
 ## Input
 
