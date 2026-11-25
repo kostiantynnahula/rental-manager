@@ -102,6 +102,11 @@ Node 24 (`.nvmrc`), pnpm via corepack. First run: `cp .env.example .env && pnpm 
 - Small steps. Run tests/lint before saying a task is done.
 - Tests — worker, bot, mcp: see `apps/<app>/CLAUDE.md` → Tests; other apps: don't write new tests unless I ask. Still run
   existing ones; if a change breaks one, tell me rather than silently rewriting it.
+- Any app's test failing because of this PR's change → fix it in this PR. Never weaken a test to make it pass — tell me.
+- A bug that any app's tests find in merged code → an `it.fails(...)` test with a `// bug: …` line above it, listed
+  under "Found bugs" in the PR description. Don't fix the code and don't create issues — I decide.
+- An `it.fails` test (any app) turned red after rebasing on `main` → the bug was fixed there: flip it to `it` and
+  strike it from "Found bugs" with a link to the fix.
 - Briefly explain non-obvious decisions — I'm learning the workflow.
 - Ask before adding dependencies or changing the DB schema.
 - App-specific rules live in `apps/*/CLAUDE.md`; details per area in path-scoped `.claude/rules/<app>-<area>.md`

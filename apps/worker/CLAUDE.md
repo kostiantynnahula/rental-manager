@@ -47,9 +47,6 @@ NestJS standalone app (`createApplicationContext`, no HTTP server), native ESM l
   (`src/test/photo-services.ts`), the condition-photo ones via `conditionPhotoServices()` — never `new` them in a
   spec, so a constructor change touches one file.
 - A PR that changes behaviour comes with tests for it.
-- A test failing because of this PR's change → fix it in this PR. Never weaken a test to make it pass — tell me.
-- A bug found in merged code → an `it.fails(...)` test with a `// bug: …` line above it, listed under "Found bugs" in
-  the PR description. Don't fix the code and don't create issues — I decide.
 - Never run `extract:samples` or `describe:samples` in tests or reviews (paid model calls) — only when I ask.
 
 ## Modules
