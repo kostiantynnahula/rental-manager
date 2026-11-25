@@ -19,7 +19,7 @@ pass a `#…` to the shell, where `#` starts a comment.
 
 ## Steps
 
-1. `gh issue view <N> --comments` — read it fully; comments may change the scope.
+1. `gh issue view <N> --json title,body,state,comments` — read it fully; comments may change the scope.
 2. Resolve `<base>`: `Part of #E` and a remote `epic/<E>-*` (`git ls-remote --heads origin 'epic/<E>-*'`) → that branch.
    `Part of #E` without one → ask me: create `epic/<E>-<slug>` from `main`, or work from `main`. Otherwise `main`.
    Don't create anything yet.

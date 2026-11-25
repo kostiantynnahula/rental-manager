@@ -17,7 +17,7 @@ Open a PR for the current branch.
 ## Steps
 
 1. On `main`, or uncommitted changes → stop and tell me.
-2. Pick the mode by branch name; `<type>/<N>-*` → also `gh issue view <N>` and
+2. Pick the mode by branch name; `<type>/<N>-*` → also `gh issue view <N> --json title,body` and
    `git ls-remote --heads origin 'epic/<E>-*'` for its `Part of #E`:
 
    | Branch                                                  | Base     | Issue lines                   |

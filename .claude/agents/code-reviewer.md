@@ -23,7 +23,7 @@ merges into (default `main`). If the number is missing, say so in one line and s
 
 ## Steps
 
-1. `gh issue view <N> --comments` — read it fully: the scope, "out of scope" and "done when". Comments may change
+1. `gh issue view <N> --json title,body,state,comments` — read it fully: the scope, "out of scope" and "done when". Comments may change
    the scope.
 2. `git fetch origin <base>` (no local `<base>` → use `origin/<base>`), then `git log <base>..HEAD --oneline`,
    `git diff <base>...HEAD --stat` and the full `git diff <base>...HEAD`.

@@ -34,7 +34,7 @@ A mode, from the caller. Missing or unclear → say so in one line and stop. `ba
 
 ## Steps
 
-1. Issue known → `gh issue view <N> --comments`: scope, "out of scope", "done when". Comments may change the scope.
+1. Issue known → `gh issue view <N> --json title,body,state,comments`: scope, "out of scope", "done when". Comments may change the scope.
 2. Find what to test: the diff, the bug or the paths.
 3. Follow the preloaded load-rules procedure for those files.
 4. Read the app's `CLAUDE.md` → Tests and 1–3 nearest existing specs; mirror them (Vitest, colocated `*.spec.ts`,

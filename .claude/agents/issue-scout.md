@@ -24,7 +24,7 @@ merges into (default `main`). If the number is missing, say so in one line and s
 
 ## Steps
 
-1. `gh issue view <N> --comments` — read it fully: the scope, "out of scope" and "done when". Comments may change
+1. `gh issue view <N> --json title,body,state,comments` — read it fully: the scope, "out of scope" and "done when". Comments may change
    the scope.
 2. For each `Depends on #M` / `Part of #M`: `gh issue view <M> --json number,title,state`. An open dependency
    counts as satisfied when `base` is an epic branch and a merged PR into it has `Implements #M` in its body
