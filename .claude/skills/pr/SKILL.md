@@ -2,7 +2,7 @@
 name: pr
 description: Push the current branch and open its PR.
 disable-model-invocation: true
-allowed-tools: Bash(git branch --show-current), Bash(git status --short), Bash(gh issue view *), Bash(git ls-remote *), Bash(git log *), Bash(git diff *), Bash(gh pr list *), Bash(gh api --paginate repos/{owner}/{repo}/issues/*/sub_issues), Bash(git push -u origin *), Bash(gh pr create *)
+allowed-tools: Bash(git branch --show-current), Bash(git status --short), Bash(gh issue view *), Bash(git ls-remote --heads origin *), Bash(git log *), Bash(git diff *), Bash(gh pr list *), Bash(gh api --paginate repos/{owner}/{repo}/issues/*/sub_issues), Bash(git push -u origin *), Bash(gh pr create *)
 ---
 
 ## Context
