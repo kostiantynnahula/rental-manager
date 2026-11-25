@@ -100,8 +100,9 @@ Node 24 (`.nvmrc`), pnpm via corepack. First run: `cp .env.example .env && pnpm 
 
 - Reply in the language I write in (Russian/Ukrainian); code, comments, commits in English.
 - Small steps. Run tests/lint before saying a task is done.
-- Tests — worker, bot, mcp: see `apps/<app>/CLAUDE.md` → Tests; other apps: don't write new tests unless I ask. Still run
-  existing ones; if a change breaks one, tell me rather than silently rewriting it.
+- Tests — worker, bot, mcp: see `apps/<app>/CLAUDE.md` → Tests; other apps: don't write new tests unless I ask
+  (`--tests`, `/write-tests` and a `fix` issue count as asking). Still run existing ones; if a change breaks one,
+  tell me rather than silently rewriting it.
 - Any app's test failing because of this PR's change → fix it in this PR. Never weaken a test to make it pass — tell me.
 - A bug that any app's tests find in merged code → an `it.fails(...)` test with a `// bug: …` line above it, listed
   under "Found bugs" in the PR description. Don't fix the code and don't create issues — I decide.

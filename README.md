@@ -215,7 +215,8 @@ packages/
   shared/     shared rules (consumption limits, phone normalization) + queue contracts
 .claude/
   rules/      path-scoped instructions for Claude Code, per app and area
-  skills/     /issue — implement a GitHub issue end to end
+  agents/     subagents: issue-scout, test-writer, code-reviewer
+  skills/     /issue, /scout, /write-tests, /pr + shared procedures (load-rules, …)
 CLAUDE.md     project context for Claude Code (domain, rules, commands)
 ```
 
@@ -223,6 +224,10 @@ CLAUDE.md     project context for Claude Code (domain, rules, commands)
 
 - `CLAUDE.md` (root and per app) is the project context; `.claude/rules/<app>-<area>.md` add details per area and
   load only when files of that area are touched.
-- Work is planned as GitHub issues (epics with sub-issues). In Claude Code, `/issue <N>` reads the issue, plans,
-  implements on a branch and opens a PR.
+- Work is planned as GitHub issues (epics with sub-issues). In Claude Code:
+  - `/issue <N> [--scout] [--tests] [--review]` — reads the issue, plans, implements on a branch and opens a PR. A
+    sub-issue lands in its epic branch (`epic/<E>-*`) when there is one, else in `main`.
+  - `/scout <N>` — a brief of the issue before planning; changes nothing.
+  - `/write-tests <PR | paths…>` — tests written independently of the code's author.
+  - `/pr` — pushes the current branch and opens its PR (issue branch, epic branch or neither). Never merges.
 - Every change lands through a PR.
