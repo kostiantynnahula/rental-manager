@@ -94,6 +94,7 @@ model Apartment {
   meters          Meter[]
   photos          Photo[]
   conditionPhotos ConditionPhoto[]
+  chats           Chat[]
   tariffs         ApartmentTariff[]
   statements      Statement[]
 
@@ -348,6 +349,42 @@ model PhotoEmbedding {
 
   @@id([photoId, kind, model])
   @@map("photo_embeddings")
+}
+
+enum ChatRole {
+  USER
+  ASSISTANT
+
+  @@map("chat_role")
+}
+
+// A chat about one apartment (epic #157). Restrict: apartments are archived, never deleted.
+model Chat {
+  id          String        @id @default(uuid()) @db.Uuid
+  apartmentId String        @db.Uuid
+  apartment   Apartment     @relation(fields: [apartmentId], references: [id], onDelete: Restrict)
+  // null = untitled (set from the first question by #159, or renamed by the user).
+  title       String?       @db.VarChar(100)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  messages    ChatMessage[]
+
+  @@index([apartmentId, updatedAt])
+  @@map("chats")
+}
+
+// One row per message (not one Json array on Chat): append-only, the last N read by the index.
+model ChatMessage {
+  id        String   @id @default(uuid()) @db.Uuid
+  chatId    String   @db.Uuid
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  role      ChatRole
+  // AI SDK UIMessage parts, stored as-is.
+  parts     Json
+  createdAt DateTime @default(now())
+
+  @@index([chatId, createdAt])
+  @@map("chat_messages")
 }
 
 model Photo {
