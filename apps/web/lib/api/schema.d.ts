@@ -562,6 +562,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/apartments/{apartmentId}/chats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ApartmentChatsController_list"];
+        put?: never;
+        post: operations["ApartmentChatsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chats/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ChatsController_findOne"];
+        put?: never;
+        post?: never;
+        delete: operations["ChatsController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["ChatsController_update"];
+        trace?: never;
+    };
     "/meters/{meterId}/readings": {
         parameters: {
             query?: never;
@@ -1781,6 +1813,57 @@ export interface components {
             description?: components["schemas"]["ConditionPhotoDescriptionDto"];
             /** @description Why the photo could not be described */
             error?: string;
+        };
+        ChatResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            apartmentId: string;
+            /** @description null = untitled */
+            title: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        ChatListItemDto: {
+            /** Format: uuid */
+            id: string;
+            /** @description null = untitled */
+            title: string | null;
+            /** Format: date-time */
+            updatedAt: string;
+            messageCount: number;
+        };
+        /** @enum {string} */
+        ChatRole: "USER" | "ASSISTANT";
+        ChatMessageResponseDto: {
+            /** Format: uuid */
+            id: string;
+            role: components["schemas"]["ChatRole"];
+            /** @description AI SDK UIMessage parts, e.g. { type: "text", text } */
+            parts: {
+                [key: string]: unknown;
+            }[];
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ChatDetailResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            apartmentId: string;
+            /** @description null = untitled */
+            title: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** @description All messages, oldest first */
+            messages: components["schemas"]["ChatMessageResponseDto"][];
+        };
+        UpdateChatDto: {
+            title: string | null;
         };
         /** @enum {string} */
         ReadingSource: "MANUAL" | "PHOTO";
@@ -4727,6 +4810,188 @@ export interface operations {
             };
             /** @description Embeddings not configured (saved, DESCRIBED) */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApartmentChatsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                apartmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description By updatedAt (newest first) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatListItemDto"][];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Apartment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ApartmentChatsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                apartmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description An empty, untitled chat */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Apartment not found or archived */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatsController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatDetailResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Chat not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatsController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The chat and all its messages deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Chat not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateChatDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatResponseDto"];
+                };
+            };
+            /** @description Invalid body (title missing, not a string, > 100) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Chat not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

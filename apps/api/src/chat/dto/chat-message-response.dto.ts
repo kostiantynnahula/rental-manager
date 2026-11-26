@@ -11,8 +11,9 @@ export class ChatMessageResponseDto {
 
   // Json in the DB, stored as-is: the AI SDK UIMessage parts (written by the agent, #159).
   @ApiProperty({
-    type: Object,
-    isArray: true,
+    type: 'array',
+    // Not `type: Object`: that becomes Record<string, never> in the web types.
+    items: { type: 'object', additionalProperties: true },
     description: 'AI SDK UIMessage parts, e.g. { type: "text", text }',
   })
   parts: Record<string, unknown>[];
