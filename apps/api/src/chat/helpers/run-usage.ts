@@ -1,13 +1,13 @@
-import { AIMessage, type BaseMessage } from '@langchain/core/messages';
+import { AIMessage } from '@langchain/core/messages';
+import type { LLMResult } from '@langchain/core/outputs';
 
-// Tokens of this run's model calls (from the final graph state). History messages carry no usage, so they add 0.
-export function runUsage(messages: readonly BaseMessage[] | undefined): {
-  inputTokens: number;
-  outputTokens: number;
-} {
+// Tokens of one model call (a callback's handleLLMEnd): counted per call, so a failed or aborted run still logs
+// what it spent.
+export function llmResultUsage(result: LLMResult): { inputTokens: number; outputTokens: number } {
   let inputTokens = 0;
   let outputTokens = 0;
-  for (const message of messages ?? []) {
+  for (const generation of result.generations.flat()) {
+    const message = 'message' in generation ? generation.message : undefined;
     if (!AIMessage.isInstance(message) || !message.usage_metadata) continue;
     inputTokens += message.usage_metadata.input_tokens;
     outputTokens += message.usage_metadata.output_tokens;

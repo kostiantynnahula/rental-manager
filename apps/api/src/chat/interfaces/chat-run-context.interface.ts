@@ -6,6 +6,8 @@ export interface ChatRunContext {
   // Every photo id a tool returned in this run: the only ids an answer may cite.
   photoIds: Set<string>;
   toolCalls: ChatToolCall[];
+  // Summed over the run's model calls.
+  usage: { inputTokens: number; outputTokens: number };
   // A failure that must end the run (search down) rather than go back to the model as a tool error.
   fail(error: unknown): void;
 }

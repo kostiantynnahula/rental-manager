@@ -10,6 +10,7 @@ export function chatModel(config: ConfigService<Env, true>): ChatAnthropic | nul
   return new ChatAnthropic({
     model: config.get('CHAT_MODEL', { infer: true }),
     apiKey,
-    maxTokens: 2048,
+    // Room for a full room-by-room baseline answer (thinking counts too).
+    maxTokens: 4096,
   });
 }

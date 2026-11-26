@@ -134,3 +134,32 @@ describe('photoMarkerFilter', () => {
     expect(joined(out)).toBe(`[[photo:${A}]]`);
   });
 });
+
+describe('long or made-up ids (review fix)', () => {
+  it('holds back a marker with an id longer than a uuid until it closes', () => {
+    const tail = `[[photo:${'x'.repeat(80)}`;
+    expect(splitAtPartialMarker(`a ${tail}`)).toEqual(['a ', tail]);
+  });
+
+  it('releases an unclosed "[[photo:" once it holds whitespace', () => {
+    expect(splitAtPartialMarker('[[photo:ab cd')).toEqual(['[[photo:ab cd', '']);
+  });
+
+  it('strips a split marker with a long made-up id from the stream', async () => {
+    const id = 'z'.repeat(70);
+    const out = await run(
+      [
+        { type: 'text-start', id: 't' },
+        { type: 'text-delta', id: 't', delta: `a [[photo:${id.slice(0, 40)}` },
+        { type: 'text-delta', id: 't', delta: `${id.slice(40)}]] b` },
+        { type: 'text-end', id: 't' },
+      ],
+      new Set(),
+    );
+    const text = out
+      .filter((c): c is Extract<UIMessageChunk, { type: 'text-delta' }> => c.type === 'text-delta')
+      .map((c) => c.delta)
+      .join('');
+    expect(text).toBe('a  b');
+  });
+});
