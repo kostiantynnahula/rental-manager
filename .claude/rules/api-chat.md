@@ -44,7 +44,8 @@ the CRUD routes (#158) and the agent with its streaming route (#159).
 - **Stack**: `createAgent` from `langchain` v1 (the current agent API, on LangGraph) with `ChatAnthropic`
   (`CHAT_MODEL`, default Sonnet; `maxTokens` 4096). The stream goes through `@ai-sdk/langchain` (`toBaseMessages` →
   `agent.stream` → `toUIMessageStream`) into the AI SDK UI message stream protocol (`createUIMessageStream` →
-  `pipeUIMessageStreamToResponse`, SSE).
+  `pipeUIMessageStreamToResponse`, SSE) with `Cache-Control: no-cache, no-transform`: without `no-transform` the
+  web's `/api` rewrite (Next's gzip) holds the whole answer back (`web-chat.md`).
 - **Env**: `ANTHROPIC_API_KEY` is **shared with the worker** (one root `.env`), optional: without it the route answers
   **503** before saving. A placeholder that passes the `sk-ant-` check gets a failed run (an error part) instead.
   `CHAT_HISTORY_LIMIT` (20), `CHAT_MAX_TOOL_CALLS` (5).

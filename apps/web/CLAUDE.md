@@ -56,6 +56,7 @@
   - Readings and meters (`components/{readings,meters}/`): `.claude/rules/web-readings.md`
   - Statements (`components/statements/`): `.claude/rules/web-statements.md`
   - Tariffs (`components/tariffs/`): `.claude/rules/web-tariffs.md`
+  - Apartment chat — «Чат» tab, AI Elements (`components/{chat,ai-elements}/`): `.claude/rules/web-chat.md`
 - Billing (consumption, prices, statement totals) is computed by the API only (`reading_consumption` view,
   `priceForPeriod`): the web shows what the API returns and never re-implements a calculation.
 - Project rules override advice from skills.
