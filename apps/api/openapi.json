@@ -2744,6 +2744,66 @@
         ]
       }
     },
+    "/chats/{id}/messages": {
+      "post": {
+        "operationId": "ChatsController_sendMessage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendChatMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "AI SDK UI message stream (Server-Sent Events)",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body (not a user text message, blank, > 2000 chars)"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Chat not found"
+          },
+          "409": {
+            "description": "An answer in this chat is still being written"
+          },
+          "503": {
+            "description": "The chat agent is not configured"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "chats"
+        ]
+      }
+    },
     "/meters/{meterId}/readings": {
       "get": {
         "description": "API key scope: readings:read",
@@ -7017,6 +7077,63 @@
         },
         "required": [
           "title"
+        ]
+      },
+      "ChatTextPartDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "text"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "type",
+          "text"
+        ]
+      },
+      "ChatUserMessageDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "user"
+            ]
+          },
+          "parts": {
+            "minItems": 1,
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatTextPartDto"
+            }
+          }
+        },
+        "required": [
+          "role",
+          "parts"
+        ]
+      },
+      "SendChatMessageDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "$ref": "#/components/schemas/ChatUserMessageDto"
+          }
+        },
+        "required": [
+          "message"
         ]
       },
       "ReadingSource": {

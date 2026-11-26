@@ -594,6 +594,22 @@ export interface paths {
         patch: operations["ChatsController_update"];
         trace?: never;
     };
+    "/chats/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChatsController_sendMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/meters/{meterId}/readings": {
         parameters: {
             query?: never;
@@ -1864,6 +1880,20 @@ export interface components {
         };
         UpdateChatDto: {
             title: string | null;
+        };
+        ChatTextPartDto: {
+            /** @enum {string} */
+            type: "text";
+            text: string;
+        };
+        ChatUserMessageDto: {
+            id?: string;
+            /** @enum {string} */
+            role: "user";
+            parts: components["schemas"]["ChatTextPartDto"][];
+        };
+        SendChatMessageDto: {
+            message: components["schemas"]["ChatUserMessageDto"];
         };
         /** @enum {string} */
         ReadingSource: "MANUAL" | "PHOTO";
@@ -4992,6 +5022,66 @@ export interface operations {
             };
             /** @description Chat not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ChatsController_sendMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendChatMessageDto"];
+            };
+        };
+        responses: {
+            /** @description AI SDK UI message stream (Server-Sent Events) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            /** @description Invalid body (not a user text message, blank, > 2000 chars) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Chat not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description An answer in this chat is still being written */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The chat agent is not configured */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
