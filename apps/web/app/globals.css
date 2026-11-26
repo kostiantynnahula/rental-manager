@@ -2,6 +2,9 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
+/* Streamdown (chat answers, components/ai-elements/message.tsx) ships its own Tailwind classes. */
+@source '../node_modules/streamdown/dist/*.js';
+
 /* Light theme only: shadcn components keep their dark: classes, but nothing ever sets .dark. */
 @custom-variant dark (&:is(.dark *));
 
