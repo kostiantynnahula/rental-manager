@@ -25,7 +25,8 @@ export class ChatMessageResponseDto {
     return {
       id: m.id,
       role: m.role,
-      parts: m.parts as Record<string, unknown>[],
+      // Stored unvalidated Json: never send a non-array where the contract promises one.
+      parts: Array.isArray(m.parts) ? (m.parts as Record<string, unknown>[]) : [],
       createdAt: m.createdAt,
     };
   }
