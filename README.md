@@ -232,7 +232,8 @@ Photos kept: 418a9aaa…, c18d3cba…
 ```
 
 `count` = rows the tool returned (`error` = it failed, `—` = no result: past `CHAT_MAX_TOOL_CALLS`). `stripped` =
-cited photo ids that no tool returned in this run (cut from the answer, as in the web).
+cited photo ids that no tool returned in this run (cut from the answer, as in the web). A failed run still lists the tool calls that
+ran (args `—`). Photo ids are shortened here; the CLI prints full uuids.
 
 Samples folders, `expected.json` and the output: [`apps/worker/README.md`](apps/worker/README.md#samples-scripts--check-the-model-on-local-photos).
 

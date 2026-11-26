@@ -109,23 +109,28 @@ function printToolCalls(messages: unknown[], toolCalls: ChatToolCall[]): void {
   const calls = messages.filter((m) => AIMessage.isInstance(m)).flatMap((m) => m.tool_calls ?? []);
   const results = new Map<string, typeof toolCalls>();
   for (const call of toolCalls) results.set(call.name, [...(results.get(call.name) ?? []), call]);
-  if (calls.length === 0) {
+  const rows = calls.map((call) => {
+    const done = results.get(call.name)?.shift();
+    return {
+      name: call.name,
+      args: JSON.stringify(call.args),
+      // No result: past CHAT_MAX_TOOL_CALLS (the middleware answers it) or the run ended first.
+      count: done ? (done.count ?? 'error') : '—',
+      ms: done?.ms ?? '—',
+    };
+  });
+  // Results without a model message: a failed run (invoke threw, so no messages) still shows what ran and failed.
+  for (const left of results.values()) {
+    for (const done of left) {
+      rows.push({ name: done.name, args: '—', count: done.count ?? 'error', ms: done.ms });
+    }
+  }
+  if (rows.length === 0) {
     console.log('\nTool calls: none');
     return;
   }
   console.log('\nTool calls:');
-  console.table(
-    calls.map((call) => {
-      const done = results.get(call.name)?.shift();
-      return {
-        name: call.name,
-        args: JSON.stringify(call.args),
-        // No result: past CHAT_MAX_TOOL_CALLS (the middleware answers it) or the run ended first.
-        count: done ? (done.count ?? 'error') : '—',
-        ms: done?.ms ?? '—',
-      };
-    }),
-  );
+  console.table(rows);
 }
 
 try {
