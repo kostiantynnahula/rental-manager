@@ -1,6 +1,5 @@
 import { toBaseMessages, toUIMessageStream } from '@ai-sdk/langchain';
 import type { ChatAnthropic } from '@langchain/anthropic';
-import type { BaseMessage } from '@langchain/core/messages';
 import {
   ConflictException,
   Injectable,
@@ -30,7 +29,7 @@ import { CHAT_TITLE_FROM_QUESTION_LENGTH } from './constants/chat-agent.js';
 import { SendChatMessageDto } from './dto/send-chat-message.dto.js';
 import { toHistory } from './helpers/history.js';
 import { questionText } from './helpers/question.js';
-import { runUsage } from './helpers/run-usage.js';
+import { llmResultUsage } from './helpers/run-usage.js';
 import { photoMarkerFilter, sourcesInOrder } from './helpers/sources.js';
 import { chatSystemPrompt } from './helpers/system-prompt.js';
 import { titleFromQuestion } from './helpers/title.js';
@@ -119,6 +118,7 @@ export class ChatAgentService {
       apartmentId,
       photoIds: new Set(),
       toolCalls: [],
+      usage: { inputTokens: 0, outputTokens: 0 },
       fail: (error) => {
         fatal ??= error;
         abort.abort();
@@ -133,50 +133,67 @@ export class ChatAgentService {
         toolCallLimitMiddleware({ runLimit: this.maxToolCalls, exitBehavior: 'continue' }),
       ],
     });
-    let finalMessages: BaseMessage[] | undefined;
     let outcome: 'answered' | 'failed' = 'failed';
+    // Settled when execute is over. The pipe returns as soon as the client disconnects, while the run may still be
+    // unwinding: the lock (released by send) and the log wait for this.
+    let executeDone!: () => void;
+    const executed = new Promise<void>((resolve) => (executeDone = resolve));
 
     const stream = createUIMessageStream({
       execute: async ({ writer }) => {
-        const graph = await agent.stream(
-          { messages: await toBaseMessages(history) },
-          { streamMode: ['values', 'messages'], signal: abort.signal },
-        );
-        const chunks = toUIMessageStream<{ messages?: BaseMessage[] }>(graph, {
-          sendFinish: false,
-          onFinish: (state) => {
-            finalMessages = state?.messages;
-          },
-        }).pipeThrough(photoMarkerFilter(ctx.photoIds));
+        try {
+          const graph = await agent.stream(
+            { messages: await toBaseMessages(history) },
+            {
+              streamMode: ['values', 'messages'],
+              signal: abort.signal,
+              // Per model call, so a failed or aborted run still logs what it spent.
+              callbacks: [
+                {
+                  handleLLMEnd: (result) => {
+                    const usage = llmResultUsage(result);
+                    ctx.usage.inputTokens += usage.inputTokens;
+                    ctx.usage.outputTokens += usage.outputTokens;
+                  },
+                },
+              ],
+            },
+          );
+          const chunks = toUIMessageStream(graph, { sendFinish: false }).pipeThrough(
+            photoMarkerFilter(ctx.photoIds),
+          );
 
-        const texts = new Map<string, string>();
-        let failed = false;
-        for await (const chunk of chunks) {
-          // The adapter's error part carries the raw cause: replaced by RUN_FAILED_TEXT (onError below).
-          if (chunk.type === 'error') {
-            failed = true;
-            continue;
+          const texts = new Map<string, string>();
+          let failed = false;
+          for await (const chunk of chunks) {
+            // The adapter's error part carries the raw cause: replaced by RUN_FAILED_TEXT (onError below).
+            if (chunk.type === 'error') {
+              failed = true;
+              continue;
+            }
+            if (chunk.type === 'text-delta') {
+              texts.set(chunk.id, (texts.get(chunk.id) ?? '') + chunk.delta);
+            }
+            writer.write(chunk);
           }
-          if (chunk.type === 'text-delta') {
-            texts.set(chunk.id, (texts.get(chunk.id) ?? '') + chunk.delta);
-          }
-          writer.write(chunk);
+          if (failed || abort.signal.aborted) throw fatal ?? new Error('The agent run failed');
+
+          const text = [...texts.values()].filter((t) => t.trim());
+          const sources = {
+            type: 'data-sources',
+            data: { photoIds: sourcesInOrder(text, ctx.photoIds) },
+          } as const;
+          writer.write(sources as UIMessageChunk);
+          // Saved before `finish`: a client that reloads the chat on finish sees the answer.
+          await this.saveMessage(chatId, ChatRole.ASSISTANT, [
+            ...text.map((t) => ({ type: 'text', text: t })),
+            sources,
+          ]);
+          outcome = 'answered';
+          writer.write({ type: 'finish' });
+        } finally {
+          executeDone();
         }
-        if (failed || abort.signal.aborted) throw fatal ?? new Error('The agent run failed');
-
-        const text = [...texts.values()].filter((t) => t.trim());
-        const sources = {
-          type: 'data-sources',
-          data: { photoIds: sourcesInOrder(text, ctx.photoIds) },
-        } as const;
-        writer.write(sources as UIMessageChunk);
-        // Saved before `finish`: a client that reloads the chat on finish sees the answer.
-        await this.saveMessage(chatId, ChatRole.ASSISTANT, [
-          ...text.map((t) => ({ type: 'text', text: t })),
-          sources,
-        ]);
-        outcome = 'answered';
-        writer.write({ type: 'finish' });
       },
       onError: (error) => {
         fatal ??= error;
@@ -187,7 +204,9 @@ export class ChatAgentService {
     try {
       await pipeUIMessageStreamToResponse({ response: res, stream });
     } finally {
-      this.logRun(chatId, outcome, ctx, finalMessages, performance.now() - started, fatal);
+      // Even when the pipe fails: the close handler aborts the run, so execute ends.
+      await executed;
+      this.logRun(chatId, outcome, ctx, performance.now() - started, fatal);
     }
   }
 
@@ -212,12 +231,11 @@ export class ChatAgentService {
     chatId: string,
     outcome: 'answered' | 'failed',
     ctx: ChatRunContext,
-    messages: BaseMessage[] | undefined,
     ms: number,
     error: unknown,
   ): void {
     const tools = ctx.toolCalls.map((t) => `${t.name}=${t.count ?? 'error'}/${t.ms}ms`).join(' ');
-    const { inputTokens, outputTokens } = runUsage(messages);
+    const { inputTokens, outputTokens } = ctx.usage;
     const line =
       `chat ${chatId} ${outcome} in ${Math.round(ms)}ms; tools: ${tools || 'none'}; ` +
       `tokens in=${inputTokens} out=${outputTokens}`;

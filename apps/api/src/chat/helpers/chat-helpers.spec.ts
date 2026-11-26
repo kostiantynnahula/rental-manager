@@ -61,6 +61,20 @@ describe('toHistory', () => {
   it('tolerates non-array parts', () => {
     expect(toHistory([row(ChatRole.USER, null)])[0].parts).toEqual([]);
   });
+
+  it('starts at a question: drops answers before the first one (review fix)', () => {
+    const text = (t: string) => [{ type: 'text', text: t }];
+    const history = toHistory([
+      row(ChatRole.ASSISTANT, text('old answer')),
+      row(ChatRole.USER, text('q')),
+      row(ChatRole.ASSISTANT, text('a')),
+    ]);
+    expect(history.map((m) => m.role)).toEqual(['user', 'assistant']);
+  });
+
+  it('is empty when no question is in the window', () => {
+    expect(toHistory([row(ChatRole.ASSISTANT, [])])).toEqual([]);
+  });
 });
 
 describe('toLeaseFact', () => {

@@ -42,9 +42,12 @@ the CRUD routes (#158) and the agent with its streaming route (#159).
 ## Agent (#159)
 
 - **Stack**: `createAgent` from `langchain` v1 (the current agent API, on LangGraph) with `ChatAnthropic`
-  (`CHAT_MODEL`, default Sonnet; `ANTHROPIC_API_KEY`, optional: without it the route answers **503** before saving).
-  The stream goes through `@ai-sdk/langchain` (`toBaseMessages` → `agent.stream` → `toUIMessageStream`) into the AI
-  SDK UI message stream protocol (`createUIMessageStream` → `pipeUIMessageStreamToResponse`, SSE).
+  (`CHAT_MODEL`, default Sonnet; `maxTokens` 4096). The stream goes through `@ai-sdk/langchain` (`toBaseMessages` →
+  `agent.stream` → `toUIMessageStream`) into the AI SDK UI message stream protocol (`createUIMessageStream` →
+  `pipeUIMessageStreamToResponse`, SSE).
+- **Env**: `ANTHROPIC_API_KEY` is **shared with the worker** (one root `.env`), optional: without it the route answers
+  **503** before saving. A placeholder that passes the `sk-ant-` check gets a failed run (an error part) instead.
+  `CHAT_HISTORY_LIMIT` (20), `CHAT_MAX_TOOL_CALLS` (5).
 - **Request**: `message` = a user `UIMessage` with text parts only (`ChatUserMessageDto`). The parts joined and trimmed
   give 1–2000 chars (`helpers/question.ts`), else 400. The client's message `id` is not stored.
 - **Flow** (`ChatAgentService.send`):
@@ -52,13 +55,16 @@ the CRUD routes (#158) and the agent with its streaming route (#159).
      chat still answers**.
   2. The question is saved **first** (+ the title from it, ~60 chars on a word boundary, if untitled, + `updatedAt`),
      in one transaction. A failed run leaves the question unanswered; the user asks again.
-  3. History = the last `CHAT_HISTORY_LIMIT` (20) messages by `seq`, new question included, text parts only.
+  3. History = the last `CHAT_HISTORY_LIMIT` (20) messages by `seq`, new question included, text parts only. It
+     starts at a question (`toHistory` drops leading answers): an even window of alternating turns starts with an
+     answer, and the model's conversation must open with the user.
   4. On success: a `data-sources` part, then the answer is saved (text parts + `data-sources`, + `updatedAt`), then
      `finish`. Saving before `finish` lets a client reload the chat on finish and see the answer.
   5. Any failure after the stream started → one error part with a fixed Ukrainian text (the cause goes to the log
      only), and **no answer saved**. A client disconnect aborts the run (no answer saved either).
 - **One run per chat**: an in-process `Set` of chat ids → 409. One API process, and a restart ends the run anyway. A
-  second process would need a shared lock.
+  second process would need a shared lock. Released only once the run itself is over: the pipe returns as soon as
+  the client disconnects, so the service also awaits `execute`.
 - **Tools** (`agent/chat-tools.ts`): read-only and bound to the chat's apartment. The model never names an apartment.
   - `search_photos { query, event?, from?, to? }` → `ConditionPhotosService.search` (the reranked search), 10 max.
   - `get_condition_baseline { date? }` (default today, Kyiv) → `ConditionPhotosService.baseline`, grouped by room.
@@ -71,7 +77,8 @@ the CRUD routes (#158) and the agent with its streaming route (#159).
     `recursionLimit`. A recursion limit throws (no answer). With `continue`, a call past the limit gets an error
     message, and the model answers with what it has.
 - **Sources** (`helpers/sources.ts`): the agent cites `[[photo:<id>]]` (system prompt). Only ids a tool returned **in
-  this run** are kept: `photoMarkerFilter` strips any other marker from the streamed text, holding back a marker split
-  across deltas. `data-sources` = `{ photoIds }` in order of first mention.
-- **Log** (one line per run): outcome, ms, each tool's name, result count and ms, and token usage. Never the question or
-  the answer text.
+  this run** are kept: `photoMarkerFilter` strips any other marker (any id shape, made-up ones too) from the streamed
+  text. A marker split across deltas is held back while the tail can still become one (no length cap), and flushed at
+  the text part's end. `data-sources` = `{ photoIds }` in order of first mention.
+- **Log** (one line per run): outcome, ms, each tool's name, result count and ms, and token usage (summed per model
+  call by a `handleLLMEnd` callback, so failed runs count too). Never the question or the answer text.
