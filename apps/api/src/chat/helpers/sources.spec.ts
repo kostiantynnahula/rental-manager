@@ -1,5 +1,8 @@
+import { AIMessage } from '@langchain/core/messages';
 import type { UIMessageChunk } from 'ai';
+import { newRunContext, usageCallback } from '../agent/chat-agent.js';
 import {
+  citedIds,
   photoMarkerFilter,
   sourcesInOrder,
   splitAtPartialMarker,
@@ -43,6 +46,62 @@ describe('sourcesInOrder', () => {
 
   it('is empty without markers', () => {
     expect(sourcesInOrder(['нічого'], new Set([A]))).toEqual([]);
+  });
+});
+
+describe('citedIds (chat:debug: cited minus kept = stripped)', () => {
+  it('lists every cited id by first mention, unknown ones included, once each', () => {
+    const texts = [`[[photo:${B}]] [[photo:${A}]]`, `[[photo:${B}]] [[photo:made-up]]`];
+    expect(citedIds(texts)).toEqual([B, A, 'made-up']);
+  });
+
+  it('is empty without markers', () => {
+    expect(citedIds(['нічого', '[[не фото]]'])).toEqual([]);
+  });
+
+  it('leaves exactly the ids no tool returned once the kept ones are removed', () => {
+    const texts = [`[[photo:${A}]] [[photo:${B}]] [[photo:${C}]]`];
+    const allowed = new Set([A, C]);
+    const kept = sourcesInOrder(texts, allowed);
+    expect(citedIds(texts).filter((id) => !kept.includes(id))).toEqual([B]);
+  });
+});
+
+describe('newRunContext / usageCallback', () => {
+  it('starts empty and bound to the apartment', () => {
+    const ctx = newRunContext('apt-1', () => {});
+    expect(ctx).toMatchObject({
+      apartmentId: 'apt-1',
+      toolCalls: [],
+      usage: { inputTokens: 0, outputTokens: 0 },
+    });
+    expect(ctx.photoIds.size).toBe(0);
+  });
+
+  it('sums tokens over every model call', () => {
+    const ctx = newRunContext('apt-1', () => {});
+    const cb = usageCallback(ctx);
+    const result = (input: number, output: number) => ({
+      generations: [
+        [
+          {
+            text: '',
+            message: new AIMessage({
+              content: '',
+              usage_metadata: {
+                input_tokens: input,
+                output_tokens: output,
+                total_tokens: input + output,
+              },
+            }),
+          },
+        ],
+      ],
+    });
+    const end = cb.handleLLMEnd as unknown as (r: unknown, runId: string) => void;
+    end(result(100, 10), 'r1');
+    end(result(50, 5), 'r2');
+    expect(ctx.usage).toEqual({ inputTokens: 150, outputTokens: 15 });
   });
 });
 
