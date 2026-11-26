@@ -15,8 +15,6 @@ import {
   type UIMessageChunk,
 } from 'ai';
 import type { Response } from 'express';
-import { createAgent, toolCallLimitMiddleware } from 'langchain';
-import { todayDateOnly } from '../common/helpers/date-only.js';
 import { ConditionPhotosService } from '../condition-photos/condition-photos.service.js';
 import type { Env } from '../config/env.validation.js';
 import type { Prisma } from '../generated/prisma/client.js';
@@ -24,14 +22,12 @@ import { ChatRole } from '../generated/prisma/enums.js';
 import { LeasesService } from '../leases/leases.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { chatModel } from './agent/chat-model.js';
-import { buildChatTools } from './agent/chat-tools.js';
+import { buildChatAgent, newRunContext, usageCallback } from './agent/chat-agent.js';
 import { CHAT_TITLE_FROM_QUESTION_LENGTH } from './constants/chat-agent.js';
 import { SendChatMessageDto } from './dto/send-chat-message.dto.js';
 import { toHistory } from './helpers/history.js';
 import { questionText } from './helpers/question.js';
-import { llmResultUsage } from './helpers/run-usage.js';
 import { photoMarkerFilter, sourcesInOrder } from './helpers/sources.js';
-import { chatSystemPrompt } from './helpers/system-prompt.js';
 import { titleFromQuestion } from './helpers/title.js';
 import type { ChatRunContext } from './interfaces/chat-run-context.interface.js';
 
@@ -114,24 +110,16 @@ export class ChatAgentService {
       if (!res.writableFinished) abort.abort();
     });
     let fatal: unknown;
-    const ctx: ChatRunContext = {
-      apartmentId,
-      photoIds: new Set(),
-      toolCalls: [],
-      usage: { inputTokens: 0, outputTokens: 0 },
-      fail: (error) => {
-        fatal ??= error;
-        abort.abort();
-      },
-    };
-    const agent = createAgent({
+    const ctx = newRunContext(apartmentId, (error) => {
+      fatal ??= error;
+      abort.abort();
+    });
+    const agent = buildChatAgent({
       model,
-      tools: buildChatTools(ctx, { conditionPhotos: this.conditionPhotos, leases: this.leases }),
-      systemPrompt: chatSystemPrompt({ apartmentName, today: todayDateOnly() }),
-      // 'continue': a call past the limit gets an error message, and the model answers with what it has.
-      middleware: [
-        toolCallLimitMiddleware({ runLimit: this.maxToolCalls, exitBehavior: 'continue' }),
-      ],
+      ctx,
+      deps: { conditionPhotos: this.conditionPhotos, leases: this.leases },
+      apartmentName,
+      maxToolCalls: this.maxToolCalls,
     });
     let outcome: 'answered' | 'failed' = 'failed';
     // Settled when execute is over. The pipe returns as soon as the client disconnects, while the run may still be
@@ -147,16 +135,7 @@ export class ChatAgentService {
             {
               streamMode: ['values', 'messages'],
               signal: abort.signal,
-              // Per model call, so a failed or aborted run still logs what it spent.
-              callbacks: [
-                {
-                  handleLLMEnd: (result) => {
-                    const usage = llmResultUsage(result);
-                    ctx.usage.inputTokens += usage.inputTokens;
-                    ctx.usage.outputTokens += usage.outputTokens;
-                  },
-                },
-              ],
+              callbacks: [usageCallback(ctx)],
             },
           );
           const chunks = toUIMessageStream(graph, { sendFinish: false }).pipeThrough(

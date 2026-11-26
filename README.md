@@ -200,6 +200,40 @@ Manual tools, run from the repo root. They build first, then run once.
 | `pnpm --filter api embed:backfill`                                                      | embed described condition photos that have no vector yet (Voyage)                  |
 | `pnpm --filter api search:debug -- --apartment <id\|name> "<query>"`                    | condition photo search: vector and rerank scores side by side                      |
 | `pnpm --filter api describe:requeue -- --apartment <id\|name> \| --all \| --photo <id>` | describe condition photos again (worker: **paid**, 1 call / photo)                 |
+| `pnpm --filter api chat:debug -- --apartment <id\|name> "<question>"`                   | the chat agent once, nothing saved: tool calls, answer, photos, tokens (**paid**)  |
+
+`chat:debug` needs the infra up (Redis too), `ANTHROPIC_API_KEY` and `VOYAGE_API_KEY`. It runs the same agent as the
+web chat, with one question and no history:
+
+```bash
+pnpm --filter api chat:debug -- --apartment "Шевченка" "Який стан холодильника на кухні?"
+```
+
+```
+Шевченка — "Який стан холодильника на кухні?"
+
+Tool calls:
+┌─────────┬─────────────────┬────────────────────────────────────┬───────┬──────┐
+│ (index) │ name            │ args                               │ count │ ms   │
+├─────────┼─────────────────┼────────────────────────────────────┼───────┼──────┤
+│ 0       │ 'search_photos' │ '{"query":"холодильник на кухні"}' │ 3     │ 2608 │
+└─────────┴─────────────────┴────────────────────────────────────┴───────┴──────┘
+
+7346ms; tokens in=5112 out=328
+
+Answer:
+Єдине фото, де холодильник видно докладно, — це фото із заселення від 2026-11-03. На ньому сріблястий холодильник Hitachi з верхньою морозильною камерою біля стіни. Зверху стоїть мікрохвильова піч із відчиненими дверцятами. Явних пошкоджень не помітно. [[photo:418a9aaa…]]
+
+На фото із заселення від 2026-11-20 холодильник лише згаданий у переліку, без опису стану. [[photo:c18d3cba…]]
+
+Фото виїзду або змін, де видно холодильник, немає. Внутрішній стан (камери, полиці, чистота), роботу та запах фото не показують.
+
+Photos kept: 418a9aaa…, c18d3cba…
+```
+
+`count` = rows the tool returned (`error` = it failed, `—` = no result: past `CHAT_MAX_TOOL_CALLS`). `stripped` =
+cited photo ids that no tool returned in this run (cut from the answer, as in the web). A failed run still lists
+the tool calls that ran (args `—`). Photo ids are shortened here; the CLI prints full uuids.
 
 Samples folders, `expected.json` and the output: [`apps/worker/README.md`](apps/worker/README.md#samples-scripts--check-the-model-on-local-photos).
 

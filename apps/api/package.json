@@ -31,6 +31,7 @@
     "apikey:revoke": "nest build && node dist/cli/api-keys.js revoke",
     "embed:backfill": "nest build && node dist/cli/embed-backfill.js",
     "search:debug": "nest build && node dist/cli/search-debug.js",
+    "chat:debug": "nest build && node dist/cli/chat-debug.js",
     "describe:requeue": "nest build && node dist/cli/describe-requeue.js"
   },
   "dependencies": {

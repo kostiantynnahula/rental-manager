@@ -1,5 +1,6 @@
 import type { UIMessageChunk } from 'ai';
 import {
+  citedIds,
   photoMarkerFilter,
   sourcesInOrder,
   splitAtPartialMarker,
@@ -43,6 +44,24 @@ describe('sourcesInOrder', () => {
 
   it('is empty without markers', () => {
     expect(sourcesInOrder(['нічого'], new Set([A]))).toEqual([]);
+  });
+});
+
+describe('citedIds (chat:debug: cited minus kept = stripped)', () => {
+  it('lists every cited id by first mention, unknown ones included, once each', () => {
+    const texts = [`[[photo:${B}]] [[photo:${A}]]`, `[[photo:${B}]] [[photo:made-up]]`];
+    expect(citedIds(texts)).toEqual([B, A, 'made-up']);
+  });
+
+  it('is empty without markers', () => {
+    expect(citedIds(['нічого', '[[не фото]]'])).toEqual([]);
+  });
+
+  it('leaves exactly the ids no tool returned once the kept ones are removed', () => {
+    const texts = [`[[photo:${A}]] [[photo:${B}]] [[photo:${C}]]`];
+    const allowed = new Set([A, C]);
+    const kept = sourcesInOrder(texts, allowed);
+    expect(citedIds(texts).filter((id) => !kept.includes(id))).toEqual([B]);
   });
 });
 
