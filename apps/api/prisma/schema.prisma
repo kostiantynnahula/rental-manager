@@ -382,8 +382,10 @@ model ChatMessage {
   // AI SDK UIMessage parts, stored as-is.
   parts     Json
   createdAt DateTime @default(now())
+  // The order of messages: createdAt ties inside one transaction (CURRENT_TIMESTAMP) and a uuid v4 id is random.
+  seq       Int      @default(autoincrement())
 
-  @@index([chatId, createdAt])
+  @@index([chatId, seq])
   @@map("chat_messages")
 }
 

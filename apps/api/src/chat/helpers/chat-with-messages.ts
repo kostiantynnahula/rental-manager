@@ -1,8 +1,8 @@
 import type { Prisma } from '../../generated/prisma/client.js';
 
-// Oldest first: the order they were said in. id breaks a createdAt tie (stable order).
+// Oldest first, by seq (insertion order): createdAt can tie, and the uuid id is random.
 export const chatWithMessagesInclude = {
-  messages: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] },
+  messages: { orderBy: { seq: 'asc' } },
 } satisfies Prisma.ChatInclude;
 
 export type ChatWithMessages = Prisma.ChatGetPayload<{ include: typeof chatWithMessagesInclude }>;
