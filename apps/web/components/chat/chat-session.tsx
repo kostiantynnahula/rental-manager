@@ -15,6 +15,7 @@ import { chatKeys, type ChatStoredMessage } from '@/lib/api/queries/chats';
 import { ChatInput } from './chat-input';
 import { ChatMessageView } from './chat-message-view';
 import { chatErrorMessage } from './helpers/chat-error-message';
+import { isThinking } from './helpers/is-thinking';
 import { toUIMessages } from './helpers/to-ui-messages';
 import type { ChatUIMessage } from './interfaces/chat-ui-message';
 
@@ -57,6 +58,7 @@ export function ChatSession({
   });
 
   const busy = status === 'submitted' || status === 'streaming';
+  const thinking = isThinking(status, messages.at(-1));
 
   function send(text: string) {
     clearError();
@@ -64,8 +66,8 @@ export function ChatSession({
   }
 
   return (
-    // Fixed height so the input stays on screen on a phone; the messages scroll inside.
-    <div className="flex h-[calc(100dvh-14rem)] min-h-80 flex-col overflow-hidden rounded-lg border">
+    // Fills ChatConversation; the messages scroll inside, the input stays at the bottom.
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border">
       <Conversation>
         <ConversationContent className="gap-4 p-3">
           {messages.length === 0 && (
@@ -82,7 +84,7 @@ export function ChatSession({
               streaming={status === 'streaming' && i === messages.length - 1}
             />
           ))}
-          {status === 'submitted' && (
+          {thinking && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
               <Loader />
               Думаю…

@@ -1,34 +1,29 @@
 'use client';
 
+import { useMemo, type ComponentProps } from 'react';
 import { MessageResponse } from '@/components/ai-elements/message';
-import { splitPhotoMarkers } from './helpers/split-photo-markers';
+import { PHOTO_LINK_PREFIX, photoMarkersToLinks } from './helpers/photo-markers-to-links';
 import { PhotoChip } from './photo-chip';
 
-// Markdown with the [[photo:<id>]] markers turned into thumbnail chips. A marker splits the markdown there, so
-// adjacent chips are grouped into one row.
+// Markdown with the [[photo:<id>]] markers as thumbnail chips inside the text. Other links open in a new tab.
 export function ChatAnswerText({ text, apartmentId }: { text: string; apartmentId: string }) {
-  const segments = splitPhotoMarkers(text);
-  const blocks: ({ type: 'text'; text: string } | { type: 'photos'; ids: string[] })[] = [];
-  for (const segment of segments) {
-    const last = blocks.at(-1);
-    if (segment.type === 'text') blocks.push({ type: 'text', text: segment.text });
-    else if (last?.type === 'photos') last.ids.push(segment.photoId);
-    else blocks.push({ type: 'photos', ids: [segment.photoId] });
-  }
-
-  return (
-    <div className="space-y-2">
-      {blocks.map((block, i) =>
-        block.type === 'text' ? (
-          <MessageResponse key={i}>{block.text}</MessageResponse>
+  const components = useMemo(
+    () => ({
+      a: ({ href, children, node: _node, ...props }: ComponentProps<'a'> & { node?: unknown }) =>
+        href?.startsWith(PHOTO_LINK_PREFIX) ? (
+          <PhotoChip
+            photoId={decodeURIComponent(href.slice(PHOTO_LINK_PREFIX.length))}
+            apartmentId={apartmentId}
+            inline
+          />
         ) : (
-          <div key={i} className="flex flex-wrap gap-2">
-            {block.ids.map((id) => (
-              <PhotoChip key={id} photoId={id} apartmentId={apartmentId} />
-            ))}
-          </div>
+          <a href={href} target="_blank" rel="noreferrer" className="underline" {...props}>
+            {children}
+          </a>
         ),
-      )}
-    </div>
+    }),
+    [apartmentId],
   );
+
+  return <MessageResponse components={components}>{photoMarkersToLinks(text)}</MessageResponse>;
 }

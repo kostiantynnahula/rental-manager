@@ -6,9 +6,9 @@ import { toolStatusLabel } from './helpers/tool-status-label';
 export function ToolStatus({ part }: { part: DynamicToolUIPart | ToolUIPart }) {
   if (part.state !== 'input-streaming' && part.state !== 'input-available') return null;
   return (
-    <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
+    <div className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
       <Loader />
       {toolStatusLabel(getToolOrDynamicToolName(part), part.input)}
-    </p>
+    </div>
   );
 }
