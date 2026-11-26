@@ -57,7 +57,8 @@ consumption × tariff per utility + fixed fees.
 
 pnpm workspaces monorepo:
 
-- `apps/api` — NestJS + Prisma + Postgres
+- `apps/api` — NestJS + Prisma + Postgres; also hosts the apartment chat agent (LangChain + Claude, `src/chat/`, streamed
+  to the web)
 - `apps/web` — Next.js
 - `apps/worker` — photo parsing (see `apps/worker/CLAUDE.md`). NestJS standalone consumer of BullMQ jobs (Redis)
   that the API enqueues on photo upload; authenticates to the API with an API key. Never touches the DB: it reads

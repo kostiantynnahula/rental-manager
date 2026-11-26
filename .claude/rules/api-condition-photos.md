@@ -123,3 +123,8 @@ Separate from meter `Photo` (`api-photos.md`): no inbox, no parsing, no readings
     exact name wins). Prints a `console.table` of every candidate sorted by rerank score: rank, rerank, vector,
     kept (`✓` = ≥ `RERANK_MIN_SCORE`, what the route returns up to its `limit`), event, takenOn, room, summary, id.
     Every candidate is printed: it's for checking the threshold.
+- **Baseline** (#159, the chat's `get_condition_baseline`): `ConditionPhotosService.baseline(apartmentId, date)` = the
+  apartment's state on a date. Takes the photos of the latest CHECK_IN day ≤ date, plus the CHANGE photos taken on or
+  after that day up to the date, oldest first (a same-day check-in before its changes). Earlier check-ins (an older
+  lease) and CHECK_OUT photos are not part of it. No check-in yet → `checkInOn: null` and every CHANGE up to the date.
+  The pure part is `helpers/condition-baseline.ts`. `ConditionPhotosService` is exported for the chat tools.
