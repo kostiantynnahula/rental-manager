@@ -17,7 +17,7 @@ export function ChatAnswerText({ text, apartmentId }: { text: string; apartmentI
             inline
           />
         ) : (
-          <a href={href} target="_blank" rel="noreferrer" className="underline" {...props}>
+          <a {...props} href={href} target="_blank" rel="noreferrer" className="underline">
             {children}
           </a>
         ),

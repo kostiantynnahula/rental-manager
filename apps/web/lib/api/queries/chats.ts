@@ -32,8 +32,12 @@ export function useChatDetail(id: string) {
     queryKey: chatKeys.detail(id),
     queryFn: async (): Promise<ChatDetail> =>
       unwrap(await api.GET('/chats/{id}', { params: { path: { id } } })),
-    // The live conversation is kept by useChat; a background refetch would only re-seed it.
+    // The live conversation is kept by useChat, and a refetch remounts it (ChatConversation): refreshed only by
+    // explicit invalidations (onFinish, rename), never by time, focus or a reconnect mid-answer. An invalidated
+    // query still refetches on the next mount, so reopening a chat shows its saved history.
+    staleTime: Infinity,
     refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }
 

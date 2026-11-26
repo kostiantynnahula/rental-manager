@@ -16,12 +16,14 @@ answer that cites condition photos.
 - **List** (`ChatList`): last active first (API order), title or «Без назви», date · message count. «Новий чат»
   creates and opens it (hidden for an archived apartment: the API answers 404; its chats can still be read,
   renamed, deleted). ⋯ → rename (`RenameChatDialog`, one field so no RHF; blank → null, ≤ 100) and delete
-  (`ConfirmDialog`). Mutations invalidate `chatKeys.all`; delete removes the detail instead (it would 404).
+  (`ConfirmDialog`). Create invalidates the lists, rename `chatKeys.all`, delete the lists and removes the
+  detail (it would 404).
 - **Conversation** (`ChatConversation` → `ChatSession`):
   - History from `GET /chats/:id` (`useChatDetail`; not `useChat`, that's the AI SDK's hook) → `toUIMessages` →
     `useChat({ id, messages })`. useChat takes its initial messages only once, so `ChatSession` is keyed by the
-    query's `dataUpdatedAt`: a refetch remounts it. Nothing refetches mid-answer: no window-focus refetch, and
-    `onFinish` only marks the detail stale (`refetchType: 'none'`) + invalidates the lists. The header title comes
+    query's `dataUpdatedAt`: a refetch remounts it. So `useChatDetail` never refetches on its own (`staleTime:
+Infinity`, no focus/reconnect refetch), and `onFinish` only marks it stale (`refetchType: 'none'`, refetched on
+    the next open) + invalidates the lists. The header title comes
     from the list (refetched after the answer that titled the chat), the detail's as a fallback.
   - Transport: `DefaultChatTransport` → `/api/chats/:id/messages`, `credentials: 'same-origin'`,
     `prepareSendMessagesRequest` sends **only `{ message }`** (the last one: the API owns the history).

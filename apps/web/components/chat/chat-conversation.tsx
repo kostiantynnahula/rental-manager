@@ -77,9 +77,8 @@ export function ChatConversation({
           {(listed ? listed.title : detail.data.title) ?? UNTITLED_CHAT}
         </h2>
       </div>
-      {/* Remounted when the history is refetched (opening a chat whose cache is stale): useChat takes its
-          initial messages only once. Nothing refetches it mid-answer (no window-focus refetch, onFinish only
-          marks it stale). */}
+      {/* Remounted when the history is refetched (reopening an invalidated chat): useChat takes its initial messages
+          only once. useChatDetail never refetches on its own, and onFinish only marks it stale. */}
       <ChatSession
         key={detail.dataUpdatedAt}
         chatId={chatId}

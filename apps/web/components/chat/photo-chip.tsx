@@ -15,7 +15,7 @@ export function PhotoChip({
 }) {
   return (
     <Link
-      href={`/apartments/${apartmentId}/condition-photos/${photoId}`}
+      href={`/apartments/${apartmentId}/condition-photos/${encodeURIComponent(photoId)}`}
       aria-label="Відкрити фото"
       className={cn(
         'shrink-0 overflow-hidden rounded-md border bg-muted',
