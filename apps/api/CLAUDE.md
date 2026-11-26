@@ -16,7 +16,7 @@
 - Nest 12, native ESM (`"type": "module"`): relative imports need the `.js` extension.
 - Tests: vitest (globals on). Unit `*.spec.ts` next to the code; e2e in `test/*.e2e-spec.ts`.
 - One Nest module per domain area (apartments, tenants, leases, meters, readings, tariffs, statements, photos,
-  photo-batches, condition-photos, api-keys); infra modules: auth, users, prisma, storage, queue, embeddings (the only code that knows the
+  photo-batches, condition-photos, chat, api-keys); infra modules: auth, users, prisma, storage, queue, embeddings (the only code that knows the
   embedding model), health, cli.
   `src/images/` = shared image-upload helpers (no module).
 - Shared types come from `@rental/shared` (built to `dist/`; root `dev`/`test`/`lint` build it first).
@@ -43,6 +43,7 @@ Always loaded with this file (imports); split out only to keep this file short.
   - Photos, storage (MinIO), inbox, parse queue, shared image code (`src/{photos,storage,queue,images}/`): `.claude/rules/api-photos.md`
   - Photo batches — summary, confirm by batch (`src/photo-batches/`): `.claude/rules/api-photo-batches.md`
   - Condition photos — check-in/check-out/change history, embeddings, semantic search (`src/{condition-photos,embeddings}/`): `.claude/rules/api-condition-photos.md`
+  - Apartment chat — chats and message history (`src/chat/`): `.claude/rules/api-chat.md`
   - Readings and meters (`src/{readings,meters}/`): `.claude/rules/api-readings.md`
   - Statements (`src/statements/`): `.claude/rules/api-statements.md`
   - Tariffs (`src/tariffs/`): `.claude/rules/api-tariffs.md`

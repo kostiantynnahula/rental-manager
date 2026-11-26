@@ -2536,6 +2536,214 @@
         ]
       }
     },
+    "/apartments/{apartmentId}/chats": {
+      "post": {
+        "operationId": "ApartmentChatsController_create",
+        "parameters": [
+          {
+            "name": "apartmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "An empty, untitled chat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found or archived"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "chats"
+        ]
+      },
+      "get": {
+        "operationId": "ApartmentChatsController_list",
+        "parameters": [
+          {
+            "name": "apartmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "By updatedAt (newest first)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChatListItemDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Apartment not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "chats"
+        ]
+      }
+    },
+    "/chats/{id}": {
+      "get": {
+        "operationId": "ChatsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatDetailResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Chat not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "chats"
+        ]
+      },
+      "patch": {
+        "operationId": "ChatsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChatDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body (title missing, not a string, > 100)"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Chat not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "chats"
+        ]
+      },
+      "delete": {
+        "operationId": "ChatsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The chat and all its messages deleted"
+          },
+          "401": {
+            "description": ""
+          },
+          "404": {
+            "description": "Chat not found"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "chats"
+        ]
+      }
+    },
     "/meters/{meterId}/readings": {
       "get": {
         "description": "API key scope: readings:read",
@@ -6655,6 +6863,161 @@
             "description": "Why the photo could not be described"
           }
         }
+      },
+      "ChatResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "apartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "description": "null = untitled"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "apartmentId",
+          "title",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "ChatListItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "description": "null = untitled"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "messageCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "updatedAt",
+          "messageCount"
+        ]
+      },
+      "ChatRole": {
+        "type": "string",
+        "enum": [
+          "USER",
+          "ASSISTANT"
+        ]
+      },
+      "ChatMessageResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ChatRole"
+              }
+            ]
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "description": "AI SDK UIMessage parts, e.g. { type: \"text\", text }"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "parts",
+          "createdAt"
+        ]
+      },
+      "ChatDetailResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "apartmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "description": "null = untitled"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "messages": {
+            "description": "All messages, oldest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessageResponseDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "apartmentId",
+          "title",
+          "createdAt",
+          "updatedAt",
+          "messages"
+        ]
+      },
+      "UpdateChatDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "title"
+        ]
       },
       "ReadingSource": {
         "type": "string",
