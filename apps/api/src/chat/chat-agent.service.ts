@@ -181,7 +181,13 @@ export class ChatAgentService {
     });
 
     try {
-      await pipeUIMessageStreamToResponse({ response: res, stream });
+      await pipeUIMessageStreamToResponse({
+        response: res,
+        stream,
+        // no-transform: gzip in a proxy (Next's built-in compression on the web's /api rewrite) would hold the SSE
+        // back until the answer ends. Replaces the SDK's default `no-cache`.
+        headers: { 'cache-control': 'no-cache, no-transform' },
+      });
     } finally {
       // Even when the pipe fails: the close handler aborts the run, so execute ends.
       await executed;
