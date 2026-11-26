@@ -13,7 +13,7 @@ import { ApartmentsService } from '../apartments/apartments.service.js';
 import { currentLeaseWhere } from '../apartments/helpers/current-lease-where.js';
 import type { AuthUser } from '../auth/interfaces/auth-user.interface.js';
 import type { ConditionPhoto, Prisma } from '../generated/prisma/client.js';
-import { ConditionPhotoIndexStatus } from '../generated/prisma/enums.js';
+import { ConditionPhotoEvent, ConditionPhotoIndexStatus } from '../generated/prisma/enums.js';
 import { prepareImages } from '../images/helpers/prepare-images.js';
 import { THUMBNAIL_MIME_TYPE } from '../images/helpers/thumbnail.js';
 import type { ImageFile } from '../images/interfaces/image-file.interface.js';
@@ -30,9 +30,11 @@ import { UpdateConditionPhotoDto } from './dto/update-condition-photo.dto.js';
 import { UploadConditionPhotosBodyDto } from './dto/upload-condition-photos-body.dto.js';
 import { assertDateRange } from './helpers/assert-date-range.js';
 import { assertSameApartment } from './helpers/assert-same-apartment.js';
+import { conditionBaseline } from './helpers/condition-baseline.js';
 import { jsonEquals, sameDescription, toDescriptionJson } from './helpers/description-json.js';
 import { cleanNote } from './helpers/note.js';
 import { newConditionPhotos, uploadAnswers } from './helpers/upload-batch.js';
+import type { ConditionBaseline } from './interfaces/condition-baseline.interface.js';
 import type { ConditionPhotoDescription } from './interfaces/condition-photo-description.interface.js';
 import type { ConditionPhotoDetail } from './interfaces/condition-photo-detail.interface.js';
 import type { ConditionPhotoSearchHit } from './interfaces/condition-photo-search-hit.interface.js';
@@ -106,6 +108,19 @@ export class ConditionPhotosService {
     await this.apartments.findOrThrow(apartmentId);
     assertDateRange(query);
     return this.index.search(apartmentId, query);
+  }
+
+  // The state on a date (the chat's get_condition_baseline): see conditionBaseline. An archived apartment's too.
+  async baseline(apartmentId: string, date: Date): Promise<ConditionBaseline> {
+    await this.apartments.findOrThrow(apartmentId);
+    const photos = await this.prisma.conditionPhoto.findMany({
+      where: {
+        apartmentId,
+        event: { in: [ConditionPhotoEvent.CHECK_IN, ConditionPhotoEvent.CHANGE] },
+        takenOn: { lte: date },
+      },
+    });
+    return conditionBaseline(photos, date);
   }
 
   async findOrThrow(id: string): Promise<ConditionPhoto> {

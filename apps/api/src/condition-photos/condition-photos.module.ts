@@ -24,5 +24,7 @@ import { ConditionPhotosService } from './condition-photos.service.js';
   ],
   controllers: [ApartmentConditionPhotosController, ConditionPhotosController],
   providers: [ConditionPhotosService],
+  // The chat agent's tools (search, baseline).
+  exports: [ConditionPhotosService],
 })
 export class ConditionPhotosModule {}
