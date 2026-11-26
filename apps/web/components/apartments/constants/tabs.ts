@@ -8,6 +8,7 @@ export const APARTMENT_TABS = [
   { value: 'photos', label: 'Фото' },
   { value: 'condition', label: 'Стан' },
   { value: 'leases', label: 'Договори' },
+  { value: 'chat', label: 'Чат' },
 ] as const;
 
 export type ApartmentTab = (typeof APARTMENT_TABS)[number]['value'];
