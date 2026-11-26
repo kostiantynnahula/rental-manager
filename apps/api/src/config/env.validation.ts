@@ -98,6 +98,28 @@ export class Env {
   @IsOptional()
   @IsString()
   VOYAGE_API_KEY?: string;
+
+  // Apartment chat agent (src/chat/agent/). Optional: without it POST /chats/:id/messages answers 503.
+  // Never log it. The message must not echo the value.
+  @IsOptional()
+  @Matches(/^sk-ant-/, { message: 'ANTHROPIC_API_KEY must be an Anthropic API key (sk-ant-…)' })
+  ANTHROPIC_API_KEY?: string;
+
+  @IsString()
+  @MinLength(1)
+  CHAT_MODEL: string = 'claude-sonnet-5-5';
+
+  // Messages (questions + answers) the agent sees, the new question included.
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  CHAT_HISTORY_LIMIT: number = 20;
+
+  // Tool calls per run; past it the model is told to answer with what it has.
+  @IsInt()
+  @Min(1)
+  @Max(20)
+  CHAT_MAX_TOOL_CALLS: number = 5;
 }
 
 // Used by ConfigModule: fails fast at startup with all invalid vars listed.

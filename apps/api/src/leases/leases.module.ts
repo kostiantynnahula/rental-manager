@@ -9,5 +9,7 @@ import { LeasesService } from './leases.service.js';
   imports: [ApartmentsModule, TenantsModule],
   controllers: [ApartmentLeasesController, LeasesController],
   providers: [LeasesService],
+  // The chat agent's get_leases.
+  exports: [LeasesService],
 })
 export class LeasesModule {}
