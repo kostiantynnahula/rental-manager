@@ -19,6 +19,13 @@ export function sourcesInOrder(texts: readonly string[], allowed: ReadonlySet<st
   return [...ids];
 }
 
+// Every cited id by first mention, unknown ones included (chat:debug: cited − kept = stripped).
+export function citedIds(texts: readonly string[]): string[] {
+  const ids = new Set<string>();
+  for (const text of texts) for (const [, id] of text.matchAll(MARKER)) ids.add(id);
+  return [...ids];
+}
+
 // Splits streamed text into the part safe to send now and the tail that may still become a marker. Held only while
 // it still can (no length cap: an id of any length is stripped), and flushed at the text part's end anyway.
 export function splitAtPartialMarker(buffer: string): [ready: string, held: string] {

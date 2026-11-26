@@ -80,5 +80,12 @@ the CRUD routes (#158) and the agent with its streaming route (#159).
   this run** are kept: `photoMarkerFilter` strips any other marker (any id shape, made-up ones too) from the streamed
   text. A marker split across deltas is held back while the tail can still become one (no length cap), and flushed at
   the text part's end. `data-sources` = `{ photoIds }` in order of first mention.
+- **Agent setup** (`agent/chat-agent.ts`): `newRunContext`, `buildChatAgent` (tools, system prompt, tool-call limit)
+  and `usageCallback`, shared by `ChatAgentService` and the `chat:debug` CLI, so the CLI runs the route's agent.
+- **`chat:debug`** (`src/cli/chat-debug.ts`, own `ChatDebugModule`: the condition-photos module needs Redis):
+  `pnpm --filter api chat:debug -- --apartment <id|name> "<question>"` runs the agent once, with no chat and no
+  history (nothing saved). It prints the tool calls (args, count, ms), the answer after `stripUnknownMarkers`, the
+  kept and stripped photo ids (`citedIds` − `sourcesInOrder`) and the tokens. The question and the answer go to
+  stdout, never to a log.
 - **Log** (one line per run): outcome, ms, each tool's name, result count and ms, and token usage (summed per model
   call by a `handleLLMEnd` callback, so failed runs count too). Never the question or the answer text.

@@ -200,6 +200,37 @@ Manual tools, run from the repo root. They build first, then run once.
 | `pnpm --filter api embed:backfill`                                                      | embed described condition photos that have no vector yet (Voyage)                  |
 | `pnpm --filter api search:debug -- --apartment <id\|name> "<query>"`                    | condition photo search: vector and rerank scores side by side                      |
 | `pnpm --filter api describe:requeue -- --apartment <id\|name> \| --all \| --photo <id>` | describe condition photos again (worker: **paid**, 1 call / photo)                 |
+| `pnpm --filter api chat:debug -- --apartment <id\|name> "<question>"`                   | the chat agent once, nothing saved: tool calls, answer, photos, tokens (**paid**)  |
+
+`chat:debug` needs the infra up (Redis too), `ANTHROPIC_API_KEY` and `VOYAGE_API_KEY`. It runs the same agent as the
+web chat, with one question and no history:
+
+```bash
+pnpm --filter api chat:debug -- --apartment "Шевченка" "Що перевірити на кухні при виїзді?"
+```
+
+```
+Шевченка 12 — "Що перевірити на кухні при виїзді?"
+
+Tool calls:
+┌─────────┬──────────────────────────┬──────────────────────────────┬───────┬──────┐
+│ (index) │ name                     │ args                         │ count │ ms   │
+├─────────┼──────────────────────────┼──────────────────────────────┼───────┼──────┤
+│ 0       │ 'get_condition_baseline' │ '{}'                         │ 14    │ 38   │
+│ 1       │ 'search_photos'          │ '{"query":"кухня, плита"}'   │ 3     │ 912  │
+└─────────┴──────────────────────────┴──────────────────────────────┴───────┴──────┘
+
+8412ms; tokens in=9120 out=640
+
+Answer:
+За фото заїзду (2026-03-01) на кухні: …
+
+Photos kept: 3f1c…, 9a02…
+Photos stripped: 1111…
+```
+
+`count` = rows the tool returned (`error` = it failed, `—` = no result: past `CHAT_MAX_TOOL_CALLS`). `stripped` =
+cited photo ids that no tool returned in this run (cut from the answer, as in the web).
 
 Samples folders, `expected.json` and the output: [`apps/worker/README.md`](apps/worker/README.md#samples-scripts--check-the-model-on-local-photos).
 
